@@ -301,7 +301,7 @@ function openCardDialog(cardId) {
   cardDialogTitle.textContent = card.name;
   cardDialogSet.textContent = [card.set_name || card.set_code, card.collector_number].filter(Boolean).join(' · ') || 'Riftbound catalog';
   cardDialogArt.className = `card-dialog-art${imageUrl ? ' has-image' : ''}`;
-  cardDialogArt.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`;
+  cardDialogArt.innerHTML = `${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`}${renderCardBadges(card)}`;
   const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains]];
   cardDialogStats.innerHTML = stats.filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
   cardDialogAbility.textContent = card.ability_text || 'No ability text listed.';
