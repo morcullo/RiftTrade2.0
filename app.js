@@ -152,7 +152,7 @@ function renderListings() {
     const card = listingCards[activeCardIndex]?.card || {};
     const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
-    const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
+    const price = listingPriceLabel(listing);
     return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
       <div class="card-art${imageUrl ? ' has-image' : ''}">
         ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`}
@@ -257,15 +257,39 @@ function listingStatusLabel(status) {
   return { active: 'Active', paused: 'Pending', completed: 'Sold', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
 }
 
+function listingCardCount(listingCards) {
+  return listingCards.reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0);
+}
+
+function formatDollar(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '';
+  return `$${amount.toFixed(2).replace(/\.00$/, '')}`;
+}
+
+function listingPriceLabel(listing) {
+  const listingCards = listing.listing_cards || [];
+  const cardPrices = listingCards.map(({ price }) => Number(price)).filter(Number.isFinite);
+  if (listingCards.length > 1) {
+    if (!cardPrices.length) return 'Make an offer';
+    const lowest = Math.min(...cardPrices);
+    const highest = Math.max(...cardPrices);
+    return lowest === highest ? formatDollar(lowest) : `${formatDollar(lowest)}-${formatDollar(highest)}`;
+  }
+  if (cardPrices.length) return formatDollar(cardPrices[0]);
+  return listing.price !== null && listing.price !== undefined ? formatDollar(listing.price) : 'Make an offer';
+}
+
 function renderMyListings() {
   myListingsGrid.innerHTML = myListings.map((listing) => {
     const listingCards = listing.listing_cards || [];
     const cardNames = listingCards.map(({ card, quantity }) => `${quantity > 1 ? `${quantity}× ` : ''}${card?.name || 'Riftbound card'}`).join(', ');
     const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
-    const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
+    const price = listingPriceLabel(listing);
+    const cardCount = listingCardCount(listingCards);
     const status = listingStatusLabel(listing.status);
     const statusClass = listing.status === 'completed' ? 'complete' : listing.status === 'active' ? 'pending' : 'waiting';
-    return `<article class="my-listing-row"><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${listingCards.length} card${listingCards.length === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="trade-status ${statusClass}">${escapeHtml(status)}</span><button class="row-arrow my-listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></article>`;
+    return `<article class="my-listing-row"><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="trade-status ${statusClass}">${escapeHtml(status)}</span><button class="row-arrow my-listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></article>`;
   }).join('');
   myListingsCount.textContent = `${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
   myListingsEmpty.hidden = myListings.length !== 0;
@@ -318,16 +342,17 @@ function openListingDetails(listingId) {
   const listingCards = listing.listing_cards || [];
   const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
   const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
-  const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
+  const price = listingPriceLabel(listing);
+  const cardCount = listingCardCount(listingCards);
   listingDetailsTitle.textContent = listing.title;
   listingDetailsSeller.textContent = `Listed by ${seller}`;
-  listingDetailsMeta.textContent = [listingType, price, `${listingCards.length} card${listingCards.length === 1 ? '' : 's'}`].join(' · ');
+  listingDetailsMeta.textContent = [listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
   listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, price }) => {
     const imageUrl = getCardImageUrl(card || {});
     const badge = renderCardBadges(card || {});
-    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${badge}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`USD ${Number(price).toFixed(2)} each`)}</small>` : ''}</span><span class="listing-details-quantity">× ${escapeHtml(quantity || 1)}</span></button>`;
+    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${badge}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`${formatDollar(price)} each`)}</small>` : ''}</span><span class="listing-details-quantity">× ${escapeHtml(quantity || 1)}</span></button>`;
   }).join('');
   listingDetailsCards.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
   window.riftTradeSupabase?.auth.getUser().then(({ data: { user } }) => {
