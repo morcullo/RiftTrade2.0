@@ -171,11 +171,23 @@
       <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
         <button class="dialog-close" id="profile-close" type="button" aria-label="Close profile">×</button>
         <p class="eyebrow">RIFTTRADE / MEMBER PROFILE</p>
-        <div class="profile-title-row"><h2 id="profile-title">Member profile</h2><button class="button button-dark profile-message-button" id="profile-message" type="button" hidden>Message <span>→</span></button></div>
+        <div class="profile-title-row"><h2 id="profile-title">Member profile</h2><div class="profile-title-actions"><button class="button button-outline profile-edit-button" id="profile-edit" type="button" hidden>Edit</button><button class="button button-dark profile-message-button" id="profile-message" type="button" hidden>Message <span>→</span></button></div></div>
         <dl class="profile-info"><div><dt>Display name</dt><dd id="profile-display-name"></dd></div><div><dt>Email</dt><dd><a id="profile-email"></a></dd></div><div><dt>Member since</dt><dd id="profile-member-since"></dd></div><div id="profile-discord-field" hidden><dt>Discord</dt><dd><a id="profile-discord-link" target="_blank" rel="noopener noreferrer">Discord Profile ↗</a></dd></div></dl>
         <div class="profile-listings-heading"><h3>Listings</h3><span id="profile-listing-count"></span></div>
         <p class="profile-listings-status" id="profile-listings-status" aria-live="polite">Loading listings...</p>
         <div class="market-grid profile-listings" id="profile-listings"></div>
+      </dialog>
+
+      <dialog class="profile-edit-dialog" id="profile-edit-dialog" aria-labelledby="profile-edit-title">
+        <button class="dialog-close" id="profile-edit-close" type="button" aria-label="Close display name editor">×</button>
+        <p class="eyebrow">RIFTTRADE / PROFILE SETTINGS</p>
+        <h2 id="profile-edit-title">Edit display name</h2>
+        <p class="account-intro">Choose the name other RiftTrade members will see.</p>
+        <form id="profile-edit-form">
+          <label class="auth-field">Display name<input id="profile-edit-name" type="text" autocomplete="nickname" minlength="2" maxlength="40" required /></label>
+          <button class="button button-dark auth-submit" id="profile-edit-submit" type="submit">Save name <span>→</span></button>
+        </form>
+        <p class="auth-message" id="profile-edit-message" role="status" aria-live="polite"></p>
       </dialog>
 
       <nav class="mobile-nav" aria-label="Mobile navigation">

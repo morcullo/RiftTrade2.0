@@ -92,7 +92,14 @@ const profileEmail = document.querySelector('#profile-email');
 const profileMemberSince = document.querySelector('#profile-member-since');
 const profileDiscordField = document.querySelector('#profile-discord-field');
 const profileDiscordLink = document.querySelector('#profile-discord-link');
+const profileEditButton = document.querySelector('#profile-edit');
 const profileMessageButton = document.querySelector('#profile-message');
+const profileEditDialog = document.querySelector('#profile-edit-dialog');
+const profileEditClose = document.querySelector('#profile-edit-close');
+const profileEditForm = document.querySelector('#profile-edit-form');
+const profileEditName = document.querySelector('#profile-edit-name');
+const profileEditSubmit = document.querySelector('#profile-edit-submit');
+const profileEditMessage = document.querySelector('#profile-edit-message');
 const profileListingCount = document.querySelector('#profile-listing-count');
 const profileListingsStatus = document.querySelector('#profile-listings-status');
 const profileListingsGrid = document.querySelector('#profile-listings');
@@ -181,6 +188,8 @@ let selectedListingCardLanguages = {};
 let selectedListingCardFoils = {};
 let authMode = 'signin';
 const discordOnboardingStorageKey = 'riftTradeDiscordOnboarding';
+const displayNameMinLength = 2;
+const displayNameMaxLength = 40;
 
 function getCardImageUrl(card) {
   if (card.image_url && /^https?:\/\//i.test(card.image_url)) return card.image_url;
@@ -606,6 +615,7 @@ async function openProfileDialog(profileId) {
   profileDialog.dataset.profileId = requestedProfileId;
   profileTitle.textContent = 'Loading profile...';
   profileDisplayName.textContent = '';
+  profileEditButton.hidden = true;
   profileMessageButton.hidden = true;
   profileMessageButton.dataset.profileId = '';
   profileEmail.textContent = '';
@@ -653,6 +663,7 @@ async function openProfileDialog(profileId) {
   const displayName = profile.display_name || profile.username || 'RiftTrade member';
   profileTitle.textContent = displayName;
   profileDisplayName.textContent = displayName;
+  profileEditButton.hidden = !signedInUser || signedInUser.id !== profile.id;
   profileMessageButton.hidden = !signedInUser || signedInUser.id === profile.id;
   profileMessageButton.dataset.profileId = profile.id;
   profileEmail.textContent = profile.email || (profileResult.emailColumnMissing ? 'Run the profile email migration to enable email display.' : 'Email not provided.');
@@ -698,6 +709,85 @@ listingMessageButton.addEventListener('click', () => {
 });
 profileClose.addEventListener('click', () => profileDialog.close());
 profileDialog.addEventListener('click', (event) => { if (event.target === profileDialog) profileDialog.close(); });
+profileEditClose.addEventListener('click', () => profileEditDialog.close());
+profileEditDialog.addEventListener('click', (event) => { if (event.target === profileEditDialog) profileEditDialog.close(); });
+profileEditButton.addEventListener('click', () => {
+  if (!signedInUser || profileDialog.dataset.profileId !== signedInUser.id) return;
+  profileEditName.value = profileDisplayName.textContent.trim();
+  profileEditMessage.textContent = '';
+  profileEditMessage.classList.remove('is-error');
+  profileEditDialog.showModal();
+  requestAnimationFrame(() => profileEditName.focus());
+});
+profileEditForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const displayName = profileEditName.value.trim();
+  const currentName = profileDisplayName.textContent.trim();
+  const validationError = validateDisplayName(displayName, currentName);
+  if (validationError) {
+    profileEditMessage.textContent = validationError;
+    profileEditMessage.classList.add('is-error');
+    profileEditName.focus();
+    return;
+  }
+  if (!window.riftTradeSupabase) {
+    profileEditMessage.textContent = 'Add your Supabase URL and anon key first.';
+    profileEditMessage.classList.add('is-error');
+    return;
+  }
+  profileEditSubmit.disabled = true;
+  profileEditMessage.textContent = 'Checking display name...';
+  profileEditMessage.classList.remove('is-error');
+  const { data: { user }, error: userError } = await window.riftTradeSupabase.auth.getUser();
+  if (userError || !user) {
+    profileEditSubmit.disabled = false;
+    profileEditMessage.textContent = userError?.message || 'Your session has expired. Sign in again.';
+    profileEditMessage.classList.add('is-error');
+    return;
+  }
+  if (user.id !== profileDialog.dataset.profileId) {
+    profileEditSubmit.disabled = false;
+    profileEditMessage.textContent = 'You can only edit your own display name.';
+    profileEditMessage.classList.add('is-error');
+    return;
+  }
+  const { data: existingProfile, error: profileLookupError } = await findProfileByDisplayName(displayName);
+  if (profileLookupError) {
+    profileEditSubmit.disabled = false;
+    profileEditMessage.textContent = profileLookupError.message;
+    profileEditMessage.classList.add('is-error');
+    return;
+  }
+  if (existingProfile && existingProfile.id !== user.id) {
+    profileEditSubmit.disabled = false;
+    profileEditMessage.textContent = 'That display name is already in use. Choose another.';
+    profileEditMessage.classList.add('is-error');
+    profileEditName.focus();
+    return;
+  }
+  profileEditMessage.textContent = 'Saving display name...';
+  const { data: updatedProfile, error: updateError } = await window.riftTradeSupabase.from('profiles')
+    .update({ display_name: displayName })
+    .eq('id', user.id)
+    .select('id, display_name')
+    .maybeSingle();
+  profileEditSubmit.disabled = false;
+  if (updateError) {
+    profileEditMessage.textContent = isDisplayNameConflictError(updateError) ? 'That display name is already in use. Choose another.' : updateError.message;
+    profileEditMessage.classList.add('is-error');
+    return;
+  }
+  if (!updatedProfile) {
+    profileEditMessage.textContent = 'Your display name could not be updated. Try again.';
+    profileEditMessage.classList.add('is-error');
+    return;
+  }
+  profileTitle.textContent = displayName;
+  profileDisplayName.textContent = displayName;
+  signedInName.textContent = displayName;
+  signedInName.dataset.profileId = user.id;
+  profileEditDialog.close();
+});
 profileMessageButton.addEventListener('click', () => {
   const recipientId = profileMessageButton.dataset.profileId;
   profileDialog.close();
@@ -1477,6 +1567,19 @@ function setAuthMode(mode) {
 async function findProfileByDisplayName(displayName) {
   const pattern = displayName.replace(/[\\%_]/g, '\\$&');
   return window.riftTradeSupabase.from('profiles').select('id').ilike('display_name', pattern).limit(1).maybeSingle();
+}
+
+function validateDisplayName(displayName, currentName = '') {
+  if (!displayName) return 'Enter a display name.';
+  if (displayName.length < displayNameMinLength) return `Display name must be at least ${displayNameMinLength} characters.`;
+  if (displayName.length > displayNameMaxLength) return `Display name must be ${displayNameMaxLength} characters or fewer.`;
+  if (/[\u0000-\u001F\u007F]/.test(displayName)) return 'Display name contains invalid characters.';
+  if (displayName === currentName) return 'Enter a different display name.';
+  return '';
+}
+
+function isDisplayNameConflictError(error) {
+  return error?.code === '23505' || /display.?name|profiles_display_name_unique_idx/i.test(error?.message || '');
 }
 
 async function openAccount() {
