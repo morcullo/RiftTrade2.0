@@ -147,7 +147,7 @@ function renderListings() {
         ${renderCardBadges(card)}
         ${listingCards.length > 1 ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card image">←</button><span class="listing-image-count">${activeCardIndex + 1} / ${listingCards.length}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card image">→</button>` : ''}
       </div>
-      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span><button class="listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></div></div>
+      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span><button class="listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button">View listing</button></div></div>
     </article>`;
   }).join('');
   emptyMessage.hidden = matches.length !== 0;
