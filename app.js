@@ -102,6 +102,7 @@ let selectedListingCardQuantities = {};
 let selectedListingCardConditions = {};
 let selectedListingCardPrices = {};
 let selectedListingCardLanguages = {};
+let selectedListingCardFoils = {};
 let authMode = 'signin';
 
 function getCardImageUrl(card) {
@@ -353,10 +354,11 @@ function openListingDetails(listingId) {
   listingDetailsMeta.textContent = [listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
-  listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, price }) => {
+  listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, foil, price }) => {
     const imageUrl = getCardImageUrl(card || {});
     const conditionLabel = condition ? condition.replaceAll('_', ' ').replace(/^./, (character) => character.toUpperCase()) : '';
-    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}</span><span class="listing-details-card-copy"><span class="listing-details-card-title"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong>${renderCardBadges(card || {})}</span><span>${escapeHtml([card?.public_code, conditionLabel, language].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`${formatDollar(price)} each`)}</small>` : ''}</span><span class="listing-details-quantity">× ${escapeHtml(quantity || 1)}</span></button>`;
+    const foilLabel = ['common', 'uncommon'].includes(String(card?.rarity || '').toLowerCase()) && foil ? foil === 'foil' ? 'Foil' : 'Non-foil' : '';
+    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}</span><span class="listing-details-card-copy"><span class="listing-details-card-title"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong>${renderCardBadges(card || {})}</span><span>${escapeHtml([card?.public_code, conditionLabel, language, foilLabel].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`${formatDollar(price)} each`)}</small>` : ''}</span><span class="listing-details-quantity">× ${escapeHtml(quantity || 1)}</span></button>`;
   }).join('');
   listingDetailsCards.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
   window.riftTradeSupabase?.auth.getUser().then(({ data: { user } }) => {
@@ -393,6 +395,7 @@ function openListingForm(listing = null) {
     selectedListingCardConditions = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, condition }) => [card.id, condition || 'near_mint']));
     selectedListingCardPrices = Object.fromEntries((listing.listing_cards || []).filter(({ card, price }) => card?.id && price !== null && price !== undefined).map(({ card, price }) => [card.id, price]));
     selectedListingCardLanguages = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, language }) => [card.id, language || 'English']));
+    selectedListingCardFoils = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, foil }) => [card.id, foil || 'non_foil']));
     selectedListingCardIds = Object.keys(selectedListingCardQuantities);
     listingCardSearch.value = '';
     renderSelectedListingCards();
@@ -486,7 +489,7 @@ listingForm.addEventListener('submit', async (event) => {
   if (editingListingId) await window.riftTradeSupabase.from('listing_cards').delete().eq('listing_id', editingListingId);
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: selectedListingCardConditions[cardId] || 'near_mint', price: selectedListingCardPrices[cardId] === '' ? null : Number(selectedListingCardPrices[cardId]) || null, language: (selectedListingCardLanguages[cardId] || 'English').trim(), notes: listingDescription.value.trim() || null })));
+    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: selectedListingCardConditions[cardId] || 'near_mint', price: selectedListingCardPrices[cardId] === '' ? null : Number(selectedListingCardPrices[cardId]) || null, language: (selectedListingCardLanguages[cardId] || 'English').trim(), foil: selectedListingCardFoils[cardId] || 'non_foil', notes: listingDescription.value.trim() || null })));
   if (cardError) {
     if (!editingListingId) await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
@@ -583,6 +586,7 @@ function populateListingCards() {
   selectedListingCardConditions = {};
   selectedListingCardPrices = {};
   selectedListingCardLanguages = {};
+  selectedListingCardFoils = {};
   listingCardSelected.innerHTML = '';
   listingCardSearch.setCustomValidity('Choose at least one card from the search results.');
 }
@@ -602,6 +606,7 @@ listingCardResults.addEventListener('click', (event) => {
     selectedListingCardConditions[card.id] = 'near_mint';
     selectedListingCardPrices[card.id] = '';
     selectedListingCardLanguages[card.id] = 'English';
+    selectedListingCardFoils[card.id] = 'non_foil';
   }
   listingCardSearch.value = '';
   renderSelectedListingCards();
@@ -618,7 +623,8 @@ function renderSelectedListingCards() {
       const condition = selectedListingCardConditions[card.id] || 'near_mint';
       const price = selectedListingCardPrices[card.id] ?? '';
       const language = selectedListingCardLanguages[card.id] || 'English';
-        return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span class="listing-card-selected-name">${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><span class="listing-card-selected-fields"><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(card.id)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-language">Language<input type="text" value="${escapeHtml(language)}" data-listing-card-language="${escapeHtml(card.id)}" aria-label="Language for ${escapeHtml(card.name)}" /></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(card.id)}" aria-label="Price for ${escapeHtml(card.name)}" /></label><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span></span>`;
+      const foilSelector = ['common', 'uncommon'].includes(String(card.rarity || '').toLowerCase()) ? `<label class="listing-card-foil">Finish<select data-listing-card-foil="${escapeHtml(card.id)}" aria-label="Finish for ${escapeHtml(card.name)}"><option value="non_foil"${selectedListingCardFoils[card.id] !== 'foil' ? ' selected' : ''}>Non-foil</option><option value="foil"${selectedListingCardFoils[card.id] === 'foil' ? ' selected' : ''}>Foil</option></select></label>` : '';
+        return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span class="listing-card-selected-name">${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><span class="listing-card-selected-fields"><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(card.id)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-language">Language<input type="text" value="${escapeHtml(language)}" data-listing-card-language="${escapeHtml(card.id)}" aria-label="Language for ${escapeHtml(card.name)}" /></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(card.id)}" aria-label="Price for ${escapeHtml(card.name)}" /></label>${foilSelector}<button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span></span>`;
   }).join('');
   listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
 }
@@ -631,6 +637,7 @@ listingCardSelected.addEventListener('click', (event) => {
     delete selectedListingCardConditions[removeButton.dataset.removeListingCard];
     delete selectedListingCardPrices[removeButton.dataset.removeListingCard];
     delete selectedListingCardLanguages[removeButton.dataset.removeListingCard];
+    delete selectedListingCardFoils[removeButton.dataset.removeListingCard];
   renderSelectedListingCards();
   listingCardResults.hidden = true;
 });
@@ -648,6 +655,8 @@ listingCardSelected.addEventListener('change', (event) => {
   if (priceInput) selectedListingCardPrices[priceInput.dataset.listingCardPrice] = priceInput.value;
   const languageInput = event.target.closest('[data-listing-card-language]');
   if (languageInput) selectedListingCardLanguages[languageInput.dataset.listingCardLanguage] = languageInput.value;
+  const foilSelect = event.target.closest('[data-listing-card-foil]');
+  if (foilSelect) selectedListingCardFoils[foilSelect.dataset.listingCardFoil] = foilSelect.value;
 });
 
 document.addEventListener('pointerdown', (event) => {
@@ -711,8 +720,9 @@ async function loadHomeStats() {
   });
 }
 
-function listingSelect(includeCardPrice = true) {
-  return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${includeCardPrice ? 'price, ' : ''}language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))`;
+function listingSelect(includeCardPrice = true, includeCardFoil = true) {
+  const listingCardFields = [includeCardPrice ? 'price' : '', 'language', includeCardFoil ? 'foil' : '', 'notes'].filter(Boolean).join(', ');
+  return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${listingCardFields}, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))`;
 }
 
 async function loadListings() {
@@ -722,7 +732,7 @@ async function loadListings() {
     .select(listingSelect())
     .eq('status', 'active')
     .order('created_at', { ascending: false });
-  if (error?.message?.includes('listing_cards_1.price')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(false)).eq('status', 'active').order('created_at', { ascending: false }));
+  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil'))).eq('status', 'active').order('created_at', { ascending: false }));
   if (error) {
     marketStatus.textContent = `Could not load listings: ${error.message}`;
     return;
@@ -752,7 +762,7 @@ async function loadMyListings() {
     .select(listingSelect())
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false });
-  if (error?.message?.includes('listing_cards_1.price')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(false)).eq('seller_id', user.id).order('created_at', { ascending: false }));
+  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil'))).eq('seller_id', user.id).order('created_at', { ascending: false }));
   if (error) {
     myListingsStatus.textContent = `Could not load your listings: ${error.message}`;
     return;
