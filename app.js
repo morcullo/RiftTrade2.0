@@ -106,11 +106,9 @@ function renderListings() {
 
 function renderHeroCards() {
   const imageCards = cards.filter((card) => card.is_signed && getCardImageUrl(card));
-  if (imageCards.length < 2) return;
-  const firstIndex = Math.floor(Math.random() * imageCards.length);
-  let secondIndex = Math.floor(Math.random() * imageCards.length);
-  while (secondIndex === firstIndex) secondIndex = Math.floor(Math.random() * imageCards.length);
-  const heroCards = [imageCards[firstIndex], imageCards[secondIndex]];
+  const heroNames = ['green father', 'bloodharbor ripper'];
+  const heroCards = heroNames.map((name) => imageCards.find((card) => card.name.trim().toLowerCase() === name)).filter(Boolean);
+  if (heroCards.length < 2) return;
   const [backCard, frontCard] = heroCards;
   heroCardBack.classList.add('has-image');
   heroCardFront.classList.add('has-image');
