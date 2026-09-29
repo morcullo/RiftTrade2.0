@@ -184,7 +184,7 @@ function renderListings() {
     const singleQuantityBadge = !isGrid && !isCarousel && singleQuantity > 1 ? `<span class="listing-card-quantity-badge">X${singleQuantity}</span>` : '';
     const carouselControls = isCarousel ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card page">←</button><span class="listing-image-count">${activeCarouselPage + 1} / ${totalCarouselPages}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card page">→</button>` : '';
     return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
-      <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}">
+      <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}${!isGrid && !isCarousel && matchingCardIndex === 0 ? ' is-search-match' : ''}">
         ${cardArt}
         ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
       </div>
@@ -574,6 +574,7 @@ function scoreSearchToken(queryToken, candidateTokens) {
 function scoreCardSearchMatch(card, query) {
   if (!query) return 1;
   const fields = cardSearchFields(card);
+  query = normalizeCardSearch(query);
   const combined = fields.join(' ');
   if (fields[0].includes(query)) return 500;
   if (combined.includes(query)) return 300;
