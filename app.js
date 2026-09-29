@@ -153,6 +153,32 @@ function updateListingCard(listing) {
   if (count) count.textContent = `${activeCardIndex + 1} / ${listingCards.length}`;
 }
 
+function renderListingCarouselTiles(listing, page, query) {
+  const listingCards = listing.listing_cards || [];
+  const pageSize = 4;
+  const matchingCardIndex = query ? listingCards.findIndex(({ card }) => card && scoreCardSearchMatch(card, query) > 0) : -1;
+  return listingCards.slice(page * pageSize, (page + 1) * pageSize).map(({ card, quantity }, visibleCardIndex) => {
+    const listingImageUrl = getCardImageUrl(card || {});
+    const quantityBadge = Number(quantity) > 1 ? `<span class="listing-card-quantity-badge">X${Math.max(Number(quantity) || 1, 1)}</span>` : '';
+    const isSearchMatch = matchingCardIndex === page * pageSize + visibleCardIndex;
+    return `<span class="listing-card-tile${isSearchMatch ? ' is-search-match' : ''}">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(card?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
+  }).join('');
+}
+
+function changeListingCarouselPage(listing, page) {
+  const pageSize = 4;
+  const listingCards = listing.listing_cards || [];
+  const totalPages = Math.ceil(listingCards.length / pageSize);
+  listing.activeCardIndex = page * pageSize;
+  const article = [...marketGrid.querySelectorAll('.listing')].find((item) => item.dataset.listingId === String(listing.id));
+  const artwork = article?.querySelector('.card-art.is-carousel');
+  if (!artwork) return;
+  artwork.querySelectorAll('.listing-card-tile').forEach((tile) => tile.remove());
+  artwork.insertAdjacentHTML('afterbegin', renderListingCarouselTiles(listing, page, searchInput.value.trim().toLowerCase()));
+  const count = artwork.querySelector('.listing-image-count');
+  if (count) count.textContent = `${page + 1} / ${totalPages}`;
+}
+
 function renderListings() {
   const query = searchInput.value.trim().toLowerCase();
   const selectedListingType = marketTypeFilter.value;
@@ -191,21 +217,23 @@ function renderListings() {
     const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
     const price = listingPriceLabel(listing);
-    const cardArt = isGrid || isCarousel
-      ? visibleCards.map(({ card: listingCard, quantity: listingQuantity }, visibleCardIndex) => {
+    const cardArt = isCarousel
+      ? renderListingCarouselTiles(listing, activeCarouselPage, query)
+      : isGrid
+        ? visibleCards.map(({ card: listingCard, quantity: listingQuantity }, visibleCardIndex) => {
         const listingImageUrl = getCardImageUrl(listingCard || {});
         const quantity = Math.max(Number(listingQuantity) || 1, 1);
         const quantityBadge = quantity > 1 ? `<span class="listing-card-quantity-badge">X${quantity}</span>` : '';
         const cardIndex = activeCarouselPage * carouselPageSize + visibleCardIndex;
         const isSearchMatch = matchingCardIndex === cardIndex;
         return `<span class="listing-card-tile${isSearchMatch ? ' is-search-match' : ''}">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
-      }).join('')
-      : imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`;
+        }).join('')
+        : imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`;
     const singleQuantity = Math.max(Number(listingCards[0]?.quantity) || 1, 1);
     const singleQuantityBadge = !isGrid && !isCarousel && singleQuantity > 1 ? `<span class="listing-card-quantity-badge">X${singleQuantity}</span>` : '';
     const carouselControls = isCarousel ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card page">←</button><span class="listing-image-count">${activeCarouselPage + 1} / ${totalCarouselPages}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card page">→</button>` : '';
     return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
-      <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}${!isGrid && !isCarousel && matchingCardIndex === 0 ? ' is-search-match' : ''}">
+      <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}${isCarousel ? ' is-carousel' : ''}${!isGrid && !isCarousel && matchingCardIndex === 0 ? ' is-search-match' : ''}">
         ${cardArt}
         ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
       </div>
@@ -218,6 +246,7 @@ function renderListings() {
       openListingDetails(article.dataset.listingId);
     };
     article.addEventListener('click', (event) => {
+      if (marketGrid.dataset.swipedAt && Date.now() - Number(marketGrid.dataset.swipedAt) < 800) return;
       if (event.target.closest('.listing-image-button')) return;
       openListing();
     });
@@ -231,14 +260,37 @@ function renderListings() {
     event.stopPropagation();
     const listing = listings.find((item) => item.id === button.dataset.listingId);
     if (!listing) return;
-    const cardsInListing = listing.listing_cards || [];
     const pageSize = 4;
-    const totalPages = Math.ceil(cardsInListing.length / pageSize);
+    const totalPages = Math.ceil((listing.listing_cards || []).length / pageSize);
     const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
     const nextPage = (currentPage + Number(button.dataset.direction) + totalPages) % totalPages;
-    listing.activeCardIndex = nextPage * pageSize;
-    renderListings();
+    changeListingCarouselPage(listing, nextPage);
   }));
+  marketGrid.querySelectorAll('.card-art.is-carousel').forEach((artwork) => {
+    let touchStart = null;
+    artwork.addEventListener('touchstart', (event) => {
+      const touch = event.changedTouches[0];
+      touchStart = { x: touch.clientX, y: touch.clientY };
+    }, { passive: true });
+    artwork.addEventListener('touchend', (event) => {
+      if (!touchStart) return;
+      const touch = event.changedTouches[0];
+      const horizontalDistance = touch.clientX - touchStart.x;
+      const verticalDistance = touch.clientY - touchStart.y;
+      touchStart = null;
+      if (Math.abs(horizontalDistance) < 40 || Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) return;
+      const article = artwork.closest('.listing');
+      const listing = listings.find((item) => item.id === article?.dataset.listingId);
+      if (!listing) return;
+      marketGrid.dataset.swipedAt = String(Date.now());
+      const pageSize = 4;
+      const totalPages = Math.ceil((listing.listing_cards || []).length / pageSize);
+      const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
+      const direction = horizontalDistance < 0 ? 1 : -1;
+      const nextPage = (currentPage + direction + totalPages) % totalPages;
+      changeListingCarouselPage(listing, nextPage);
+    }, { passive: true });
+  });
 }
 
 function renderCatalog() {
