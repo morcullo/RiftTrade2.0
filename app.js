@@ -64,6 +64,7 @@ const listingTypeOptions = document.querySelectorAll('[data-listing-type]');
 const listingDescription = document.querySelector('#listing-description');
 const accountDialog = document.querySelector('#account-dialog');
 const profileButton = document.querySelector('#profile-button');
+const profileButtonAvatar = document.querySelector('#profile-button-avatar');
 const profileMenu = document.querySelector('#profile-menu');
 const profileMenuView = document.querySelector('#profile-menu-view');
 const profileMenuSignOut = document.querySelector('#profile-menu-sign-out');
@@ -174,6 +175,7 @@ const myListingsFilter = document.querySelector('#my-listings-filter');
 let editingListingId = null;
 
 let cards = [];
+let catalogLoadPromise = null;
 let listings = [];
 let myListings = [];
 let profileListings = [];
@@ -556,7 +558,8 @@ function renderCardBadges(card) {
   return badges.length ? `<span class="card-badges">${badges.map((badge) => `<span class="card-badge">${badge}</span>`).join('')}</span>` : '';
 }
 
-function openCardDialog(cardId) {
+async function openCardDialog(cardId) {
+  if (!cards.length) await loadCatalog();
   const card = cards.find((item) => item.id === cardId);
   if (!card) return;
   cardDialogMarketplace.dataset.cardName = card.name;
@@ -749,6 +752,7 @@ profileAvatarInput.addEventListener('change', async () => {
     return;
   }
   renderProfileAvatar(profileDisplayName.textContent.trim(), avatarUrl);
+  renderProfileButton(profileDisplayName.textContent.trim(), avatarUrl);
   profileListingsStatus.textContent = profileListings.length ? '' : 'No visible listings.';
   profileListingsStatus.hidden = profileListings.length > 0;
   await refreshInboxConversations();
@@ -909,6 +913,7 @@ openListingButton.addEventListener('click', async () => {
     setAuthMessage('Sign in before creating a listing.', true);
     return;
   }
+  await loadCatalog();
   openListingForm();
 });
 listingClose.addEventListener('click', () => listingDialog.close());
@@ -1127,7 +1132,7 @@ document.addEventListener('pointerdown', (event) => {
   if (!event.target.closest('.listing-card-picker')) listingCardResults.hidden = true;
 });
 
-async function loadCatalog() {
+async function fetchCatalog() {
   if (!window.riftTradeSupabase) {
     marketStatus.textContent = 'Add your Supabase URL and anon key to load listings.';
     return;
@@ -1152,6 +1157,11 @@ async function loadCatalog() {
   populateCatalogFilters();
   renderHeroCards();
   renderCatalog();
+}
+
+function loadCatalog() {
+  if (!catalogLoadPromise) catalogLoadPromise = fetchCatalog();
+  return catalogLoadPromise;
 }
 
 function formatMetric(value) {
@@ -1252,6 +1262,12 @@ function renderProfileAvatar(name, avatarUrl) {
   const content = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="" />` : escapeHtml(inboxInitials(name));
   profileAvatar.innerHTML = content;
   profileAvatarStatic.innerHTML = content;
+}
+
+function renderProfileButton(name, avatarUrl) {
+  profileButtonAvatar.innerHTML = avatarUrl
+    ? `<img src="${escapeHtml(avatarUrl)}" alt="" />`
+    : `<svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg>`;
 }
 
 function inboxTimeLabel(value) {
@@ -1701,6 +1717,7 @@ async function refreshAuthState() {
   const user = session?.user;
   signedInUser = user || null;
   authStateReady = true;
+  if (!user) renderProfileButton('RiftTrade member', '');
   if (!user) closeProfileMenu();
   signedInPanel.hidden = !user;
   discordNameForm.hidden = true;
@@ -1708,8 +1725,9 @@ async function refreshAuthState() {
   authLinks.hidden = Boolean(user);
   authIntro.hidden = Boolean(user);
   if (user) {
-    const { data: profile } = await window.riftTradeSupabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle();
+    const { data: profile } = await window.riftTradeSupabase.from('profiles').select('display_name, avatar_url').eq('id', user.id).maybeSingle();
     const profileDisplayName = profile?.display_name?.trim() || '';
+    renderProfileButton(profileDisplayName || user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'RiftTrade member', profile?.avatar_url);
     const discordProvider = user.app_metadata?.provider === 'discord' || user.app_metadata?.providers?.includes('discord');
     const discordOnboardingRequested = localStorage.getItem(discordOnboardingStorageKey) === '1';
     const needsDiscordDisplayName = discordProvider && discordOnboardingRequested && (!profileDisplayName || profileDisplayName === user.email?.trim());
