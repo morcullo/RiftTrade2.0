@@ -13,7 +13,7 @@ button { color: inherit; cursor: pointer; }
 .app-shell { max-width: 1240px; min-height: 100vh; margin: auto; padding: 0 48px 60px; }
 .site-header { position: sticky; z-index: 10; top: 0; height: 92px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(247,247,245,.96); backdrop-filter: blur(12px); }
 .wordmark { color: var(--ink); text-decoration: none; font-size: 1.05rem; font-weight: 700; letter-spacing: .08em; }
-.wordmark span { display: inline-grid; place-items: center; width: 25px; height: 25px; margin-right: 6px; color: white; background: var(--ink); border-radius: 50%; font-size: .8rem; }
+.wordmark span { margin-right: 0; }
 .desktop-nav { display: flex; gap: 34px; height: 100%; align-items: center; }
 .nav-link { border: 0; border-bottom: 2px solid transparent; padding: 5px 0; background: transparent; color: var(--muted); font-size: .84rem; }
 .nav-link.is-active, .nav-link:hover { color: var(--ink); border-bottom-color: var(--ink); }
