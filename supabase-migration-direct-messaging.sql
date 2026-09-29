@@ -38,7 +38,6 @@ returns boolean language sql stable security definer set search_path = public as
   select auth.uid() is not null and exists (
     select 1 from public.listings listing
     where listing.id = target_listing_id
-      and (listing.status = 'active' or listing.seller_id = auth.uid())
   );
 $$;
 

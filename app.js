@@ -94,10 +94,7 @@ const profileAvatar = document.querySelector('#profile-avatar');
 const profileAvatarStatic = document.querySelector('#profile-avatar-static');
 const profileAvatarInput = document.querySelector('#profile-avatar-input');
 const profileDisplayName = document.querySelector('#profile-display-name');
-const profileEmail = document.querySelector('#profile-email');
 const profileMemberSince = document.querySelector('#profile-member-since');
-const profileDiscordField = document.querySelector('#profile-discord-field');
-const profileDiscordLink = document.querySelector('#profile-discord-link');
 const profileEditButton = document.querySelector('#profile-edit');
 const profileMessageButton = document.querySelector('#profile-message');
 const profileEditDialog = document.querySelector('#profile-edit-dialog');
@@ -631,10 +628,6 @@ async function openProfileDialog(profileId) {
   profileEditButton.hidden = true;
   profileMessageButton.hidden = true;
   profileMessageButton.dataset.profileId = '';
-  profileEmail.textContent = '';
-  profileEmail.removeAttribute('href');
-  profileDiscordField.hidden = true;
-  profileDiscordLink.removeAttribute('href');
   profileListingCount.textContent = '';
   profileListingsStatus.textContent = 'Loading listings...';
   profileListingsGrid.innerHTML = '';
@@ -682,14 +675,7 @@ async function openProfileDialog(profileId) {
   profileEditButton.hidden = !signedInUser || signedInUser.id !== profile.id;
   profileMessageButton.hidden = !signedInUser || signedInUser.id === profile.id;
   profileMessageButton.dataset.profileId = profile.id;
-  profileEmail.textContent = profile.email || (profileResult.emailColumnMissing ? 'Run the profile email migration to enable email display.' : 'Email not provided.');
   profileMemberSince.textContent = profile.created_at ? new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(profile.created_at)) : 'Unknown';
-  if (profile.email) profileEmail.href = `mailto:${profile.email}`;
-  const discordId = String(profile.discord_id || '');
-  if (/^\d{17,20}$/.test(discordId)) {
-    profileDiscordLink.href = `https://discord.com/users/${discordId}`;
-    profileDiscordField.hidden = false;
-  }
   if (listingResult.error) {
     profileListingCount.textContent = '';
     profileListingsStatus.textContent = `Could not load listings: ${listingResult.error.message}`;
@@ -854,7 +840,7 @@ function openListingForm(listing = null) {
     listingDescription.value = listing.description || '';
     selectedListingCardQuantities = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity }) => [card.id, Math.max(Number(quantity) || 1, 1)]));
     selectedListingCardConditions = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, condition }) => [card.id, condition || 'near_mint']));
-    selectedListingCardPrices = Object.fromEntries((listing.listing_cards || []).filter(({ card, price }) => card?.id && price !== null && price !== undefined).map(({ card, price }) => [card.id, price]));
+    selectedListingCardPrices = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, price }) => [card.id, price ?? '']));
     selectedListingCardLanguages = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, language }) => [card.id, language || 'English']));
     selectedListingCardFoils = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, foil }) => [card.id, foil || 'non_foil']));
     selectedListingCardIds = Object.keys(selectedListingCardQuantities);
@@ -938,6 +924,9 @@ listingForm.addEventListener('submit', async (event) => {
     listingSubmit.disabled = false;
     return setListingMessage('Choose at least one card for the listing.', true);
   }
+  listingCardSelected.querySelectorAll('[data-listing-card-price]').forEach((input) => {
+    selectedListingCardPrices[input.dataset.listingCardPrice] = input.value;
+  });
   const totalPrice = selectedListingCardIds.reduce((total, cardId) => total + (Number(selectedListingCardPrices[cardId]) || 0), 0);
   const hasCardPrice = selectedListingCardIds.some((cardId) => selectedListingCardPrices[cardId] !== '');
   const listingPayload = { title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: hasCardPrice ? totalPrice : null };
@@ -965,7 +954,7 @@ listingForm.addEventListener('submit', async (event) => {
   listingSubmit.disabled = false;
   listingDialog.close();
   editingListingId = null;
-  await loadListings();
+  await Promise.all([loadListings(), loadMyListings()]);
 });
 
 function renderListingCardResults() {
@@ -1114,15 +1103,17 @@ listingCardSelected.addEventListener('click', (event) => {
 
 listingCardSelected.addEventListener('input', (event) => {
   const quantityInput = event.target.closest('[data-listing-card-quantity]');
-  if (!quantityInput) return;
-  selectedListingCardQuantities[quantityInput.dataset.listingCardQuantity] = Math.max(Number(quantityInput.value) || 1, 1);
+  if (quantityInput) {
+    selectedListingCardQuantities[quantityInput.dataset.listingCardQuantity] = Math.max(Number(quantityInput.value) || 1, 1);
+    return;
+  }
+  const priceInput = event.target.closest('[data-listing-card-price]');
+  if (priceInput) selectedListingCardPrices[priceInput.dataset.listingCardPrice] = priceInput.value;
 });
 
 listingCardSelected.addEventListener('change', (event) => {
   const conditionSelect = event.target.closest('[data-listing-card-condition]');
   if (conditionSelect) selectedListingCardConditions[conditionSelect.dataset.listingCardCondition] = conditionSelect.value;
-  const priceInput = event.target.closest('[data-listing-card-price]');
-  if (priceInput) selectedListingCardPrices[priceInput.dataset.listingCardPrice] = priceInput.value;
   const languageInput = event.target.closest('[data-listing-card-language]');
   if (languageInput) selectedListingCardLanguages[languageInput.dataset.listingCardLanguage] = languageInput.value;
   const foilSelect = event.target.closest('[data-listing-card-foil]');
