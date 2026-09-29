@@ -217,7 +217,7 @@ listingForm.addEventListener('submit', async (event) => {
 function renderListingCardResults() {
   const query = listingCardSearch.value.trim().toLowerCase();
   const matches = cards.filter((card) => !selectedListingCardIds.includes(card.id) && [card.name, card.code, card.public_code, card.set_name, card.set_code].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 12);
-  listingCardResults.innerHTML = matches.map((card) => { const imageUrl = getCardImageUrl(card); return `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : '<span class="listing-card-option-placeholder">R</span>'}<span class="listing-card-option-copy"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span></span></button>`; }).join('');
+    listingCardResults.innerHTML = matches.map((card) => { const imageUrl = getCardImageUrl(card); const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : ''; return `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : '<span class="listing-card-option-placeholder">R</span>'}<span class="listing-card-option-copy"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span>${badge ? `<em class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</em>` : ''}</span></button>`; }).join('');
   listingCardResults.hidden = matches.length === 0;
 }
 
@@ -249,7 +249,8 @@ function renderSelectedListingCards() {
     const card = cards.find((item) => item.id === cardId);
     if (!card) return '';
     const imageUrl = getCardImageUrl(card);
-    return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}</span><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
+      const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : '';
+      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
   }).join('');
   listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
 }
