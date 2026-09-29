@@ -16,7 +16,15 @@ if (window.Appwrite && window.RIFTTRADE_APPWRITE_PROJECT_ID) {
     storage: new window.Appwrite.Storage(client),
   };
 
-  client.ping()
-    .then(() => console.info('RiftTrade connected to Appwrite.'))
-    .catch((error) => console.error('RiftTrade could not connect to Appwrite.', error));
+  window.riftTradeAppwritePing = client.ping()
+    .then((response) => {
+      console.info('RiftTrade connected to Appwrite.', response);
+      return response;
+    })
+    .catch((error) => {
+      console.error('RiftTrade could not connect to Appwrite.', error);
+      throw error;
+    });
+} else {
+  console.error('RiftTrade Appwrite setup is unavailable: the SDK did not load or the project ID is missing.');
 }
