@@ -188,7 +188,7 @@ function renderListings() {
         ${cardArt}
         ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
       </div>
-      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span></div></div>
+      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span><span class="listing-type-indicator type-${listingTypeClass(listing.listing_type)}">${escapeHtml(listingTypeLabel(listing.listing_type))}</span></div></div>
     </article>`;
   }).join('');
   emptyMessage.hidden = matches.length !== 0;
@@ -268,7 +268,9 @@ function listingStatusLabel(status) {
 function listingTypeLabel(listingType) {
   return { sale: 'For sale', trade_or_sale: 'Trade or sale', buy: 'Buying' }[listingType] || 'For trade';
 }
-
+function listingTypeClass(listingType) {
+  return { sale: 'sale', trade_or_sale: 'trade-or-sale', buy: 'buy' }[listingType] || 'trade';
+}
 function listingCardCount(listingCards) {
   return listingCards.reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0);
 }
