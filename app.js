@@ -204,7 +204,10 @@ function renderListings() {
       || (Number.isFinite(lowestPrice) && Number.isFinite(highestPrice)
         && (!hasMinimumPrice || highestPrice >= minimumPrice)
         && (!hasMaximumPrice || lowestPrice <= maximumPrice));
-    return searchable.includes(query) && (!selectedListingType || listing.listing_type === selectedListingType) && matchesPrice;
+    const matchesType = !selectedListingType
+      || listing.listing_type === selectedListingType
+      || (listing.listing_type === 'trade_or_sale' && ['sale', 'trade'].includes(selectedListingType));
+    return searchable.includes(query) && matchesType && matchesPrice;
   });
   marketGrid.innerHTML = matches.map((listing) => {
     const listingCards = listing.listing_cards || [];
