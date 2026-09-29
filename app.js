@@ -69,6 +69,13 @@ const listingDetailsSeller = document.querySelector('#listing-details-seller');
 const listingDetailsMeta = document.querySelector('#listing-details-meta');
 const listingDetailsDescription = document.querySelector('#listing-details-description');
 const listingDetailsCards = document.querySelector('#listing-details-cards');
+const listingDetailsActions = document.querySelector('#listing-details-actions');
+const listingEditButton = document.querySelector('#listing-edit');
+const listingPendingButton = document.querySelector('#listing-pending');
+const listingSoldButton = document.querySelector('#listing-sold');
+const listingDeleteButton = document.querySelector('#listing-delete');
+const listingDialogTitle = document.querySelector('#listing-title');
+let editingListingId = null;
 
 let cards = [];
 let listings = [];
@@ -163,6 +170,7 @@ function openCardDialog(cardId) {
 function openListingDetails(listingId) {
   const listing = listings.find((item) => item.id === listingId);
   if (!listing) return;
+  listingDetailsDialog.dataset.listingId = listing.id;
   const listingCards = listing.listing_cards || [];
   const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
   const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
@@ -171,12 +179,19 @@ function openListingDetails(listingId) {
   listingDetailsSeller.textContent = `Listed by ${seller}`;
   listingDetailsMeta.textContent = [listingType, price, `${listingCards.length} card${listingCards.length === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
+  listingDetailsActions.hidden = true;
   listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language }) => {
     const imageUrl = getCardImageUrl(card || {});
     const badge = renderCardBadges(card || {});
     return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${badge}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language, quantity > 1 ? `Quantity ${quantity}` : ''].filter(Boolean).join(' · '))}</span></span></button>`;
   }).join('');
   listingDetailsCards.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
+  window.riftTradeSupabase?.auth.getUser().then(({ data: { user } }) => {
+    const isOwner = Boolean(user && user.id === listing.seller_id);
+    listingDetailsActions.hidden = !isOwner;
+    listingPendingButton.hidden = listing.status !== 'active';
+    listingSoldButton.hidden = listing.status !== 'active';
+  });
   listingDetailsDialog.showModal();
 }
 
@@ -184,6 +199,55 @@ cardDialogClose.addEventListener('click', () => cardDialog.close());
 cardDialog.addEventListener('click', (event) => { if (event.target === cardDialog) cardDialog.close(); });
 listingDetailsClose.addEventListener('click', () => listingDetailsDialog.close());
 listingDetailsDialog.addEventListener('click', (event) => { if (event.target === listingDetailsDialog) listingDetailsDialog.close(); });
+
+function openListingForm(listing = null) {
+  editingListingId = listing?.id || null;
+  listingDialogTitle.textContent = listing ? 'Edit listing' : 'List a card';
+  listingSubmit.innerHTML = listing ? 'Save changes <span>→</span>' : 'Publish listing <span>→</span>';
+  if (listing) {
+    listingName.value = listing.title || '';
+    listingType.value = listing.listing_type || 'trade';
+    listingPrice.value = listing.price ?? '';
+    listingDescription.value = listing.description || '';
+    selectedListingCardIds = (listing.listing_cards || []).map(({ card }) => card?.id).filter(Boolean);
+    listingCardSearch.value = '';
+    renderSelectedListingCards();
+    listingCondition.value = listing.listing_cards?.[0]?.condition || 'near_mint';
+    listingLanguage.value = listing.listing_cards?.[0]?.language || 'English';
+  } else {
+    listingForm.reset();
+    populateListingCards();
+    listingLanguage.value = 'English';
+  }
+  listingMessage.textContent = '';
+  listingDialog.showModal();
+}
+
+async function updateListingStatus(status) {
+  const listingId = listingDetailsDialog.dataset.listingId;
+  if (!listingId || !window.riftTradeSupabase) return;
+  const { error } = await window.riftTradeSupabase.from('listings').update({ status }).eq('id', listingId);
+  if (error) return setListingMessage(error.message, true);
+  listingDetailsDialog.close();
+  await loadListings();
+}
+
+listingEditButton.addEventListener('click', () => {
+  const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId);
+  if (!listing) return;
+  listingDetailsDialog.close();
+  openListingForm(listing);
+});
+listingPendingButton.addEventListener('click', () => updateListingStatus('paused'));
+listingSoldButton.addEventListener('click', () => updateListingStatus('completed'));
+listingDeleteButton.addEventListener('click', async () => {
+  const listingId = listingDetailsDialog.dataset.listingId;
+  if (!listingId || !window.confirm('Delete this listing?')) return;
+  const { error } = await window.riftTradeSupabase.from('listings').delete().eq('id', listingId);
+  if (error) return setListingMessage(error.message, true);
+  listingDetailsDialog.close();
+  await loadListings();
+});
 
 function setListingMessage(message, isError = false) {
   listingMessage.textContent = message;
@@ -198,8 +262,7 @@ openListingButton.addEventListener('click', async () => {
     setAuthMessage('Sign in before creating a listing.', true);
     return;
   }
-  setListingMessage('');
-  listingDialog.showModal();
+  openListingForm();
 });
 listingClose.addEventListener('click', () => listingDialog.close());
 listingDialog.addEventListener('click', (event) => { if (event.target === listingDialog) listingDialog.close(); });
@@ -218,20 +281,21 @@ listingForm.addEventListener('submit', async (event) => {
     listingSubmit.disabled = false;
     return setListingMessage('Choose at least one card for the listing.', true);
   }
-  const { data: listing, error: listingError } = await window.riftTradeSupabase
-    .from('listings')
-    .insert({ seller_id: user.id, title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: listingPrice.value ? Number(listingPrice.value) : null })
-    .select('id')
-    .single();
+  const listingPayload = { title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: listingPrice.value ? Number(listingPrice.value) : null };
+  const listingRequest = editingListingId
+    ? window.riftTradeSupabase.from('listings').update(listingPayload).eq('id', editingListingId).select('id').single()
+    : window.riftTradeSupabase.from('listings').insert({ ...listingPayload, seller_id: user.id }).select('id').single();
+  const { data: listing, error: listingError } = await listingRequest;
   if (listingError) {
     listingSubmit.disabled = false;
     return setListingMessage(listingError.message, true);
   }
+  if (editingListingId) await window.riftTradeSupabase.from('listing_cards').delete().eq('listing_id', editingListingId);
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
     .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
   if (cardError) {
-    await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
+    if (!editingListingId) await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
     return setListingMessage(cardError.message, true);
   }
@@ -240,6 +304,7 @@ listingForm.addEventListener('submit', async (event) => {
   listingLanguage.value = 'English';
   listingSubmit.disabled = false;
   listingDialog.close();
+  editingListingId = null;
   await loadListings();
 });
 
@@ -318,7 +383,7 @@ async function loadListings() {
   if (!window.riftTradeSupabase) return;
   const { data, error } = await window.riftTradeSupabase
     .from('listings')
-    .select('id, title, description, listing_type, price, currency, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))')
+    .select('id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
   if (error) {
