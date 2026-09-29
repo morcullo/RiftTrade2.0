@@ -19,6 +19,10 @@ const searchInput = document.querySelector('#card-search');
 const marketGrid = document.querySelector('#market-grid');
 const marketStatus = document.querySelector('#market-status');
 const emptyMessage = document.querySelector('#market-empty');
+const marketFilterButton = document.querySelector('#market-filter-button');
+const marketFilterPanel = document.querySelector('#market-filter-panel');
+const marketTypeFilter = document.querySelector('#market-type-filter');
+const marketFilterClear = document.querySelector('#market-filter-clear');
 const catalogSearch = document.querySelector('#catalog-search');
 const catalogGrid = document.querySelector('#catalog-grid');
 const catalogCount = document.querySelector('#catalog-count');
@@ -147,10 +151,12 @@ function updateListingCard(listing) {
 
 function renderListings() {
   const query = searchInput.value.trim().toLowerCase();
+  const selectedListingType = marketTypeFilter.value;
+  marketFilterButton.classList.toggle('is-active', Boolean(selectedListingType));
   const matches = listings.filter((listing) => {
     const listingCards = listing.listing_cards || [];
     const searchable = [listing.title, listing.description, listing.seller?.display_name, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code])].filter(Boolean).join(' ').toLowerCase();
-    return searchable.includes(query);
+    return searchable.includes(query) && (!selectedListingType || listing.listing_type === selectedListingType);
   });
   marketGrid.innerHTML = matches.map((listing) => {
     const listingCards = listing.listing_cards || [];
@@ -788,6 +794,15 @@ async function loadMyListings() {
 }
 
 searchInput.addEventListener('input', renderListings);
+marketFilterButton.addEventListener('click', () => {
+  marketFilterPanel.hidden = !marketFilterPanel.hidden;
+  marketFilterButton.setAttribute('aria-expanded', String(!marketFilterPanel.hidden));
+});
+marketTypeFilter.addEventListener('change', renderListings);
+marketFilterClear.addEventListener('click', () => {
+  marketTypeFilter.value = '';
+  renderListings();
+});
 catalogSearch.addEventListener('input', renderCatalog);
 catalogSetFilter.addEventListener('change', renderCatalog);
 catalogDomainOptions.addEventListener('change', renderCatalog);
