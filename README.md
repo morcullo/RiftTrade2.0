@@ -26,6 +26,16 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 
    Never put the service-role key in the browser or commit it.
 
+### Discord login
+
+1. In the Discord Developer Portal, create an application and copy its **Client ID** and **Client Secret** from OAuth2.
+2. In Supabase, open **Authentication → Sign In / Providers → Discord**, enable Discord, and enter those credentials.
+3. Add this callback URL to the Discord application's OAuth2 redirect URLs: `https://rdsseyfwxfexiueegcaa.supabase.co/auth/v1/callback`.
+4. In Supabase **Authentication → URL Configuration**, set the production Site URL and add the local app URL (for example, `http://127.0.0.1:3000/**`) and deployed app URL to the redirect URL allowlist.
+5. Open the app's account dialog and select **Continue with Discord**.
+
+Keep the Discord Client Secret in Supabase only; never add it to the browser config.
+
 ## Data model
 
 - Supabase Auth owns users; `profiles` stores public profile fields.

@@ -63,6 +63,7 @@ const authMessage = document.querySelector('#auth-message');
 const authTitle = document.querySelector('#account-title');
 const authIntro = document.querySelector('#account-intro');
 const authSubmit = document.querySelector('#auth-submit');
+const discordAuthButton = document.querySelector('#discord-auth');
 const passwordField = document.querySelector('#password-field');
 const newPasswordField = document.querySelector('#new-password-field');
 const nameField = document.querySelector('#name-field');
@@ -986,6 +987,7 @@ function setAuthMode(mode) {
   nameField.hidden = !isSignup;
   passwordField.hidden = isForgot || isRecovery;
   newPasswordField.hidden = !isRecovery;
+  discordAuthButton.hidden = isForgot || isRecovery;
   authEmail.parentElement.hidden = isRecovery;
   authPassword.required = isSignup || mode === 'signin';
   authNewPassword.required = isRecovery;
@@ -1066,6 +1068,18 @@ authForm.addEventListener('submit', async (event) => {
   if (authMode === 'recovery') { setAuthMode('signin'); return setAuthMessage('Password updated. You can sign in now.'); }
   await refreshAuthState();
   setAuthMessage('Signed in successfully.');
+});
+
+discordAuthButton.addEventListener('click', async () => {
+  if (!window.riftTradeSupabase) return setAuthMessage('Add your Supabase URL and anon key first.', true);
+  discordAuthButton.disabled = true;
+  setAuthMessage('Redirecting to Discord...');
+  const { error } = await window.riftTradeSupabase.auth.signInWithOAuth({
+    provider: 'discord',
+    options: { redirectTo: `${window.location.origin}${window.location.pathname}${window.location.search}` },
+  });
+  discordAuthButton.disabled = false;
+  if (error) setAuthMessage(error.message, true);
 });
 
 document.querySelector('#sign-out').addEventListener('click', async () => {
