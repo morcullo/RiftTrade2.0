@@ -31,4 +31,4 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 - `listings` belongs to one seller and supports trade, sale, or both.
 - `listing_cards` links each listing to one or more cards and stores quantity, condition, language, and notes.
 
-The current Marketplace screen still displays sample listings; the next wiring step is querying active Supabase listings and their `listing_cards` rows.
+The Marketplace displays active Supabase listings and their linked `listing_cards` rows. Signed-in users can create listings from the **List a card** control; the listing owner and card relationship are protected by the SQL policies.

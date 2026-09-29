@@ -33,8 +33,8 @@
               <button class="button button-dark" data-go="marketplace">Explore marketplace <span>↗</span></button>
             </div>
             <div class="hero-card-stack" aria-label="Featured Riftbound cards">
-              <div class="hero-card hero-card-back"><span>R</span></div>
-              <div class="hero-card hero-card-front"><span class="card-index">01 / 03</span><strong>SPARK<br />OF<br />REBELLION</strong><small>Riftbound · Spiritforged</small></div>
+              <div class="hero-card hero-card-back" id="hero-card-back"><span>R</span></div>
+              <div class="hero-card hero-card-front" id="hero-card-front"><span class="card-index">01 / 03</span><strong>SPARK<br />OF<br />REBELLION</strong><small>Riftbound · Spiritforged</small></div>
             </div>
           </div>
 
@@ -47,11 +47,11 @@
         </section>
 
         <section class="view" data-page="marketplace" hidden>
-          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 01</p><h1>Marketplace</h1></div><button class="button button-outline" type="button">List a card <span>＋</span></button></div>
+          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 01</p><h1>Marketplace</h1></div><button class="button button-outline" id="open-listing" type="button">List a card <span>＋</span></button></div>
           <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" type="button">Filter <span>☷</span></button></div>
-          <p class="market-status" id="market-status" aria-live="polite">Loading cards...</p>
+          <p class="market-status" id="market-status" aria-live="polite">Loading listings...</p>
           <div class="market-grid" id="market-grid"></div>
-          <p class="empty-message" id="market-empty" hidden>No cards match that search.</p>
+          <p class="empty-message" id="market-empty" hidden>No listings match that search.</p>
         </section>
 
         <section class="view" data-page="trades" hidden>
@@ -88,6 +88,22 @@
         <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
         <div class="auth-links" id="auth-links"><button type="button" data-auth-mode="signup">Create an account</button><button type="button" data-auth-mode="forgot">Forgot password?</button></div>
         <div class="signed-in-panel" id="signed-in-panel" hidden><p>Signed in as <strong id="signed-in-email"></strong></p><button class="button button-outline" id="sign-out" type="button">Sign out</button></div>
+      </dialog>
+
+      <dialog class="listing-dialog" id="listing-dialog" aria-labelledby="listing-title">
+        <button class="dialog-close" id="listing-close" type="button" aria-label="Close listing form">×</button>
+        <p class="eyebrow">THE MARKET / NEW LISTING</p>
+        <h2 id="listing-title">List a card</h2>
+        <p class="account-intro">Put a card in front of the RiftTrade community.</p>
+        <form id="listing-form">
+          <label class="auth-field">Card<select id="listing-card" required></select></label>
+          <label class="auth-field">Listing title<input id="listing-name" type="text" placeholder="Near mint copy" required /></label>
+          <div class="listing-form-row"><label class="auth-field">Type<select id="listing-type"><option value="trade">Trade</option><option value="sale">For sale</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="auth-field">Price<input id="listing-price" type="number" min="0" step="0.01" placeholder="Optional" /></label></div>
+          <div class="listing-form-row"><label class="auth-field">Condition<select id="listing-condition"><option value="near_mint">Near mint</option><option value="lightly_played">Lightly played</option><option value="moderately_played">Moderately played</option><option value="heavily_played">Heavily played</option><option value="damaged">Damaged</option></select></label><label class="auth-field">Language<input id="listing-language" type="text" value="English" required /></label></div>
+          <label class="auth-field">Description<textarea id="listing-description" rows="3" placeholder="Add details about your card"></textarea></label>
+          <button class="button button-dark auth-submit" id="listing-submit" type="submit">Publish listing <span>→</span></button>
+        </form>
+        <p class="auth-message" id="listing-message" role="status" aria-live="polite"></p>
       </dialog>
 
       <dialog class="card-dialog" id="card-dialog" aria-labelledby="card-dialog-title">
