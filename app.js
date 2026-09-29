@@ -319,23 +319,6 @@ function renderCardBadges(card) {
   return badges.length ? `<span class="card-badges">${badges.map((badge) => `<span class="card-badge">${badge}</span>`).join('')}</span>` : '';
 }
 
-function renderCardText(text) {
-  let rendered = escapeHtml(text);
-  rendered = rendered.replace(/\{might\}/gi, '<span class="card-symbol card-symbol-might" role="img" aria-label="Might">⚔</span>');
-  rendered = rendered.replace(/\{energy:(\d+)\}/gi, '<span class="card-symbol card-symbol-energy" role="img" aria-label="Energy $1">⚡$1</span>');
-  rendered = rendered.replace(/\{power:([a-z]+)\}/gi, (_, domain) => `<span class="card-symbol card-symbol-power card-symbol-power-${domain.toLowerCase()}" role="img" aria-label="${escapeHtml(domain)} power">◆</span>`);
-  rendered = rendered.replace(/\{exhaust\}/gi, '<span class="card-symbol card-symbol-exhaust" role="img" aria-label="Exhaust">↻</span>');
-  rendered = rendered.replace(/\[([^\]]+)\]/g, '<span class="card-keyword">$1</span>');
-  return rendered.replace(/\r?\n/g, '<br />');
-}
-
-function renderCardStatValue(label, value) {
-  if (label === 'Cost') return `<span class="card-stat-symbol card-symbol-energy" role="img" aria-label="Energy">⚡</span>${escapeHtml(value)}`;
-  if (label === 'Might') return `<span class="card-stat-symbol card-symbol-might" role="img" aria-label="Might">⚔</span>${escapeHtml(value)}`;
-  if (label === 'Power') return `<span class="card-stat-symbol card-symbol-power" role="img" aria-label="Power">◆</span>${escapeHtml(value)}`;
-  return escapeHtml(value);
-}
-
 function openCardDialog(cardId) {
   const card = cards.find((item) => item.id === cardId);
   if (!card) return;
@@ -347,8 +330,8 @@ function openCardDialog(cardId) {
   cardDialogArt.className = `card-dialog-art${imageUrl ? ' has-image' : ''}`;
   cardDialogArt.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`;
   const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains]];
-  cardDialogStats.innerHTML = stats.filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${renderCardStatValue(label, value)}</dd></div>`).join('');
-  cardDialogAbility.innerHTML = renderCardText(card.ability_text || 'No ability text listed.');
+  cardDialogStats.innerHTML = stats.filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
+  cardDialogAbility.textContent = card.ability_text || 'No ability text listed.';
   cardDialogTags.textContent = Array.isArray(card.tags) && card.tags.length ? `Tags: ${card.tags.join(', ')}` : '';
   cardDialog.showModal();
 }
