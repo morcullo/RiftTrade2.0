@@ -68,11 +68,12 @@
           </div></div>
           <p class="market-status" id="catalog-status" aria-live="polite">Loading catalog...</p>
           <div class="catalog-grid" id="catalog-grid"></div>
+          <nav class="catalog-pagination" id="catalog-pagination" aria-label="Card catalog pages" hidden><button id="catalog-previous" type="button">Previous</button><span id="catalog-page-status" aria-live="polite"></span><button id="catalog-next" type="button">Next</button></nav>
           <p class="empty-message" id="catalog-empty" hidden>No cards match that search.</p>
         </section>
 
         <section class="view" data-page="trades" hidden>
-          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 02</p><h1>My listings</h1></div><span class="status-tag" id="my-listings-count">Loading...</span></div>
+          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 02</p><h1>My listings</h1></div><div class="my-listings-heading-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Active</option><option value="paused">Pending</option><option value="completed">Sold</option></select></label><span class="status-tag" id="my-listings-count">Loading...</span></div></div>
           <p class="market-status" id="my-listings-status" aria-live="polite">Loading your listings...</p>
           <div class="my-listings-grid" id="my-listings-grid"></div>
           <p class="empty-message" id="my-listings-empty" hidden>You have not listed any cards yet.</p>

@@ -32,6 +32,10 @@ const catalogStatus = document.querySelector('#catalog-status');
 const catalogEmpty = document.querySelector('#catalog-empty');
 const catalogFilterButton = document.querySelector('#catalog-filter-button');
 const catalogFilterPanel = document.querySelector('#catalog-filter-panel');
+const catalogPagination = document.querySelector('#catalog-pagination');
+const catalogPrevious = document.querySelector('#catalog-previous');
+const catalogNext = document.querySelector('#catalog-next');
+const catalogPageStatus = document.querySelector('#catalog-page-status');
 const catalogSetFilter = document.querySelector('#catalog-set-filter');
 const catalogDomainOptions = document.querySelector('#catalog-domain-options');
 const catalogRarityFilter = document.querySelector('#catalog-rarity-filter');
@@ -100,11 +104,14 @@ const myListingsGrid = document.querySelector('#my-listings-grid');
 const myListingsCount = document.querySelector('#my-listings-count');
 const myListingsStatus = document.querySelector('#my-listings-status');
 const myListingsEmpty = document.querySelector('#my-listings-empty');
+const myListingsFilter = document.querySelector('#my-listings-filter');
 let editingListingId = null;
 
 let cards = [];
 let listings = [];
 let myListings = [];
+let catalogPage = 0;
+const catalogPageSize = 25;
 let selectedListingCardIds = [];
 let selectedListingCardQuantities = {};
 let selectedListingCardConditions = {};
@@ -308,7 +315,10 @@ function renderCatalog() {
     if (selectedDomains.length && !selectedDomains.every((domain) => cardDomains(card).includes(domain))) return false;
     return !query || scoreCardSearchMatch(card, query) > 0;
   });
-  catalogGrid.innerHTML = matches.map((card) => {
+  const pageCount = Math.ceil(matches.length / catalogPageSize);
+  catalogPage = Math.min(catalogPage, Math.max(pageCount - 1, 0));
+  const visibleCards = matches.slice(catalogPage * catalogPageSize, (catalogPage + 1) * catalogPageSize);
+  catalogGrid.innerHTML = visibleCards.map((card) => {
     const imageUrl = getCardImageUrl(card);
     const details = [card.code || card.public_code, card.set_name, card.rarity].filter(Boolean).join(' · ');
     return `<button class="catalog-card" data-catalog-card-id="${escapeHtml(card.id)}" type="button" aria-label="View details for ${escapeHtml(card.name)}"><div class="catalog-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name)}</span>`}${renderCardBadges(card)}</div><span class="catalog-card-copy"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(details || 'Riftbound card')}</small></span></button>`;
@@ -316,6 +326,15 @@ function renderCatalog() {
   catalogCount.textContent = `${matches.length} / ${cards.length} cards`;
   catalogStatus.textContent = query || activeFilterCount ? `Showing ${matches.length} matching card${matches.length === 1 ? '' : 's'}.` : `${cards.length} cards in the catalog.`;
   catalogEmpty.hidden = matches.length !== 0;
+  catalogPagination.hidden = pageCount <= 1;
+  catalogPageStatus.textContent = pageCount ? `Page ${catalogPage + 1} of ${pageCount}` : '';
+  catalogPrevious.disabled = catalogPage === 0;
+  catalogNext.disabled = catalogPage >= pageCount - 1;
+}
+
+function renderCatalogFromFirstPage() {
+  catalogPage = 0;
+  renderCatalog();
 }
 
 function cardDomains(card) {
@@ -369,26 +388,43 @@ function listingPriceLabel(listing) {
 }
 
 function renderMyListings() {
-  myListingsGrid.innerHTML = myListings.map((listing) => {
+  const visibleListings = myListings.filter((listing) => !myListingsFilter.value || listing.status === myListingsFilter.value);
+  myListingsGrid.innerHTML = visibleListings.map((listing) => {
     const listingCards = listing.listing_cards || [];
     const cardNames = listingCards.map(({ card, quantity }) => `${quantity > 1 ? `${quantity}× ` : ''}${card?.name || 'Riftbound card'}`).join(', ');
-    const cardPreviews = listingCards.slice(0, 3).map(({ card }) => {
+    const cardPreviews = listingCards.slice(0, 2).map(({ card }) => {
       const imageUrl = getCardImageUrl(card || {});
       return imageUrl
         ? `<span class="my-listing-preview-card"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></span>`
         : `<span class="my-listing-preview-card my-listing-preview-placeholder" aria-hidden="true">${escapeHtml((card?.name || '?').slice(0, 1))}</span>`;
     }).join('');
-    const remainingCards = listingCardCount(listingCards.slice(3));
+    const remainingCards = listingCardCount(listingCards.slice(2));
     const listingType = listingTypeLabel(listing.listing_type);
     const price = listingPriceLabel(listing);
     const cardCount = listingCardCount(listingCards);
     const status = listingStatusLabel(listing.status);
-    const statusClass = listing.status === 'completed' ? 'complete' : listing.status === 'active' ? 'pending' : 'waiting';
-    return `<article class="my-listing-row"><div class="my-listing-preview" aria-hidden="true">${cardPreviews}${remainingCards > 0 ? `<span class="my-listing-preview-more">+${remainingCards}</span>` : ''}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="trade-status ${statusClass}">${escapeHtml(status)}</span><button class="row-arrow my-listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></article>`;
+    const statusClass = listing.status === 'active' ? 'status-active' : listing.status === 'completed' ? 'status-sold' : 'status-pending';
+    return `<article class="my-listing-row"><div class="my-listing-preview" aria-hidden="true">${cardPreviews}${remainingCards > 0 ? `<span class="my-listing-preview-more">+${remainingCards}</span>` : ''}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="my-listing-status ${statusClass}">${escapeHtml(status)}</span><div class="my-listing-actions"><button class="my-listing-action my-listing-view" data-listing-id="${escapeHtml(listing.id)}" type="button">View</button><button class="my-listing-action my-listing-edit" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="my-listing-action my-listing-delete" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></article>`;
   }).join('');
   myListingsCount.textContent = `${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
-  myListingsEmpty.hidden = myListings.length !== 0;
-  myListingsGrid.querySelectorAll('.my-listing-open').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
+  myListingsEmpty.hidden = visibleListings.length !== 0;
+  myListingsEmpty.textContent = myListings.length && !visibleListings.length ? 'No listings with this status.' : 'You have not listed any cards yet.';
+  myListingsGrid.querySelectorAll('.my-listing-view').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
+  myListingsGrid.querySelectorAll('.my-listing-edit').forEach((button) => button.addEventListener('click', () => {
+    const listing = myListings.find((item) => item.id === button.dataset.listingId);
+    if (listing) openListingForm(listing);
+  }));
+  myListingsGrid.querySelectorAll('.my-listing-delete').forEach((button) => button.addEventListener('click', async () => {
+    const listing = myListings.find((item) => item.id === button.dataset.listingId);
+    if (!listing || !window.riftTradeSupabase || !window.confirm(`Delete "${listing.title}"?`)) return;
+    const { error } = await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
+    if (error) {
+      myListingsStatus.hidden = false;
+      myListingsStatus.textContent = `Could not delete listing: ${error.message}`;
+      return;
+    }
+    await Promise.all([loadListings(), loadMyListings()]);
+  }));
 }
 
 function renderHeroCards() {
@@ -436,7 +472,7 @@ function openCardDialog(cardId) {
 }
 
 function openListingDetails(listingId) {
-  const listing = listings.find((item) => item.id === listingId);
+  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId);
   if (!listing) return;
   listingDetailsDialog.dataset.listingId = listing.id;
   const listingCards = listing.listing_cards || [];
@@ -514,7 +550,7 @@ async function updateListingStatus(status) {
   const { error } = await window.riftTradeSupabase.from('listings').update({ status }).eq('id', listingId);
   if (error) return setListingMessage(error.message, true);
   listingDetailsDialog.close();
-  await loadListings();
+  await Promise.all([loadListings(), loadMyListings()]);
 }
 
 listingEditButton.addEventListener('click', () => {
@@ -850,6 +886,7 @@ async function loadMyListings() {
     return;
   }
   myListingsStatus.textContent = 'Loading your listings...';
+  myListingsStatus.hidden = false;
   const { data: { user } } = await window.riftTradeSupabase.auth.getUser();
   if (!user) {
     myListings = [];
@@ -870,11 +907,13 @@ async function loadMyListings() {
     return;
   }
   myListings = data || [];
-  myListingsStatus.textContent = myListings.length ? 'Manage your listings from their details.' : 'Your listings will appear here once you list a card.';
+  myListingsStatus.textContent = myListings.length ? '' : 'Your listings will appear here once you list a card.';
+  myListingsStatus.hidden = myListings.length > 0;
   renderMyListings();
 }
 
 searchInput.addEventListener('input', renderListings);
+myListingsFilter.addEventListener('change', renderMyListings);
 marketFilterButton.addEventListener('click', () => {
   marketFilterPanel.hidden = !marketFilterPanel.hidden;
   marketFilterButton.setAttribute('aria-expanded', String(!marketFilterPanel.hidden));
@@ -888,17 +927,26 @@ marketFilterClear.addEventListener('click', () => {
   marketMaxPrice.value = '';
   renderListings();
 });
-catalogSearch.addEventListener('input', renderCatalog);
-catalogSetFilter.addEventListener('change', renderCatalog);
-catalogDomainOptions.addEventListener('change', renderCatalog);
-catalogRarityFilter.addEventListener('change', renderCatalog);
-catalogTypeFilter.addEventListener('change', renderCatalog);
+catalogSearch.addEventListener('input', renderCatalogFromFirstPage);
+catalogSetFilter.addEventListener('change', renderCatalogFromFirstPage);
+catalogDomainOptions.addEventListener('change', renderCatalogFromFirstPage);
+catalogRarityFilter.addEventListener('change', renderCatalogFromFirstPage);
+catalogTypeFilter.addEventListener('change', renderCatalogFromFirstPage);
 catalogFilterClear.addEventListener('click', () => {
   catalogSearch.value = '';
   catalogSetFilter.value = '';
   catalogDomainOptions.querySelectorAll('input:checked').forEach((input) => { input.checked = false; });
   catalogRarityFilter.value = '';
   catalogTypeFilter.value = '';
+  renderCatalogFromFirstPage();
+});
+catalogPrevious.addEventListener('click', () => {
+  if (catalogPage === 0) return;
+  catalogPage -= 1;
+  renderCatalog();
+});
+catalogNext.addEventListener('click', () => {
+  catalogPage += 1;
   renderCatalog();
 });
 catalogFilterButton.addEventListener('click', () => {

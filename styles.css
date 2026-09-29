@@ -67,6 +67,9 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .stat-card-dark { color: white; background: var(--ink); }
 .stat-card-dark span, .stat-card-dark small { color: #aaa; }
 .page-heading { display: flex; align-items: end; justify-content: space-between; border-bottom: 1px solid var(--ink); padding-bottom: 25px; }
+.my-listings-heading-tools { display: flex; align-items: center; gap: 12px; }
+.my-listings-filter { display: flex; align-items: center; gap: 8px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
+.my-listings-filter select { min-width: 120px; border: 1px solid var(--line); padding: 9px 10px; color: var(--ink); background: white; font: .65rem "DM Mono", monospace; text-transform: none; }
 .page-heading .eyebrow { margin-bottom: 18px; }
 .page-heading h1 { margin: 0; font-size: clamp(3.2rem, 7vw, 6rem); }
 .status-tag { padding: 8px 11px; color: var(--red); border: 1px solid var(--red); border-radius: 30px; font: 500 .7rem "DM Mono", monospace; }
@@ -82,6 +85,11 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .filter-button span { margin-left: 16px; }
 .market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px 14px; }
+.catalog-pagination { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 28px 0; font: .65rem "DM Mono", monospace; }
+.catalog-pagination button { border: 1px solid var(--line); padding: 9px 13px; color: var(--ink); background: white; font: inherit; cursor: pointer; }
+.catalog-pagination button:hover:not(:disabled), .catalog-pagination button:focus-visible { border-color: var(--ink); outline: 0; }
+.catalog-pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.catalog-pagination span { min-width: 76px; text-align: center; }
 .catalog-card { display: block; min-width: 0; border: 0; padding: 0; background: transparent; text-align: left; }
 .catalog-card:hover .catalog-card-art, .catalog-card:focus-visible .catalog-card-art { outline: 2px solid var(--ink); outline-offset: 3px; }
 .catalog-card-art { position: relative; aspect-ratio: 5 / 7; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--yellow); }
@@ -134,7 +142,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .card-badges { position: absolute; right: 8px; bottom: 8px; left: 8px; z-index: 2; display: flex; flex-wrap: wrap; gap: 5px; }.card-badge { width: fit-content; padding: 4px 6px; color: var(--ink) !important; border: 1px solid var(--ink); background: var(--yellow); font: 500 .56rem "DM Mono", monospace !important; text-transform: uppercase; }.card-badge + .card-badge { background: var(--blue); color: white !important; border-color: white; }
 .empty-message { color: var(--muted); text-align: center; }
 .my-listings-grid { margin-top: 30px; border-top: 1px solid var(--ink); }
-.my-listing-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 110px 25px; gap: 16px; align-items: center; min-height: 108px; border-bottom: 1px solid var(--line); }
+.my-listing-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto 204px; gap: 16px; align-items: center; min-height: 108px; border-bottom: 1px solid var(--line); }
 .my-listing-preview { display: flex; align-items: center; min-width: 0; padding-left: 4px; }
 .my-listing-preview-card { position: relative; flex: 0 0 42px; width: 42px; height: 58px; overflow: hidden; margin-left: -6px; border: 1px solid var(--ink); background: var(--paper); }
 .my-listing-preview-card:first-child { margin-left: 0; }
@@ -145,6 +153,14 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .my-listing-main strong { font-size: .9rem; }
 .my-listing-main span { overflow: hidden; color: var(--muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
 .my-listing-main small { color: var(--muted); font: .62rem "DM Mono", monospace; }
+.my-listing-status { justify-self: start; padding: 6px 8px; border-radius: 999px; font: 500 .58rem "DM Mono", monospace; text-transform: uppercase; white-space: nowrap; }
+.my-listing-status.status-active { color: #286641; background: #e4f1e8; }
+.my-listing-status.status-pending { color: #5f6265; background: #eceeed; }
+.my-listing-status.status-sold { color: #a02f27; background: #f8e5e2; }
+.my-listing-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.my-listing-action { padding: 8px 10px; border: 1px solid var(--line); color: var(--ink); background: white; font: 500 .62rem "DM Mono", monospace; cursor: pointer; }
+.my-listing-action:hover, .my-listing-action:focus-visible { border-color: var(--ink); outline: 0; }
+.my-listing-delete { color: var(--red); }
 .trade-list, .message-list { margin-top: 30px; border-top: 1px solid var(--ink); }
 .trade-row { display: grid; grid-template-columns: 42px 1fr 110px 110px 70px 25px; gap: 16px; align-items: center; min-height: 98px; border-bottom: 1px solid var(--line); }
 .avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; font: 500 .64rem "DM Mono", monospace; }.avatar-red { background: var(--red); }.avatar-blue { background: var(--blue); color: white; }.avatar-yellow { background: var(--yellow); }
@@ -163,3 +179,11 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .listing-card-selected .listing-card-selected-name { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }.listing-card-selected .listing-card-foil { display: inline-flex; align-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); font: 500 .5rem "DM Mono", monospace; text-transform: uppercase; }.listing-card-selected .listing-card-foil button { padding: 3px 6px; color: var(--muted); border: 0; background: transparent; font: inherit; line-height: 1; }.listing-card-selected .listing-card-foil button[aria-pressed="true"] { color: var(--ink); background: var(--yellow); }.listing-card-selected .listing-card-foil button:hover, .listing-card-selected .listing-card-foil button:focus-visible { color: var(--ink); background: white; outline: 0; }.listing-card-selected .listing-card-foil button:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
 .listing-card-selected .listing-card-selected-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }.listing-card-selected .listing-card-quantity input, .listing-card-selected .listing-card-condition select, .listing-card-selected .listing-card-language input, .listing-card-selected .listing-card-price input { width: 100%; min-width: 0; }
 @media (max-width: 700px) { .listing-card-selected .listing-card-selected-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+	.my-listings-heading-tools { width: 100%; justify-content: space-between; }
+	.my-listing-row { grid-template-columns: 76px minmax(0, 1fr); grid-template-areas: "preview main" "status actions"; gap: 9px 7px; min-height: 0; padding: 14px 0; }
+	.my-listing-preview { grid-area: preview; }
+	.my-listing-main { grid-area: main; }
+	.my-listing-status { grid-area: status; }
+	.my-listing-actions { grid-area: actions; }
+}
