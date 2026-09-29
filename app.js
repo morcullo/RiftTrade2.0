@@ -123,6 +123,8 @@ const inboxPeerAvatar = document.querySelector('#inbox-peer-avatar');
 const inboxPeerProfile = document.querySelector('#inbox-peer-profile');
 const inboxBack = document.querySelector('#inbox-back');
 const inboxThread = document.querySelector('#inbox-thread');
+const inboxTyping = document.querySelector('#inbox-typing');
+const inboxTypingLabel = document.querySelector('#inbox-typing-label');
 const inboxMessageStatus = document.querySelector('#inbox-message-status');
 const inboxMessageForm = document.querySelector('#inbox-message-form');
 const inboxMessageInput = document.querySelector('#inbox-message-input');
@@ -182,6 +184,8 @@ let activeConversationId = null;
 let inboxSharedListings = [];
 let inboxRealtimeChannel = null;
 let inboxRealtimeConversationId = null;
+let inboxTypingTimer = null;
+let inboxTypingConversationId = null;
 let inboxLoadPromise = null;
 let inboxRecipientSearchTimer = null;
 let catalogPage = 0;
@@ -1298,13 +1302,37 @@ function closeInboxRealtime() {
   if (inboxRealtimeChannel && window.riftTradeSupabase) window.riftTradeSupabase.removeChannel(inboxRealtimeChannel);
   inboxRealtimeChannel = null;
   inboxRealtimeConversationId = null;
+  clearTimeout(inboxTypingTimer);
+  inboxTypingTimer = null;
+  inboxTypingConversationId = null;
+  inboxTyping.hidden = true;
+}
+
+function setInboxTyping(isTyping) {
+  if (!inboxRealtimeChannel || !inboxTypingConversationId) return;
+  inboxRealtimeChannel.send({
+    type: 'broadcast',
+    event: 'typing',
+    payload: { user_id: inboxUser?.id, is_typing: isTyping },
+  });
+}
+
+function showInboxTyping(name) {
+  inboxTypingLabel.textContent = `${name || 'Member'} is typing...`;
+  inboxTyping.hidden = false;
 }
 
 function watchInboxConversation(conversationId) {
   if (inboxRealtimeConversationId === String(conversationId)) return;
   closeInboxRealtime();
   inboxRealtimeConversationId = String(conversationId);
+  inboxTypingConversationId = String(conversationId);
   inboxRealtimeChannel = window.riftTradeSupabase.channel(`direct-messages-${conversationId}`)
+    .on('broadcast', { event: 'typing' }, ({ payload }) => {
+      if (payload?.user_id === inboxUser?.id || String(activeConversationId) !== String(conversationId)) return;
+      if (payload?.is_typing) showInboxTyping(inboxPeerProfile.textContent);
+      else inboxTyping.hidden = true;
+    })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'direct_messages', filter: `conversation_id=eq.${conversationId}` }, async () => {
       if (String(activeConversationId) === String(conversationId)) await openInboxConversation(conversationId, false);
       await refreshInboxConversations();
@@ -1345,6 +1373,7 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   inboxPeerProfile.textContent = conversation.peer_display_name || 'RiftTrade member';
   inboxPeerAvatar.innerHTML = avatarMarkup(conversation.peer_display_name, conversation.peer_avatar_url, 'inbox-peer-avatar').replace(/^<span[^>]*>|<\/span>$/g, '');
   inboxPeerProfile.dataset.profileId = conversation.peer_id;
+  inboxTyping.hidden = true;
   inboxMessageStatus.textContent = '';
   inboxThread.innerHTML = '<p class="inbox-thread-loading">Loading messages...</p>';
   renderInboxConversations();
@@ -1527,6 +1556,8 @@ inboxMessageForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const body = inboxMessageInput.value.trim();
   if (!body || !activeConversationId || !inboxUser || !window.riftTradeSupabase) return;
+  clearTimeout(inboxTypingTimer);
+  setInboxTyping(false);
   inboxSend.disabled = true;
   inboxMessageStatus.textContent = 'Sending...';
   const { error } = await window.riftTradeSupabase.from('direct_messages').insert({
@@ -1543,6 +1574,20 @@ inboxMessageForm.addEventListener('submit', async (event) => {
   inboxMessageStatus.textContent = '';
   await Promise.all([openInboxConversation(activeConversationId, false), refreshInboxConversations()]);
   inboxMessageInput.focus();
+});
+inboxMessageInput.addEventListener('input', () => {
+  if (!activeConversationId || !inboxUser) return;
+  clearTimeout(inboxTypingTimer);
+  setInboxTyping(true);
+  inboxTypingTimer = setTimeout(() => {
+    setInboxTyping(false);
+    inboxTypingTimer = null;
+  }, 900);
+});
+inboxMessageInput.addEventListener('blur', () => {
+  clearTimeout(inboxTypingTimer);
+  inboxTypingTimer = null;
+  setInboxTyping(false);
 });
 inboxMessageInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.shiftKey) {

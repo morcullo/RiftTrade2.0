@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=market-grid-mobile-2" />
+    <link rel="stylesheet" href="styles.css?v=inbox-typing-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -98,6 +98,7 @@
               <div class="inbox-active" id="inbox-active" hidden>
                 <header class="inbox-thread-header"><button class="inbox-back" id="inbox-back" type="button" aria-label="Back to conversations">←</button><span class="inbox-peer-avatar" id="inbox-peer-avatar"></span><div><button class="profile-link" id="inbox-peer-profile" type="button"></button><small>RiftTrade member</small></div></header>
                 <div class="inbox-thread" id="inbox-thread" role="log" aria-live="polite" aria-relevant="additions text"></div>
+                <div class="inbox-typing" id="inbox-typing" aria-live="polite" hidden><span class="inbox-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="inbox-typing-label">Typing...</span></div>
                 <p class="inbox-message-status" id="inbox-message-status" role="status" aria-live="polite"></p>
                 <form class="inbox-composer" id="inbox-message-form"><textarea id="inbox-message-input" rows="2" maxlength="4000" placeholder="Write a message..." required aria-label="Message"></textarea><button class="button button-dark" id="inbox-send" type="submit">Send <span>→</span></button></form>
               </div>
@@ -196,6 +197,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=direct-messaging-1"></script>
+    <script src="app.js?v=inbox-typing-1"></script>
   </body>
 </html>
