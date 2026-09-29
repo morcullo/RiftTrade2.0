@@ -1336,7 +1336,7 @@ async function loadInbox() {
   inboxStatus.textContent = 'Loading conversations...';
   const { data: { user }, error } = await window.riftTradeSupabase.auth.getUser();
   if (error) {
-    inboxStatus.textContent = error.message;
+    inboxStatus.textContent = error.message === 'Auth session missing!' ? 'Log in to see messages' : error.message;
     inboxSignInButton.hidden = false;
     return;
   }
