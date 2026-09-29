@@ -10,6 +10,10 @@ function showView(viewName) {
   navItems.forEach((item) => item.classList.toggle('is-active', item.dataset.view === viewName));
   history.replaceState(null, '', `#${viewName}`);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (viewName === 'home') loadHomeStats();
+  else if (viewName === 'marketplace') loadListings();
+  else if (viewName === 'catalog') loadCatalog();
+  else if (viewName === 'trades') loadMyListings();
 }
 
 navItems.forEach((item) => item.addEventListener('click', () => showView(item.dataset.view)));
@@ -56,6 +60,9 @@ const listingTypeOptions = document.querySelectorAll('[data-listing-type]');
 const listingDescription = document.querySelector('#listing-description');
 const accountDialog = document.querySelector('#account-dialog');
 const profileButton = document.querySelector('#profile-button');
+const profileMenu = document.querySelector('#profile-menu');
+const profileMenuView = document.querySelector('#profile-menu-view');
+const profileMenuSignOut = document.querySelector('#profile-menu-sign-out');
 const accountClose = document.querySelector('#account-close');
 const authForm = document.querySelector('#auth-form');
 const authLinks = document.querySelector('#auth-links');
@@ -68,7 +75,19 @@ const passwordField = document.querySelector('#password-field');
 const newPasswordField = document.querySelector('#new-password-field');
 const nameField = document.querySelector('#name-field');
 const signedInPanel = document.querySelector('#signed-in-panel');
+const signedInName = document.querySelector('#signed-in-name');
 const signedInEmail = document.querySelector('#signed-in-email');
+const profileDialog = document.querySelector('#profile-dialog');
+const profileClose = document.querySelector('#profile-close');
+const profileTitle = document.querySelector('#profile-title');
+const profileDisplayName = document.querySelector('#profile-display-name');
+const profileEmail = document.querySelector('#profile-email');
+const profileMemberSince = document.querySelector('#profile-member-since');
+const profileDiscordField = document.querySelector('#profile-discord-field');
+const profileDiscordLink = document.querySelector('#profile-discord-link');
+const profileListingCount = document.querySelector('#profile-listing-count');
+const profileListingsStatus = document.querySelector('#profile-listings-status');
+const profileListingsGrid = document.querySelector('#profile-listings');
 const authEmail = document.querySelector('#auth-email');
 const authPassword = document.querySelector('#auth-password');
 const authNewPassword = document.querySelector('#auth-new-password');
@@ -92,6 +111,7 @@ const cardDialogTcgplayer = document.querySelector('#card-dialog-tcgplayer');
 const listingDetailsDialog = document.querySelector('#listing-details-dialog');
 const listingDetailsClose = document.querySelector('#listing-details-close');
 const listingDetailsTitle = document.querySelector('#listing-details-title');
+const listingDetailsStatus = document.querySelector('#listing-details-status');
 const listingDetailsSeller = document.querySelector('#listing-details-seller');
 const listingDetailsMeta = document.querySelector('#listing-details-meta');
 const listingDetailsDescription = document.querySelector('#listing-details-description');
@@ -112,6 +132,9 @@ let editingListingId = null;
 let cards = [];
 let listings = [];
 let myListings = [];
+let profileListings = [];
+let signedInUser = null;
+let authStateReady = false;
 let catalogPage = 0;
 const catalogPageSize = 25;
 let selectedListingCardIds = [];
@@ -174,18 +197,120 @@ function renderListingCarouselTiles(listing, page, query) {
   }).join('');
 }
 
-function changeListingCarouselPage(listing, page) {
+function changeListingCarouselPage(listing, page, container = marketGrid, query = searchInput.value.trim().toLowerCase()) {
   const pageSize = 4;
   const listingCards = listing.listing_cards || [];
   const totalPages = Math.ceil(listingCards.length / pageSize);
   listing.activeCardIndex = page * pageSize;
-  const article = [...marketGrid.querySelectorAll('.listing')].find((item) => item.dataset.listingId === String(listing.id));
+  const article = [...container.querySelectorAll('.listing')].find((item) => item.dataset.listingId === String(listing.id));
   const artwork = article?.querySelector('.card-art.is-carousel');
   if (!artwork) return;
   artwork.querySelectorAll('.listing-card-tile').forEach((tile) => tile.remove());
-  artwork.insertAdjacentHTML('afterbegin', renderListingCarouselTiles(listing, page, searchInput.value.trim().toLowerCase()));
+  artwork.insertAdjacentHTML('afterbegin', renderListingCarouselTiles(listing, page, query));
   const count = artwork.querySelector('.listing-image-count');
   if (count) count.textContent = `${page + 1} / ${totalPages}`;
+}
+
+function renderMarketplaceListingCard(listing, query = '', includeStatus = false) {
+  const listingCards = listing.listing_cards || [];
+  const isGrid = listingCards.length > 1 && listingCards.length <= 4;
+  const isCarousel = listingCards.length > 4;
+  const pageSize = 4;
+  const totalPages = Math.ceil(listingCards.length / pageSize);
+  const matchingCardIndex = query ? listingCards.findIndex(({ card }) => card && scoreCardSearchMatch(card, query) > 0) : -1;
+  const activePage = isCarousel
+    ? matchingCardIndex >= 0
+      ? Math.floor(matchingCardIndex / pageSize)
+      : Math.min(Math.floor(Number(listing.activeCardIndex || 0) / pageSize), totalPages - 1)
+    : 0;
+  if (isCarousel && matchingCardIndex >= 0) listing.activeCardIndex = activePage * pageSize;
+  const visibleCards = isCarousel ? listingCards.slice(activePage * pageSize, (activePage + 1) * pageSize) : listingCards;
+  const card = listingCards[0]?.card || {};
+  const imageUrl = getCardImageUrl(card);
+  const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
+  const cardArt = isCarousel
+    ? renderListingCarouselTiles(listing, activePage, query)
+    : isGrid
+      ? visibleCards.map(({ card: listingCard, quantity }, visibleCardIndex) => {
+        const listingImageUrl = getCardImageUrl(listingCard || {});
+        const quantityBadge = Number(quantity) > 1 ? `<span class="listing-card-quantity-badge">X${Math.max(Number(quantity) || 1, 1)}</span>` : '';
+        const isSearchMatch = matchingCardIndex === activePage * pageSize + visibleCardIndex;
+        return `<span class="listing-card-tile${isSearchMatch ? ' is-search-match' : ''}">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
+      }).join('')
+      : imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`;
+  const singleQuantity = Math.max(Number(listingCards[0]?.quantity) || 1, 1);
+  const singleQuantityBadge = !isGrid && !isCarousel && singleQuantity > 1 ? `<span class="listing-card-quantity-badge">X${singleQuantity}</span>` : '';
+  const carouselControls = isCarousel ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card page">←</button><span class="listing-image-count">${activePage + 1} / ${totalPages}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card page">→</button>` : '';
+  const statusClass = listing.status === 'active' ? 'status-active' : listing.status === 'completed' ? 'status-sold' : 'status-pending';
+  const showStatusOverlay = includeStatus && ['paused', 'completed'].includes(listing.status);
+  const statusOverlay = showStatusOverlay ? `<div class="profile-listing-status-overlay"><span class="my-listing-status ${statusClass}">${escapeHtml(listingStatusLabel(listing.status))}</span></div>` : '';
+  return `<article class="listing${showStatusOverlay ? ' profile-listing-inactive' : ''}" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
+    <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}${isCarousel ? ' is-carousel' : ''}${!isGrid && !isCarousel && matchingCardIndex === 0 ? ' is-search-match' : ''}">
+      ${cardArt}
+      ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
+      ${statusOverlay}
+    </div>
+    <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(listingPriceLabel(listing))}</b></div><div class="listing-poster"><span>By <button class="profile-link" data-profile-id="${escapeHtml(listing.seller_id)}" type="button">${escapeHtml(seller)}</button></span><span class="listing-type-indicator type-${listingTypeClass(listing.listing_type)}">${escapeHtml(listingTypeLabel(listing.listing_type))}</span></div></div>
+  </article>`;
+}
+
+function bindMarketplaceListingCards(container, sourceListings, query = '') {
+  const sourceById = new Map(sourceListings.map((listing) => [String(listing.id), listing]));
+  container.querySelectorAll('.listing').forEach((article) => {
+    const openListing = () => {
+      openListingDetails(article.dataset.listingId);
+    };
+    article.addEventListener('click', (event) => {
+      if (container.dataset.swipedAt && Date.now() - Number(container.dataset.swipedAt) < 800) return;
+      if (event.target.closest('.listing-image-button, .profile-link')) return;
+      openListing();
+    });
+    article.addEventListener('keydown', (event) => {
+      if (event.target.closest('.listing-image-button, .profile-link')) return;
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      openListing();
+    });
+  });
+  container.querySelectorAll('.profile-link').forEach((button) => button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openProfileDialog(button.dataset.profileId);
+  }));
+  container.querySelectorAll('.listing-image-button').forEach((button) => button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const listing = sourceById.get(String(button.dataset.listingId));
+    if (!listing) return;
+    const pageSize = 4;
+    const totalPages = Math.ceil((listing.listing_cards || []).length / pageSize);
+    const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
+    const nextPage = (currentPage + Number(button.dataset.direction) + totalPages) % totalPages;
+    changeListingCarouselPage(listing, nextPage, container, query);
+  }));
+  container.querySelectorAll('.card-art.is-carousel').forEach((artwork) => {
+    let touchStart = null;
+    artwork.addEventListener('touchstart', (event) => {
+      const touch = event.changedTouches[0];
+      touchStart = { x: touch.clientX, y: touch.clientY };
+    }, { passive: true });
+    artwork.addEventListener('touchend', (event) => {
+      if (!touchStart) return;
+      const touch = event.changedTouches[0];
+      const horizontalDistance = touch.clientX - touchStart.x;
+      const verticalDistance = touch.clientY - touchStart.y;
+      touchStart = null;
+      if (Math.abs(horizontalDistance) < 40 || Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) return;
+      const article = artwork.closest('.listing');
+      const listing = sourceById.get(String(article?.dataset.listingId));
+      if (!listing) return;
+      container.dataset.swipedAt = String(Date.now());
+      const pageSize = 4;
+      const totalPages = Math.ceil((listing.listing_cards || []).length / pageSize);
+      const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
+      const direction = horizontalDistance < 0 ? 1 : -1;
+      const nextPage = (currentPage + direction + totalPages) % totalPages;
+      changeListingCarouselPage(listing, nextPage, container, query);
+    }, { passive: true });
+  });
 }
 
 function renderListings() {
@@ -211,98 +336,9 @@ function renderListings() {
       || (listing.listing_type === 'trade_or_sale' && ['sale', 'trade'].includes(selectedListingType));
     return searchable.includes(query) && matchesType && matchesPrice;
   });
-  marketGrid.innerHTML = matches.map((listing) => {
-    const listingCards = listing.listing_cards || [];
-    const isGrid = listingCards.length > 1 && listingCards.length <= 4;
-    const isCarousel = listingCards.length > 4;
-    const carouselPageSize = 4;
-    const totalCarouselPages = Math.ceil(listingCards.length / carouselPageSize);
-      const matchingCardIndex = query ? listingCards.findIndex(({ card }) => card && scoreCardSearchMatch(card, query) > 0) : -1;
-      const activeCarouselPage = isCarousel
-        ? matchingCardIndex >= 0
-          ? Math.floor(matchingCardIndex / carouselPageSize)
-          : Math.min(Math.floor(Number(listing.activeCardIndex || 0) / carouselPageSize), totalCarouselPages - 1)
-        : 0;
-      if (isCarousel && matchingCardIndex >= 0) listing.activeCardIndex = activeCarouselPage * carouselPageSize;
-    const visibleCards = isCarousel ? listingCards.slice(activeCarouselPage * carouselPageSize, (activeCarouselPage + 1) * carouselPageSize) : listingCards;
-    const card = listingCards[0]?.card || {};
-    const imageUrl = getCardImageUrl(card);
-    const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
-    const price = listingPriceLabel(listing);
-    const cardArt = isCarousel
-      ? renderListingCarouselTiles(listing, activeCarouselPage, query)
-      : isGrid
-        ? visibleCards.map(({ card: listingCard, quantity: listingQuantity }, visibleCardIndex) => {
-        const listingImageUrl = getCardImageUrl(listingCard || {});
-        const quantity = Math.max(Number(listingQuantity) || 1, 1);
-        const quantityBadge = quantity > 1 ? `<span class="listing-card-quantity-badge">X${quantity}</span>` : '';
-        const cardIndex = activeCarouselPage * carouselPageSize + visibleCardIndex;
-        const isSearchMatch = matchingCardIndex === cardIndex;
-        return `<span class="listing-card-tile${isSearchMatch ? ' is-search-match' : ''}">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
-        }).join('')
-        : imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`;
-    const singleQuantity = Math.max(Number(listingCards[0]?.quantity) || 1, 1);
-    const singleQuantityBadge = !isGrid && !isCarousel && singleQuantity > 1 ? `<span class="listing-card-quantity-badge">X${singleQuantity}</span>` : '';
-    const carouselControls = isCarousel ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card page">←</button><span class="listing-image-count">${activeCarouselPage + 1} / ${totalCarouselPages}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card page">→</button>` : '';
-    return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
-      <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}${isCarousel ? ' is-carousel' : ''}${!isGrid && !isCarousel && matchingCardIndex === 0 ? ' is-search-match' : ''}">
-        ${cardArt}
-        ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
-      </div>
-      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span><span class="listing-type-indicator type-${listingTypeClass(listing.listing_type)}">${escapeHtml(listingTypeLabel(listing.listing_type))}</span></div></div>
-    </article>`;
-  }).join('');
+  marketGrid.innerHTML = matches.map((listing) => renderMarketplaceListingCard(listing, query)).join('');
   emptyMessage.hidden = matches.length !== 0;
-  marketGrid.querySelectorAll('.listing').forEach((article) => {
-    const openListing = () => {
-      openListingDetails(article.dataset.listingId);
-    };
-    article.addEventListener('click', (event) => {
-      if (marketGrid.dataset.swipedAt && Date.now() - Number(marketGrid.dataset.swipedAt) < 800) return;
-      if (event.target.closest('.listing-image-button')) return;
-      openListing();
-    });
-    article.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      event.preventDefault();
-      openListing();
-    });
-  });
-  marketGrid.querySelectorAll('.listing-image-button').forEach((button) => button.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const listing = listings.find((item) => item.id === button.dataset.listingId);
-    if (!listing) return;
-    const pageSize = 4;
-    const totalPages = Math.ceil((listing.listing_cards || []).length / pageSize);
-    const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
-    const nextPage = (currentPage + Number(button.dataset.direction) + totalPages) % totalPages;
-    changeListingCarouselPage(listing, nextPage);
-  }));
-  marketGrid.querySelectorAll('.card-art.is-carousel').forEach((artwork) => {
-    let touchStart = null;
-    artwork.addEventListener('touchstart', (event) => {
-      const touch = event.changedTouches[0];
-      touchStart = { x: touch.clientX, y: touch.clientY };
-    }, { passive: true });
-    artwork.addEventListener('touchend', (event) => {
-      if (!touchStart) return;
-      const touch = event.changedTouches[0];
-      const horizontalDistance = touch.clientX - touchStart.x;
-      const verticalDistance = touch.clientY - touchStart.y;
-      touchStart = null;
-      if (Math.abs(horizontalDistance) < 40 || Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) return;
-      const article = artwork.closest('.listing');
-      const listing = listings.find((item) => item.id === article?.dataset.listingId);
-      if (!listing) return;
-      marketGrid.dataset.swipedAt = String(Date.now());
-      const pageSize = 4;
-      const totalPages = Math.ceil((listing.listing_cards || []).length / pageSize);
-      const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
-      const direction = horizontalDistance < 0 ? 1 : -1;
-      const nextPage = (currentPage + direction + totalPages) % totalPages;
-      changeListingCarouselPage(listing, nextPage);
-    }, { passive: true });
-  });
+  bindMarketplaceListingCards(marketGrid, matches, query);
 }
 
 function renderCatalog() {
@@ -373,6 +409,17 @@ function listingCardCount(listingCards) {
   return listingCards.reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0);
 }
 
+function renderListingPreviews(listingCards, previewLimit = 2) {
+  const previews = listingCards.slice(0, previewLimit).map(({ card }) => {
+    const imageUrl = getCardImageUrl(card || {});
+    return imageUrl
+      ? `<span class="my-listing-preview-card"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></span>`
+      : `<span class="my-listing-preview-card my-listing-preview-placeholder" aria-hidden="true">${escapeHtml((card?.name || '?').slice(0, 1))}</span>`;
+  }).join('');
+  const remainingCards = listingCardCount(listingCards.slice(previewLimit));
+  return `${previews}${remainingCards > 0 ? `<span class="my-listing-preview-more">+${remainingCards}</span>` : ''}`;
+}
+
 function formatDollar(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return '';
@@ -397,19 +444,13 @@ function renderMyListings() {
   myListingsGrid.innerHTML = visibleListings.map((listing) => {
     const listingCards = listing.listing_cards || [];
     const cardNames = listingCards.map(({ card, quantity }) => `${quantity > 1 ? `${quantity}× ` : ''}${card?.name || 'Riftbound card'}`).join(', ');
-    const cardPreviews = listingCards.slice(0, 2).map(({ card }) => {
-      const imageUrl = getCardImageUrl(card || {});
-      return imageUrl
-        ? `<span class="my-listing-preview-card"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></span>`
-        : `<span class="my-listing-preview-card my-listing-preview-placeholder" aria-hidden="true">${escapeHtml((card?.name || '?').slice(0, 1))}</span>`;
-    }).join('');
-    const remainingCards = listingCardCount(listingCards.slice(2));
+    const cardPreviews = renderListingPreviews(listingCards);
     const listingType = listingTypeLabel(listing.listing_type);
     const price = listingPriceLabel(listing);
     const cardCount = listingCardCount(listingCards);
     const status = listingStatusLabel(listing.status);
     const statusClass = listing.status === 'active' ? 'status-active' : listing.status === 'completed' ? 'status-sold' : 'status-pending';
-    return `<article class="my-listing-row"><div class="my-listing-preview" aria-hidden="true">${cardPreviews}${remainingCards > 0 ? `<span class="my-listing-preview-more">+${remainingCards}</span>` : ''}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="my-listing-status ${statusClass}">${escapeHtml(status)}</span><div class="my-listing-actions"><button class="my-listing-action my-listing-view" data-listing-id="${escapeHtml(listing.id)}" type="button">View</button><button class="my-listing-action my-listing-edit" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="my-listing-action my-listing-delete" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></article>`;
+    return `<article class="my-listing-row"><span class="my-listing-status ${statusClass}">${escapeHtml(status)}</span><div class="my-listing-preview" aria-hidden="true">${cardPreviews}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><div class="my-listing-actions"><button class="my-listing-action my-listing-view" data-listing-id="${escapeHtml(listing.id)}" type="button">View</button><button class="my-listing-action my-listing-edit" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="my-listing-action my-listing-delete" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></article>`;
   }).join('');
   myListingsCount.textContent = `${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
   myListingsEmpty.hidden = visibleListings.length !== 0;
@@ -482,16 +523,21 @@ function openCardDialog(cardId) {
 }
 
 function openListingDetails(listingId) {
-  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId);
+  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId) || profileListings.find((item) => item.id === listingId);
   if (!listing) return;
   listingDetailsDialog.dataset.listingId = listing.id;
+  listingDetailsDialog.dataset.listingStatus = listing.status;
   const listingCards = listing.listing_cards || [];
   const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
   const listingType = listingTypeLabel(listing.listing_type);
   const price = listingPriceLabel(listing);
   const cardCount = listingCardCount(listingCards);
   listingDetailsTitle.textContent = listing.title;
-  listingDetailsSeller.textContent = `Listed by ${seller}`;
+  listingDetailsStatus.textContent = listingStatusLabel(listing.status);
+  const statusClass = listing.status === 'active' ? 'status-active' : listing.status === 'completed' ? 'status-sold' : 'status-pending';
+  listingDetailsStatus.className = `my-listing-status ${statusClass}`;
+  listingDetailsSeller.innerHTML = `Listed by <button class="profile-link" data-profile-id="${escapeHtml(listing.seller_id)}" type="button">${escapeHtml(seller)}</button>`;
+  listingDetailsSeller.querySelector('.profile-link').addEventListener('click', () => openProfileDialog(listing.seller_id));
   listingDetailsMeta.textContent = [listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
@@ -504,11 +550,87 @@ function openListingDetails(listingId) {
   listingDetailsCards.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
   window.riftTradeSupabase?.auth.getUser().then(({ data: { user } }) => {
     const isOwner = Boolean(user && user.id === listing.seller_id);
+    const canChangeStatus = ['active', 'paused'].includes(listing.status);
+    const isSold = listing.status === 'completed';
     listingDetailsActions.hidden = !isOwner;
-    listingPendingButton.hidden = listing.status !== 'active';
-    listingSoldButton.hidden = listing.status !== 'active';
+    listingPendingButton.hidden = !canChangeStatus;
+    listingPendingButton.textContent = listing.status === 'paused' ? 'Remove pending' : 'Mark pending';
+    listingSoldButton.hidden = !canChangeStatus && !isSold;
+    listingSoldButton.textContent = isSold ? 'Remove sold' : 'Mark sold';
   });
   listingDetailsDialog.showModal();
+}
+
+async function openProfileDialog(profileId) {
+  if (!profileId || !window.riftTradeSupabase) return;
+  const requestedProfileId = String(profileId);
+  profileDialog.dataset.profileId = requestedProfileId;
+  profileTitle.textContent = 'Loading profile...';
+  profileDisplayName.textContent = '';
+  profileEmail.textContent = '';
+  profileEmail.removeAttribute('href');
+  profileDiscordField.hidden = true;
+  profileDiscordLink.removeAttribute('href');
+  profileListingCount.textContent = '';
+  profileListingsStatus.textContent = 'Loading listings...';
+  profileListingsGrid.innerHTML = '';
+  profileListings = [];
+  profileDialog.showModal();
+
+  const profileRequest = (async () => {
+    let fields = ['id', 'display_name', 'username', 'email', 'discord_id', 'created_at'];
+    let emailColumnMissing = false;
+    let discordColumnMissing = false;
+    let result;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      result = await window.riftTradeSupabase.from('profiles').select(fields.join(', ')).eq('id', requestedProfileId).maybeSingle();
+      if (!result.error) break;
+      if (result.error.message.includes('profiles.email') && !emailColumnMissing) {
+        emailColumnMissing = true;
+        fields = fields.filter((field) => field !== 'email');
+      } else if (result.error.message.includes('profiles.discord_id') && !discordColumnMissing) {
+        discordColumnMissing = true;
+        fields = fields.filter((field) => field !== 'discord_id');
+      } else {
+        break;
+      }
+    }
+    return { ...result, emailColumnMissing, discordColumnMissing };
+  })();
+  const [profileResult, listingResult] = await Promise.all([
+    profileRequest,
+    window.riftTradeSupabase.from('listings').select(listingSelect()).eq('seller_id', requestedProfileId).order('created_at', { ascending: false }),
+  ]);
+  if (profileDialog.dataset.profileId !== requestedProfileId) return;
+  if (profileResult.error || !profileResult.data) {
+    profileTitle.textContent = 'Profile unavailable';
+    profileListingsStatus.textContent = profileResult.error?.message || 'This profile could not be found.';
+    return;
+  }
+
+  const profile = profileResult.data;
+  const displayName = profile.display_name || profile.username || 'RiftTrade member';
+  profileTitle.textContent = displayName;
+  profileDisplayName.textContent = displayName;
+  profileEmail.textContent = profile.email || (profileResult.emailColumnMissing ? 'Run the profile email migration to enable email display.' : 'Email not provided.');
+  profileMemberSince.textContent = profile.created_at ? new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(profile.created_at)) : 'Unknown';
+  if (profile.email) profileEmail.href = `mailto:${profile.email}`;
+  const discordId = String(profile.discord_id || '');
+  if (/^\d{17,20}$/.test(discordId)) {
+    profileDiscordLink.href = `https://discord.com/users/${discordId}`;
+    profileDiscordField.hidden = false;
+  }
+  if (listingResult.error) {
+    profileListingCount.textContent = '';
+    profileListingsStatus.textContent = `Could not load listings: ${listingResult.error.message}`;
+    return;
+  }
+
+  profileListings = listingResult.data || [];
+  profileListingCount.textContent = `${profileListings.length} listing${profileListings.length === 1 ? '' : 's'}`;
+  profileListingsStatus.textContent = profileListings.length ? '' : 'No visible listings.';
+  profileListingsGrid.innerHTML = profileListings.map((listing) => renderMarketplaceListingCard(listing, '', true)).join('');
+  bindMarketplaceListingCards(profileListingsGrid, profileListings);
 }
 
 cardDialogClose.addEventListener('click', () => cardDialog.close());
@@ -522,6 +644,9 @@ cardDialogMarketplace.addEventListener('click', () => {
 });
 listingDetailsClose.addEventListener('click', () => listingDetailsDialog.close());
 listingDetailsDialog.addEventListener('click', (event) => { if (event.target === listingDetailsDialog) listingDetailsDialog.close(); });
+profileClose.addEventListener('click', () => profileDialog.close());
+profileDialog.addEventListener('click', (event) => { if (event.target === profileDialog) profileDialog.close(); });
+signedInName.addEventListener('click', () => openProfileDialog(signedInName.dataset.profileId));
 
 function openListingForm(listing = null) {
   editingListingId = listing?.id || null;
@@ -569,8 +694,8 @@ listingEditButton.addEventListener('click', () => {
   listingDetailsDialog.close();
   openListingForm(listing);
 });
-listingPendingButton.addEventListener('click', () => updateListingStatus('paused'));
-listingSoldButton.addEventListener('click', () => updateListingStatus('completed'));
+listingPendingButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'paused' ? 'active' : 'paused'));
+listingSoldButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'completed' ? 'active' : 'completed'));
 listingDeleteButton.addEventListener('click', async () => {
   const listingId = listingDetailsDialog.dataset.listingId;
   if (!listingId || !window.confirm('Delete this listing?')) return;
@@ -967,11 +1092,6 @@ catalogGrid.addEventListener('click', (event) => {
   const cardButton = event.target.closest('[data-catalog-card-id]');
   if (cardButton) openCardDialog(cardButton.dataset.catalogCardId);
 });
-document.querySelector('[data-view="trades"]').addEventListener('click', loadMyListings);
-loadCatalog();
-loadListings();
-loadHomeStats();
-
 function setAuthMessage(message, isError = false) {
   authMessage.textContent = message;
   authMessage.classList.toggle('is-error', isError);
@@ -1001,26 +1121,67 @@ async function findProfileByDisplayName(displayName) {
   return window.riftTradeSupabase.from('profiles').select('id').ilike('display_name', pattern).limit(1).maybeSingle();
 }
 
-function openAccount() {
+async function openAccount() {
   if (accountDialog.open) return;
   accountDialog.showModal();
-  authEmail.focus();
+  await refreshAuthState();
+  if (!authForm.hidden) authEmail.focus();
 }
 
 async function refreshAuthState() {
   if (!window.riftTradeSupabase) return;
   const { data: { session } } = await window.riftTradeSupabase.auth.getSession();
   const user = session?.user;
+  signedInUser = user || null;
+  authStateReady = true;
+  if (!user) closeProfileMenu();
   signedInPanel.hidden = !user;
   authForm.hidden = Boolean(user);
   authLinks.hidden = Boolean(user);
+  authIntro.hidden = Boolean(user);
   if (user) {
+    const { data: profile } = await window.riftTradeSupabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle();
+    signedInName.textContent = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'RiftTrade member';
+    signedInName.dataset.profileId = user.id;
     signedInEmail.textContent = user.email || 'your account';
   }
   if (views.find((view) => view.dataset.page === 'trades')?.classList.contains('is-visible')) loadMyListings();
 }
 
-profileButton.addEventListener('click', openAccount);
+function closeProfileMenu(restoreFocus = false) {
+  profileMenu.hidden = true;
+  profileButton.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) profileButton.focus();
+}
+
+profileButton.addEventListener('click', async () => {
+  if (!window.riftTradeSupabase) return openAccount();
+  if (!authStateReady) await refreshAuthState();
+  if (!signedInUser) {
+    closeProfileMenu();
+    openAccount();
+    return;
+  }
+  const shouldOpen = profileMenu.hidden;
+  profileMenu.hidden = !shouldOpen;
+  profileButton.setAttribute('aria-expanded', String(shouldOpen));
+  if (shouldOpen) profileMenuView.focus();
+});
+profileMenuView.addEventListener('click', () => {
+  const profileId = signedInUser?.id;
+  closeProfileMenu();
+  if (profileId) openProfileDialog(profileId);
+});
+profileMenuSignOut.addEventListener('click', () => {
+  closeProfileMenu();
+  openAccount();
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.profile-menu-wrap')) closeProfileMenu();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !profileMenu.hidden) closeProfileMenu(true);
+});
 accountClose.addEventListener('click', () => accountDialog.close());
 accountDialog.addEventListener('click', (event) => { if (event.target === accountDialog) accountDialog.close(); });
 document.querySelectorAll('[data-auth-mode]').forEach((link) => link.addEventListener('click', () => setAuthMode(link.dataset.authMode)));
@@ -1083,6 +1244,7 @@ discordAuthButton.addEventListener('click', async () => {
 });
 
 document.querySelector('#sign-out').addEventListener('click', async () => {
+  if (!window.confirm('Are you sure you want to sign out?')) return;
   await window.riftTradeSupabase?.auth.signOut();
   await refreshAuthState();
   setAuthMessage('You are signed out.');

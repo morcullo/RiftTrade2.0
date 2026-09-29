@@ -21,7 +21,7 @@
           <button class="nav-link" data-view="trades">My listings</button>
           <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b>2</b></button>
         </nav>
-        <button class="profile-button" id="profile-button" type="button" aria-label="Open account"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></button>
+        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">View profile</button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
       </header>
 
       <main>
@@ -93,6 +93,7 @@
         <button class="dialog-close" id="account-close" type="button" aria-label="Close account dialog">×</button>
         <p class="eyebrow">RIFTTRADE / ACCOUNT</p>
         <h2 id="account-title">Welcome back</h2>
+        <div class="signed-in-panel" id="signed-in-panel" hidden><p class="signed-in-name-line">Display name <button class="profile-link account-profile-link" id="signed-in-name" type="button"></button></p><p class="signed-in-email-line">Signed in as <strong id="signed-in-email"></strong></p><button class="button button-outline" id="sign-out" type="button">Sign out</button></div>
         <p class="account-intro" id="account-intro">Sign in to manage your trades and listings.</p>
         <form id="auth-form">
           <label class="auth-field" id="name-field" hidden>Display name<input id="auth-name" type="text" autocomplete="name" /></label>
@@ -100,11 +101,10 @@
           <label class="auth-field" id="password-field">Password<input id="auth-password" type="password" autocomplete="current-password" minlength="6" required /></label>
           <label class="auth-field" id="new-password-field" hidden>New password<input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" /></label>
           <button class="button button-dark auth-submit" id="auth-submit" type="submit">Sign in <span>→</span></button>
-          <button class="button button-outline discord-auth-button" id="discord-auth" type="button">Continue with Discord</button>
+          <button class="button button-outline discord-auth-button" id="discord-auth" type="button"><svg class="discord-auth-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 5.4a17.4 17.4 0 0 0-4.3-1.3l-.6 1.2a15.8 15.8 0 0 0-5.2 0l-.6-1.2a17.2 17.2 0 0 0-4.3 1.3C1.8 9.4 1.1 13.3 1.5 17.1a17.6 17.6 0 0 0 5.3 2.6l1.2-2a11 11 0 0 1-1.9-.9l.5-.4a12.3 12.3 0 0 0 10.8 0l.5.4a12.3 12.3 0 0 1-1.9.9l1.2 2a17.5 17.5 0 0 0 5.3-2.6c.5-4.4-.8-8.3-3-11.7ZM8.5 14.8c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm7 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z" /></svg>Continue with Discord</button>
         </form>
         <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
         <div class="auth-links" id="auth-links"><button type="button" data-auth-mode="signup">Create an account</button><button type="button" data-auth-mode="forgot">Forgot password?</button></div>
-        <div class="signed-in-panel" id="signed-in-panel" hidden><p>Signed in as <strong id="signed-in-email"></strong></p><button class="button button-outline" id="sign-out" type="button">Sign out</button></div>
       </dialog>
 
       <dialog class="listing-dialog" id="listing-dialog" aria-labelledby="listing-title">
@@ -141,12 +141,22 @@
       <dialog class="listing-details-dialog" id="listing-details-dialog" aria-labelledby="listing-details-title">
         <button class="dialog-close" id="listing-details-close" type="button" aria-label="Close listing details">×</button>
         <p class="eyebrow">MARKETPLACE / LISTING DETAILS</p>
-        <h2 id="listing-details-title"></h2>
+        <div class="listing-details-title-row"><h2 id="listing-details-title"></h2><span class="my-listing-status" id="listing-details-status"></span></div>
         <p class="listing-details-seller" id="listing-details-seller"></p>
         <div class="listing-details-meta" id="listing-details-meta"></div>
         <p class="listing-details-description" id="listing-details-description"></p>
         <div class="listing-details-cards" id="listing-details-cards"></div>
         <div class="listing-details-actions" id="listing-details-actions" hidden><button class="button button-outline" id="listing-edit" type="button">Edit listing</button><button class="button button-outline" id="listing-pending" type="button">Mark pending</button><button class="button button-outline" id="listing-sold" type="button">Mark sold</button><button class="button button-danger" id="listing-delete" type="button">Delete listing</button></div>
+      </dialog>
+
+      <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
+        <button class="dialog-close" id="profile-close" type="button" aria-label="Close profile">×</button>
+        <p class="eyebrow">RIFTTRADE / MEMBER PROFILE</p>
+        <h2 id="profile-title">Member profile</h2>
+        <dl class="profile-info"><div><dt>Display name</dt><dd id="profile-display-name"></dd></div><div><dt>Email</dt><dd><a id="profile-email"></a></dd></div><div><dt>Member since</dt><dd id="profile-member-since"></dd></div><div id="profile-discord-field" hidden><dt>Discord</dt><dd><a id="profile-discord-link" target="_blank" rel="noopener noreferrer">Message on Discord ↗</a></dd></div></dl>
+        <div class="profile-listings-heading"><h3>Listings</h3><span id="profile-listing-count"></span></div>
+        <p class="profile-listings-status" id="profile-listings-status" aria-live="polite">Loading listings...</p>
+        <div class="market-grid profile-listings" id="profile-listings"></div>
       </dialog>
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
