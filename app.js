@@ -81,6 +81,9 @@ const nameField = document.querySelector('#name-field');
 const signedInPanel = document.querySelector('#signed-in-panel');
 const signedInName = document.querySelector('#signed-in-name');
 const signedInEmail = document.querySelector('#signed-in-email');
+const discordNameForm = document.querySelector('#discord-name-form');
+const discordName = document.querySelector('#discord-name');
+const discordNameSubmit = document.querySelector('#discord-name-submit');
 const profileDialog = document.querySelector('#profile-dialog');
 const profileClose = document.querySelector('#profile-close');
 const profileTitle = document.querySelector('#profile-title');
@@ -177,6 +180,7 @@ let selectedListingCardPrices = {};
 let selectedListingCardLanguages = {};
 let selectedListingCardFoils = {};
 let authMode = 'signin';
+const discordOnboardingStorageKey = 'riftTradeDiscordOnboarding';
 
 function getCardImageUrl(card) {
   if (card.image_url && /^https?:\/\//i.test(card.image_url)) return card.image_url;
@@ -1490,12 +1494,27 @@ async function refreshAuthState() {
   authStateReady = true;
   if (!user) closeProfileMenu();
   signedInPanel.hidden = !user;
+  discordNameForm.hidden = true;
   authForm.hidden = Boolean(user);
   authLinks.hidden = Boolean(user);
   authIntro.hidden = Boolean(user);
   if (user) {
     const { data: profile } = await window.riftTradeSupabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle();
-    signedInName.textContent = profile?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'RiftTrade member';
+    const profileDisplayName = profile?.display_name?.trim() || '';
+    const discordProvider = user.app_metadata?.provider === 'discord' || user.app_metadata?.providers?.includes('discord');
+    const discordOnboardingRequested = localStorage.getItem(discordOnboardingStorageKey) === '1';
+    const needsDiscordDisplayName = discordProvider && discordOnboardingRequested && (!profileDisplayName || profileDisplayName === user.email?.trim());
+    if (needsDiscordDisplayName) {
+      signedInPanel.hidden = true;
+      discordNameForm.hidden = false;
+      discordName.value = user.user_metadata?.full_name || user.user_metadata?.name || '';
+      setAuthMessage('Choose your RiftTrade display name.');
+      if (!accountDialog.open) accountDialog.showModal();
+      requestAnimationFrame(() => discordName.focus());
+    } else {
+      if (discordOnboardingRequested) localStorage.removeItem(discordOnboardingStorageKey);
+      signedInName.textContent = profileDisplayName || user.user_metadata?.display_name || user.user_metadata?.full_name || user.user_metadata?.name || 'RiftTrade member';
+    }
     signedInName.dataset.profileId = user.id;
     signedInEmail.textContent = user.email || 'your account';
   }
@@ -1540,6 +1559,41 @@ document.addEventListener('keydown', (event) => {
 accountClose.addEventListener('click', () => accountDialog.close());
 accountDialog.addEventListener('click', (event) => { if (event.target === accountDialog) accountDialog.close(); });
 document.querySelectorAll('[data-auth-mode]').forEach((link) => link.addEventListener('click', () => setAuthMode(link.dataset.authMode)));
+
+discordNameForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const displayName = discordName.value.trim();
+  if (!displayName) return setAuthMessage('Enter a display name.', true);
+  if (!window.riftTradeSupabase) return setAuthMessage('Add your Supabase URL and anon key first.', true);
+  discordNameSubmit.disabled = true;
+  setAuthMessage('Saving your display name...');
+  const { data: existingProfile, error: profileLookupError } = await findProfileByDisplayName(displayName);
+  if (profileLookupError) {
+    discordNameSubmit.disabled = false;
+    return setAuthMessage(profileLookupError.message, true);
+  }
+  const { data: { user } } = await window.riftTradeSupabase.auth.getUser();
+  if (!user) {
+    discordNameSubmit.disabled = false;
+    discordNameForm.hidden = true;
+    return setAuthMessage('Your Discord session has expired. Sign in again.', true);
+  }
+  if (existingProfile && existingProfile.id !== user.id) {
+    discordNameSubmit.disabled = false;
+    discordName.focus();
+    return setAuthMessage('That display name is already in use. Choose another.', true);
+  }
+  const { error } = await window.riftTradeSupabase.from('profiles').update({ display_name: displayName }).eq('id', user.id);
+  discordNameSubmit.disabled = false;
+  if (error) return setAuthMessage(error.message, true);
+  localStorage.removeItem(discordOnboardingStorageKey);
+  discordNameForm.hidden = true;
+  signedInPanel.hidden = false;
+  signedInName.textContent = displayName;
+  signedInName.dataset.profileId = user.id;
+  signedInEmail.textContent = user.email || 'your account';
+  setAuthMessage('Display name saved. Welcome to RiftTrade.');
+});
 
 authForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -1589,13 +1643,17 @@ authForm.addEventListener('submit', async (event) => {
 discordAuthButton.addEventListener('click', async () => {
   if (!window.riftTradeSupabase) return setAuthMessage('Add your Supabase URL and anon key first.', true);
   discordAuthButton.disabled = true;
+  localStorage.setItem(discordOnboardingStorageKey, '1');
   setAuthMessage('Redirecting to Discord...');
   const { error } = await window.riftTradeSupabase.auth.signInWithOAuth({
     provider: 'discord',
     options: { redirectTo: `${window.location.origin}${window.location.pathname}${window.location.search}` },
   });
   discordAuthButton.disabled = false;
-  if (error) setAuthMessage(error.message, true);
+  if (error) {
+    localStorage.removeItem(discordOnboardingStorageKey);
+    setAuthMessage(error.message, true);
+  }
 });
 
 document.querySelector('#sign-out').addEventListener('click', async () => {
