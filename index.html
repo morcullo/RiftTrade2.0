@@ -55,12 +55,10 @@
         </section>
 
         <section class="view" data-page="trades" hidden>
-          <div class="page-heading"><div><p class="eyebrow">YOUR ACTIVITY / 02</p><h1>My trades</h1></div><span class="status-tag">3 active</span></div>
-          <div class="trade-list">
-            <article class="trade-row"><div class="avatar avatar-red">AM</div><div class="trade-person"><strong>Alex M.</strong><span>Wants 2 cards from you</span></div><div class="trade-cards"><span class="mini-card mini-red">V</span><span class="mini-card mini-yellow">J</span></div><span class="trade-status pending">Review offer</span><button class="row-arrow" aria-label="Open trade with Alex M.">→</button></article>
-            <article class="trade-row"><div class="avatar avatar-blue">TS</div><div class="trade-person"><strong>Taylor S.</strong><span>You sent an offer · yesterday</span></div><div class="trade-cards"><span class="mini-card mini-blue">S</span><span class="mini-card mini-black">R</span></div><span class="trade-status waiting">Waiting</span><button class="row-arrow" aria-label="Open trade with Taylor S.">→</button></article>
-            <article class="trade-row"><div class="avatar avatar-yellow">JR</div><div class="trade-person"><strong>Jamie R.</strong><span>Trade completed · Sep 21</span></div><div class="trade-cards"><span class="mini-card mini-red">V</span><span class="mini-card mini-blue">S</span></div><span class="trade-status complete">Complete</span><button class="row-arrow" aria-label="Open trade with Jamie R.">→</button></article>
-          </div>
+          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 02</p><h1>My trades</h1></div><span class="status-tag" id="my-listings-count">Loading...</span></div>
+          <p class="market-status" id="my-listings-status" aria-live="polite">Loading your listings...</p>
+          <div class="my-listings-grid" id="my-listings-grid"></div>
+          <p class="empty-message" id="my-listings-empty" hidden>You have not listed any cards yet.</p>
         </section>
 
         <section class="view" data-page="inbox" hidden>

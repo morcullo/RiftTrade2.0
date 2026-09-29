@@ -75,10 +75,15 @@ const listingPendingButton = document.querySelector('#listing-pending');
 const listingSoldButton = document.querySelector('#listing-sold');
 const listingDeleteButton = document.querySelector('#listing-delete');
 const listingDialogTitle = document.querySelector('#listing-title');
+const myListingsGrid = document.querySelector('#my-listings-grid');
+const myListingsCount = document.querySelector('#my-listings-count');
+const myListingsStatus = document.querySelector('#my-listings-status');
+const myListingsEmpty = document.querySelector('#my-listings-empty');
 let editingListingId = null;
 
 let cards = [];
 let listings = [];
+let myListings = [];
 let selectedListingCardIds = [];
 let authMode = 'signin';
 
@@ -127,6 +132,25 @@ function renderListings() {
     listing.activeCardIndex = (currentIndex + Number(button.dataset.direction) + cardsInListing.length) % cardsInListing.length;
     renderListings();
   }));
+}
+
+function listingStatusLabel(status) {
+  return { active: 'Active', paused: 'Pending', completed: 'Sold', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
+}
+
+function renderMyListings() {
+  myListingsGrid.innerHTML = myListings.map((listing) => {
+    const listingCards = listing.listing_cards || [];
+    const cardNames = listingCards.map(({ card, quantity }) => `${quantity > 1 ? `${quantity}× ` : ''}${card?.name || 'Riftbound card'}`).join(', ');
+    const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
+    const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
+    const status = listingStatusLabel(listing.status);
+    const statusClass = listing.status === 'completed' ? 'complete' : listing.status === 'active' ? 'pending' : 'waiting';
+    return `<article class="my-listing-row"><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${listingCards.length} card${listingCards.length === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="trade-status ${statusClass}">${escapeHtml(status)}</span><button class="row-arrow my-listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></article>`;
+  }).join('');
+  myListingsCount.textContent = `${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
+  myListingsEmpty.hidden = myListings.length !== 0;
+  myListingsGrid.querySelectorAll('.my-listing-open').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
 }
 
 function renderHeroCards() {
@@ -395,7 +419,37 @@ async function loadListings() {
   renderListings();
 }
 
+async function loadMyListings() {
+  if (!window.riftTradeSupabase) {
+    myListingsStatus.textContent = 'Add your Supabase URL and anon key to load listings.';
+    return;
+  }
+  myListingsStatus.textContent = 'Loading your listings...';
+  const { data: { user } } = await window.riftTradeSupabase.auth.getUser();
+  if (!user) {
+    myListings = [];
+    renderMyListings();
+    myListingsCount.textContent = 'Sign in required';
+    myListingsStatus.textContent = 'Sign in to see the listings you have posted.';
+    myListingsEmpty.hidden = true;
+    return;
+  }
+  const { data, error } = await window.riftTradeSupabase
+    .from('listings')
+    .select('id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))')
+    .eq('seller_id', user.id)
+    .order('created_at', { ascending: false });
+  if (error) {
+    myListingsStatus.textContent = `Could not load your listings: ${error.message}`;
+    return;
+  }
+  myListings = data || [];
+  myListingsStatus.textContent = myListings.length ? 'Manage your listings from their details.' : 'Your listings will appear here once you list a card.';
+  renderMyListings();
+}
+
 searchInput.addEventListener('input', renderListings);
+document.querySelector('[data-view="trades"]').addEventListener('click', loadMyListings);
 loadCatalog();
 loadListings();
 
@@ -438,6 +492,7 @@ async function refreshAuthState() {
   if (user) {
     signedInEmail.textContent = user.email || 'your account';
   }
+  if (views.find((view) => view.dataset.page === 'trades')?.classList.contains('is-visible')) loadMyListings();
 }
 
 profileButton.addEventListener('click', openAccount);
