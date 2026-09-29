@@ -85,6 +85,7 @@ let cards = [];
 let listings = [];
 let myListings = [];
 let selectedListingCardIds = [];
+let selectedListingCardQuantities = {};
 let authMode = 'signin';
 
 function getCardImageUrl(card) {
@@ -299,7 +300,8 @@ function openListingForm(listing = null) {
     listingType.value = listing.listing_type || 'trade';
     listingPrice.value = listing.price ?? '';
     listingDescription.value = listing.description || '';
-    selectedListingCardIds = (listing.listing_cards || []).map(({ card }) => card?.id).filter(Boolean);
+    selectedListingCardQuantities = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity }) => [card.id, Math.max(Number(quantity) || 1, 1)]));
+    selectedListingCardIds = Object.keys(selectedListingCardQuantities);
     listingCardSearch.value = '';
     renderSelectedListingCards();
     listingCondition.value = listing.listing_cards?.[0]?.condition || 'near_mint';
@@ -383,7 +385,7 @@ listingForm.addEventListener('submit', async (event) => {
   if (editingListingId) await window.riftTradeSupabase.from('listing_cards').delete().eq('listing_id', editingListingId);
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
+    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
   if (cardError) {
     if (!editingListingId) await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
@@ -408,6 +410,7 @@ function renderListingCardResults() {
 function populateListingCards() {
   listingCardSearch.value = '';
   selectedListingCardIds = [];
+  selectedListingCardQuantities = {};
   listingCardSelected.innerHTML = '';
   listingCardSearch.setCustomValidity('Choose at least one card from the search results.');
 }
@@ -421,7 +424,10 @@ listingCardResults.addEventListener('click', (event) => {
   if (!option) return;
   const card = cards.find((item) => item.id === option.dataset.listingCardId);
   if (!card) return;
-  if (!selectedListingCardIds.includes(card.id)) selectedListingCardIds.push(card.id);
+  if (!selectedListingCardIds.includes(card.id)) {
+    selectedListingCardIds.push(card.id);
+    selectedListingCardQuantities[card.id] = 1;
+  }
   listingCardSearch.value = '';
   renderSelectedListingCards();
   listingCardSearch.blur();
@@ -434,7 +440,7 @@ function renderSelectedListingCards() {
     if (!card) return '';
     const imageUrl = getCardImageUrl(card);
       const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : '';
-      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
+      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
   }).join('');
   listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
 }
@@ -443,8 +449,15 @@ listingCardSelected.addEventListener('click', (event) => {
   const removeButton = event.target.closest('[data-remove-listing-card]');
   if (!removeButton) return;
   selectedListingCardIds = selectedListingCardIds.filter((cardId) => cardId !== removeButton.dataset.removeListingCard);
+    delete selectedListingCardQuantities[removeButton.dataset.removeListingCard];
   renderSelectedListingCards();
   listingCardResults.hidden = true;
+});
+
+listingCardSelected.addEventListener('input', (event) => {
+  const quantityInput = event.target.closest('[data-listing-card-quantity]');
+  if (!quantityInput) return;
+  selectedListingCardQuantities[quantityInput.dataset.listingCardQuantity] = Math.max(Number(quantityInput.value) || 1, 1);
 });
 
 document.addEventListener('pointerdown', (event) => {
