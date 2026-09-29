@@ -96,7 +96,7 @@
         <h2 id="listing-title">List a card</h2>
         <p class="account-intro">Put a card in front of the RiftTrade community.</p>
         <form id="listing-form">
-          <label class="auth-field">Card<select id="listing-card" required></select></label>
+          <div class="auth-field listing-card-picker"><label for="listing-card-search">Card</label><input id="listing-card-search" type="search" placeholder="Search by card name or code" autocomplete="off" required /><input id="listing-card" type="hidden" required /><div class="listing-card-results" id="listing-card-results" role="listbox" hidden></div><p class="listing-card-selected" id="listing-card-selected" aria-live="polite"></p></div>
           <label class="auth-field">Listing title<input id="listing-name" type="text" placeholder="Near mint copy" required /></label>
           <div class="listing-form-row"><label class="auth-field">Type<select id="listing-type"><option value="trade">Trade</option><option value="sale">For sale</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="auth-field">Price<input id="listing-price" type="number" min="0" step="0.01" placeholder="Optional" /></label></div>
           <div class="listing-form-row"><label class="auth-field">Condition<select id="listing-condition"><option value="near_mint">Near mint</option><option value="lightly_played">Lightly played</option><option value="moderately_played">Moderately played</option><option value="heavily_played">Heavily played</option><option value="damaged">Damaged</option></select></label><label class="auth-field">Language<input id="listing-language" type="text" value="English" required /></label></div>

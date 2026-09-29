@@ -23,7 +23,10 @@ const openListingButton = document.querySelector('#open-listing');
 const listingDialog = document.querySelector('#listing-dialog');
 const listingClose = document.querySelector('#listing-close');
 const listingForm = document.querySelector('#listing-form');
-const listingCardSelect = document.querySelector('#listing-card');
+const listingCardSearch = document.querySelector('#listing-card-search');
+const listingCardInput = document.querySelector('#listing-card');
+const listingCardResults = document.querySelector('#listing-card-results');
+const listingCardSelected = document.querySelector('#listing-card-selected');
 const listingMessage = document.querySelector('#listing-message');
 const listingSubmit = document.querySelector('#listing-submit');
 const listingName = document.querySelector('#listing-name');
@@ -184,22 +187,52 @@ listingForm.addEventListener('submit', async (event) => {
   }
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert({ listing_id: listing.id, card_id: listingCardSelect.value, quantity: 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null });
+    .insert({ listing_id: listing.id, card_id: listingCardInput.value, quantity: 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null });
   if (cardError) {
     await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
     return setListingMessage(cardError.message, true);
   }
   listingForm.reset();
+  populateListingCards();
   listingLanguage.value = 'English';
   listingSubmit.disabled = false;
   listingDialog.close();
   await loadListings();
 });
 
-function populateListingCards() {
-  listingCardSelect.innerHTML = cards.map((card) => `<option value="${escapeHtml(card.id)}">${escapeHtml(card.name)} · ${escapeHtml(card.code || card.id)}</option>`).join('');
+function renderListingCardResults() {
+  const query = listingCardSearch.value.trim().toLowerCase();
+  const matches = cards.filter((card) => [card.name, card.code, card.public_code, card.set_name, card.set_code].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 12);
+  listingCardResults.innerHTML = matches.map((card) => `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span></button>`).join('');
+  listingCardResults.hidden = matches.length === 0;
 }
+
+function populateListingCards() {
+  listingCardSearch.value = '';
+  listingCardInput.value = '';
+  listingCardSelected.textContent = '';
+  listingCardSearch.setCustomValidity('Choose a card from the search results.');
+}
+
+listingCardSearch.addEventListener('input', () => {
+  listingCardInput.value = '';
+  listingCardSelected.textContent = '';
+  listingCardSearch.setCustomValidity('Choose a card from the search results.');
+  renderListingCardResults();
+});
+listingCardSearch.addEventListener('focus', renderListingCardResults);
+listingCardResults.addEventListener('click', (event) => {
+  const option = event.target.closest('[data-listing-card-id]');
+  if (!option) return;
+  const card = cards.find((item) => item.id === option.dataset.listingCardId);
+  if (!card) return;
+  listingCardInput.value = card.id;
+  listingCardSearch.value = card.name;
+  listingCardSelected.textContent = `${card.name} · ${card.code || card.public_code || card.id}`;
+  listingCardSearch.setCustomValidity('');
+  listingCardResults.hidden = true;
+});
 
 async function loadCatalog() {
   if (!window.riftTradeSupabase) {
