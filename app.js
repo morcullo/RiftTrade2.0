@@ -40,7 +40,7 @@ const listingMessage = document.querySelector('#listing-message');
 const listingSubmit = document.querySelector('#listing-submit');
 const listingName = document.querySelector('#listing-name');
 const listingType = document.querySelector('#listing-type');
-const listingLanguage = document.querySelector('#listing-language');
+const listingTypeOptions = document.querySelectorAll('[data-listing-type]');
 const listingDescription = document.querySelector('#listing-description');
 const accountDialog = document.querySelector('#account-dialog');
 const profileButton = document.querySelector('#profile-button');
@@ -101,6 +101,7 @@ let selectedListingCardIds = [];
 let selectedListingCardQuantities = {};
 let selectedListingCardConditions = {};
 let selectedListingCardPrices = {};
+let selectedListingCardLanguages = {};
 let authMode = 'signin';
 
 function getCardImageUrl(card) {
@@ -386,21 +387,27 @@ function openListingForm(listing = null) {
   if (listing) {
     listingName.value = listing.title || '';
     listingType.value = listing.listing_type || 'trade';
+    updateListingTypeOptions();
     listingDescription.value = listing.description || '';
     selectedListingCardQuantities = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity }) => [card.id, Math.max(Number(quantity) || 1, 1)]));
     selectedListingCardConditions = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, condition }) => [card.id, condition || 'near_mint']));
     selectedListingCardPrices = Object.fromEntries((listing.listing_cards || []).filter(({ card, price }) => card?.id && price !== null && price !== undefined).map(({ card, price }) => [card.id, price]));
+    selectedListingCardLanguages = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, language }) => [card.id, language || 'English']));
     selectedListingCardIds = Object.keys(selectedListingCardQuantities);
     listingCardSearch.value = '';
     renderSelectedListingCards();
-    listingLanguage.value = listing.listing_cards?.[0]?.language || 'English';
   } else {
     listingForm.reset();
+    listingType.value = 'trade';
+    updateListingTypeOptions();
     populateListingCards();
-    listingLanguage.value = 'English';
   }
   listingMessage.textContent = '';
   listingDialog.showModal();
+}
+
+function updateListingTypeOptions() {
+  listingTypeOptions.forEach((option) => option.classList.toggle('is-active', option.dataset.listingType === listingType.value));
 }
 
 async function updateListingStatus(status) {
@@ -446,6 +453,10 @@ openListingButton.addEventListener('click', async () => {
 });
 listingClose.addEventListener('click', () => listingDialog.close());
 listingDialog.addEventListener('click', (event) => { if (event.target === listingDialog) listingDialog.close(); });
+listingTypeOptions.forEach((option) => option.addEventListener('click', () => {
+  listingType.value = option.dataset.listingType;
+  updateListingTypeOptions();
+}));
 
 listingForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -475,7 +486,7 @@ listingForm.addEventListener('submit', async (event) => {
   if (editingListingId) await window.riftTradeSupabase.from('listing_cards').delete().eq('listing_id', editingListingId);
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: selectedListingCardConditions[cardId] || 'near_mint', price: selectedListingCardPrices[cardId] === '' ? null : Number(selectedListingCardPrices[cardId]) || null, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
+    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: selectedListingCardConditions[cardId] || 'near_mint', price: selectedListingCardPrices[cardId] === '' ? null : Number(selectedListingCardPrices[cardId]) || null, language: (selectedListingCardLanguages[cardId] || 'English').trim(), notes: listingDescription.value.trim() || null })));
   if (cardError) {
     if (!editingListingId) await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
@@ -483,7 +494,8 @@ listingForm.addEventListener('submit', async (event) => {
   }
   listingForm.reset();
   populateListingCards();
-  listingLanguage.value = 'English';
+  listingType.value = 'trade';
+  updateListingTypeOptions();
   listingSubmit.disabled = false;
   listingDialog.close();
   editingListingId = null;
@@ -570,6 +582,7 @@ function populateListingCards() {
   selectedListingCardQuantities = {};
   selectedListingCardConditions = {};
   selectedListingCardPrices = {};
+  selectedListingCardLanguages = {};
   listingCardSelected.innerHTML = '';
   listingCardSearch.setCustomValidity('Choose at least one card from the search results.');
 }
@@ -588,6 +601,7 @@ listingCardResults.addEventListener('click', (event) => {
     selectedListingCardQuantities[card.id] = 1;
     selectedListingCardConditions[card.id] = 'near_mint';
     selectedListingCardPrices[card.id] = '';
+    selectedListingCardLanguages[card.id] = 'English';
   }
   listingCardSearch.value = '';
   renderSelectedListingCards();
@@ -603,7 +617,8 @@ function renderSelectedListingCards() {
       const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : '';
       const condition = selectedListingCardConditions[card.id] || 'near_mint';
       const price = selectedListingCardPrices[card.id] ?? '';
-      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(card.id)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(card.id)}" aria-label="Price for ${escapeHtml(card.name)}" /></label><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
+      const language = selectedListingCardLanguages[card.id] || 'English';
+      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(card.id)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-language">Language<input type="text" value="${escapeHtml(language)}" data-listing-card-language="${escapeHtml(card.id)}" aria-label="Language for ${escapeHtml(card.name)}" /></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(card.id)}" aria-label="Price for ${escapeHtml(card.name)}" /></label><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
   }).join('');
   listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
 }
@@ -615,6 +630,7 @@ listingCardSelected.addEventListener('click', (event) => {
     delete selectedListingCardQuantities[removeButton.dataset.removeListingCard];
     delete selectedListingCardConditions[removeButton.dataset.removeListingCard];
     delete selectedListingCardPrices[removeButton.dataset.removeListingCard];
+    delete selectedListingCardLanguages[removeButton.dataset.removeListingCard];
   renderSelectedListingCards();
   listingCardResults.hidden = true;
 });
@@ -630,6 +646,8 @@ listingCardSelected.addEventListener('change', (event) => {
   if (conditionSelect) selectedListingCardConditions[conditionSelect.dataset.listingCardCondition] = conditionSelect.value;
   const priceInput = event.target.closest('[data-listing-card-price]');
   if (priceInput) selectedListingCardPrices[priceInput.dataset.listingCardPrice] = priceInput.value;
+  const languageInput = event.target.closest('[data-listing-card-language]');
+  if (languageInput) selectedListingCardLanguages[languageInput.dataset.listingCardLanguage] = languageInput.value;
 });
 
 document.addEventListener('pointerdown', (event) => {
