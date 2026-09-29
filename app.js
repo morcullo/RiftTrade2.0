@@ -19,14 +19,35 @@ const searchInput = document.querySelector('#card-search');
 const marketGrid = document.querySelector('#market-grid');
 const marketStatus = document.querySelector('#market-status');
 const emptyMessage = document.querySelector('#market-empty');
+const accountDialog = document.querySelector('#account-dialog');
+const profileButton = document.querySelector('#profile-button');
+const accountClose = document.querySelector('#account-close');
+const authForm = document.querySelector('#auth-form');
+const authLinks = document.querySelector('#auth-links');
+const authMessage = document.querySelector('#auth-message');
+const authTitle = document.querySelector('#account-title');
+const authIntro = document.querySelector('#account-intro');
+const authSubmit = document.querySelector('#auth-submit');
+const passwordField = document.querySelector('#password-field');
+const newPasswordField = document.querySelector('#new-password-field');
+const nameField = document.querySelector('#name-field');
+const signedInPanel = document.querySelector('#signed-in-panel');
+const signedInEmail = document.querySelector('#signed-in-email');
+const authEmail = document.querySelector('#auth-email');
+const authPassword = document.querySelector('#auth-password');
+const authNewPassword = document.querySelector('#auth-new-password');
+const authName = document.querySelector('#auth-name');
 
 let cards = [];
+let authMode = 'signin';
 
 function getCardImageUrl(card) {
-  if (card.image_url) return card.image_url;
-  const imageName = card.image_path || card.image_file;
-  if (!imageName || !window.RIFTTRADE_SUPABASE_URL) return '';
-  return `${window.RIFTTRADE_SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/card-images/${encodeURIComponent(imageName)}`;
+  if (card.image_url && /^https?:\/\//i.test(card.image_url)) return card.image_url;
+  const imageName = String(card.image_path || card.image_file || '')
+    .replace(/^card-images\//, '')
+    .replace(/^\//, '');
+  if (!imageName || !window.riftTradeSupabase) return '';
+  return window.riftTradeSupabase.storage.from('card-images').getPublicUrl(imageName).data.publicUrl;
 }
 
 function renderCards() {
@@ -39,7 +60,8 @@ function renderCards() {
     const imageUrl = getCardImageUrl(card);
     const setLabel = [card.set_name || card.set_code, card.collector_number].filter(Boolean).join(' · ');
     return `<article class="listing" data-search="${escapeHtml(card.name)}">
-      <div class="card-art${imageUrl ? ' has-image' : ''}"${imageUrl ? ` style="background-image: url('${escapeHtml(imageUrl)}')"` : ''}>
+      <div class="card-art${imageUrl ? ' has-image' : ''}">
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : ''}
         <span>${escapeHtml(card.name)}</span><strong>${escapeHtml(card.rarity || card.type || 'CARD')}</strong><small>${escapeHtml(setLabel || 'RIFTBOUND')}</small>
       </div>
       <div class="listing-copy"><div><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.set_name || card.set_code || 'Riftbound catalog')}</span></div><b>Catalog</b></div>
@@ -74,6 +96,92 @@ async function loadCards() {
 
 searchInput.addEventListener('input', renderCards);
 loadCards();
+
+function setAuthMessage(message, isError = false) {
+  authMessage.textContent = message;
+  authMessage.classList.toggle('is-error', isError);
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isSignup = mode === 'signup';
+  const isForgot = mode === 'forgot';
+  const isRecovery = mode === 'recovery';
+  authTitle.textContent = isSignup ? 'Create your account' : isForgot ? 'Reset your password' : isRecovery ? 'Choose a new password' : 'Welcome back';
+  authIntro.textContent = isSignup ? 'Join the trading network and keep your collection moving.' : isForgot ? 'We will email you a secure password-reset link.' : isRecovery ? 'Choose a new password for your RiftTrade account.' : 'Sign in to manage your trades and listings.';
+  nameField.hidden = !isSignup;
+  passwordField.hidden = isForgot || isRecovery;
+  newPasswordField.hidden = !isRecovery;
+  authEmail.parentElement.hidden = isRecovery;
+  authPassword.required = isSignup || mode === 'signin';
+  authNewPassword.required = isRecovery;
+  authSubmit.innerHTML = `${isSignup ? 'Create account' : isForgot ? 'Send reset link' : isRecovery ? 'Update password' : 'Sign in'} <span>→</span>`;
+  authLinks.hidden = isRecovery;
+  setAuthMessage('');
+}
+
+function openAccount() {
+  if (accountDialog.open) return;
+  accountDialog.showModal();
+  authEmail.focus();
+}
+
+async function refreshAuthState() {
+  if (!window.riftTradeSupabase) return;
+  const { data: { session } } = await window.riftTradeSupabase.auth.getSession();
+  const user = session?.user;
+  signedInPanel.hidden = !user;
+  authForm.hidden = Boolean(user);
+  authLinks.hidden = Boolean(user);
+  if (user) {
+    signedInEmail.textContent = user.email || 'your account';
+    profileButton.querySelector('span').textContent = (user.user_metadata?.display_name || user.email || 'RT').slice(0, 2).toUpperCase();
+  }
+}
+
+profileButton.addEventListener('click', openAccount);
+accountClose.addEventListener('click', () => accountDialog.close());
+accountDialog.addEventListener('click', (event) => { if (event.target === accountDialog) accountDialog.close(); });
+document.querySelectorAll('[data-auth-mode]').forEach((link) => link.addEventListener('click', () => setAuthMode(link.dataset.authMode)));
+
+authForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!window.riftTradeSupabase) return setAuthMessage('Add your Supabase URL and anon key first.', true);
+  authSubmit.disabled = true;
+  setAuthMessage('Working...');
+  let result;
+  if (authMode === 'signup') {
+    result = await window.riftTradeSupabase.auth.signUp({ email: authEmail.value, password: authPassword.value, options: { data: { display_name: authName.value.trim() } } });
+  } else if (authMode === 'forgot') {
+    result = await window.riftTradeSupabase.auth.resetPasswordForEmail(authEmail.value, { redirectTo: `${window.location.origin}${window.location.pathname}#reset-password` });
+  } else if (authMode === 'recovery') {
+    result = await window.riftTradeSupabase.auth.updateUser({ password: authNewPassword.value });
+  } else {
+    result = await window.riftTradeSupabase.auth.signInWithPassword({ email: authEmail.value, password: authPassword.value });
+  }
+  authSubmit.disabled = false;
+  if (result.error) return setAuthMessage(result.error.message, true);
+  if (authMode === 'signup') return setAuthMessage('Account created. Check your email if confirmation is enabled.');
+  if (authMode === 'forgot') return setAuthMessage('Reset link sent. Check your email.');
+  if (authMode === 'recovery') { setAuthMode('signin'); return setAuthMessage('Password updated. You can sign in now.'); }
+  await refreshAuthState();
+  setAuthMessage('Signed in successfully.');
+});
+
+document.querySelector('#sign-out').addEventListener('click', async () => {
+  await window.riftTradeSupabase?.auth.signOut();
+  await refreshAuthState();
+  setAuthMessage('You are signed out.');
+});
+
+if (window.riftTradeSupabase) {
+  window.riftTradeSupabase.auth.onAuthStateChange(() => refreshAuthState());
+  refreshAuthState();
+  if (window.location.hash === '#reset-password') {
+    setAuthMode('recovery');
+    openAccount();
+  }
+}
 
 const initialView = window.location.hash.slice(1);
 showView(views.some((view) => view.dataset.page === initialView) ? initialView : 'home');
