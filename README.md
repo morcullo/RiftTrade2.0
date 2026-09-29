@@ -13,7 +13,7 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 
 1. Create a Supabase project and enable Email or OAuth providers under Authentication.
 2. Run [`supabase-schema.sql`](supabase-schema.sql) in the Supabase SQL Editor.
-   If the project already exists, also run [`supabase-migration-card-prices.sql`](supabase-migration-card-prices.sql) to enable per-card prices and [`supabase-migration-card-foil.sql`](supabase-migration-card-foil.sql) to enable foil finishes.
+   If the project already exists, also run [`supabase-migration-card-prices.sql`](supabase-migration-card-prices.sql) to enable per-card prices, [`supabase-migration-card-foil.sql`](supabase-migration-card-foil.sql) to enable foil finishes, and [`supabase-migration-buy-listings.sql`](supabase-migration-buy-listings.sql) to enable buying listings.
    Run [`supabase-migration-home-stats.sql`](supabase-migration-home-stats.sql) to enable the aggregate metrics on the home page.
 3. Set the browser URL and anon key in [`supabase-config.js`](supabase-config.js). The anon key is safe in the browser when the RLS policies are enabled.
 4. Import the catalog and images with a server-side service-role key:
@@ -30,7 +30,7 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 
 - Supabase Auth owns users; `profiles` stores public profile fields.
 - `cards` contains the Riftbound catalog from `riftbound_catalog_data/cards.csv`.
-- `listings` belongs to one seller and supports trade, sale, or both.
+- `listings` belongs to one seller and supports trade, sale, buying, or combinations of trade and sale.
 - `listing_cards` links each listing to one or more cards and stores quantity, condition, language, foil finish for Common and Uncommon cards, and notes.
 
-The Marketplace displays active Supabase listings and their linked `listing_cards` rows. Signed-in users can create listings from the **List a card** control. The **My trades** view shows every listing owned by the signed-in user, including its cards, type, price, and status. Owners can edit or delete their listings, or mark them as pending or sold from the listing details dialog; pending listings use the `paused` status and sold listings use `completed`, so neither remains in the public Marketplace. The listing owner and card relationship are protected by the SQL policies.
+The Marketplace displays active Supabase listings and their linked `listing_cards` rows. Signed-in users can create selling, trading, or buying listings from the **List a card** control; buying listings use the card prices as the offer price. The **My trades** view shows every listing owned by the signed-in user, including its cards, type, price, and status. Owners can edit or delete their listings, or mark them as pending or sold from the listing details dialog; pending listings use the `paused` status and sold listings use `completed`, so neither remains in the public Marketplace. The listing owner and card relationship are protected by the SQL policies.

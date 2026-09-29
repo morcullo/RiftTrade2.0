@@ -55,7 +55,7 @@ create table if not exists public.listings (
   seller_id uuid not null references public.profiles(id) on delete cascade,
   title text not null,
   description text,
-  listing_type text not null default 'trade' check (listing_type in ('trade', 'sale', 'trade_or_sale')),
+  listing_type text not null default 'trade' check (listing_type in ('trade', 'sale', 'trade_or_sale', 'buy')),
   price numeric(10, 2) check (price is null or price >= 0),
   currency text not null default 'USD',
   status text not null default 'active' check (status in ('draft', 'active', 'paused', 'completed', 'cancelled')),

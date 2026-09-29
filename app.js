@@ -265,6 +265,10 @@ function listingStatusLabel(status) {
   return { active: 'Active', paused: 'Pending', completed: 'Sold', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
 }
 
+function listingTypeLabel(listingType) {
+  return { sale: 'For sale', trade_or_sale: 'Trade or sale', buy: 'Buying' }[listingType] || 'For trade';
+}
+
 function listingCardCount(listingCards) {
   return listingCards.reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0);
 }
@@ -292,7 +296,7 @@ function renderMyListings() {
   myListingsGrid.innerHTML = myListings.map((listing) => {
     const listingCards = listing.listing_cards || [];
     const cardNames = listingCards.map(({ card, quantity }) => `${quantity > 1 ? `${quantity}× ` : ''}${card?.name || 'Riftbound card'}`).join(', ');
-    const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
+    const listingType = listingTypeLabel(listing.listing_type);
     const price = listingPriceLabel(listing);
     const cardCount = listingCardCount(listingCards);
     const status = listingStatusLabel(listing.status);
@@ -354,7 +358,7 @@ function openListingDetails(listingId) {
   listingDetailsDialog.dataset.listingId = listing.id;
   const listingCards = listing.listing_cards || [];
   const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
-  const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
+  const listingType = listingTypeLabel(listing.listing_type);
   const price = listingPriceLabel(listing);
   const cardCount = listingCardCount(listingCards);
   listingDetailsTitle.textContent = listing.title;
