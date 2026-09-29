@@ -127,7 +127,8 @@ drop policy if exists "Anyone can read cards" on public.cards;
 create policy "Anyone can read cards" on public.cards for select to anon, authenticated using (true);
 
 drop policy if exists "Active listings are public" on public.listings;
-create policy "Active listings are public" on public.listings for select to anon, authenticated using (status = 'active' or seller_id = auth.uid());
+drop policy if exists "Active and pending listings are public" on public.listings;
+create policy "All listings are public" on public.listings for select to anon, authenticated using (true);
 drop policy if exists "Users can create listings" on public.listings;
 create policy "Users can create listings" on public.listings for insert to authenticated with check (seller_id = auth.uid());
 drop policy if exists "Owners can update listings" on public.listings;
@@ -137,7 +138,7 @@ create policy "Owners can delete listings" on public.listings for delete to auth
 
 drop policy if exists "Listing cards follow visible listings" on public.listing_cards;
 create policy "Listing cards follow visible listings" on public.listing_cards for select to anon, authenticated using (
-  exists (select 1 from public.listings where listings.id = listing_cards.listing_id and (listings.status = 'active' or listings.seller_id = auth.uid()))
+  exists (select 1 from public.listings where listings.id = listing_cards.listing_id)
 );
 drop policy if exists "Owners can manage listing cards" on public.listing_cards;
 create policy "Owners can manage listing cards" on public.listing_cards for all to authenticated using (

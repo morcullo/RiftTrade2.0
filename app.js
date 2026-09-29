@@ -302,7 +302,7 @@ function renderMarketplaceListingCard(listing, query = '', includeStatus = false
   const statusClass = listing.status === 'active' ? 'status-active' : listing.status === 'completed' ? 'status-sold' : 'status-pending';
   const showStatusOverlay = includeStatus && ['paused', 'completed'].includes(listing.status);
   const statusOverlay = showStatusOverlay ? `<div class="profile-listing-status-overlay"><span class="my-listing-status ${statusClass}">${escapeHtml(listingStatusLabel(listing.status))}</span></div>` : '';
-  return `<article class="listing${showStatusOverlay ? ' profile-listing-inactive' : ''}" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
+  return `<article class="listing${showStatusOverlay ? ' listing-status-inactive profile-listing-inactive' : ''}" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
     <div class="card-art${isGrid || isCarousel ? ` multi-card-art${listingCards.length === 2 ? ' two-card-art' : ''}` : imageUrl ? ' has-image' : ''}${isCarousel ? ' is-carousel' : ''}${!isGrid && !isCarousel && matchingCardIndex === 0 ? ' is-search-match' : ''}">
       ${cardArt}
       ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
@@ -394,7 +394,7 @@ function renderListings() {
       || (listing.listing_type === 'trade_or_sale' && ['sale', 'trade'].includes(selectedListingType));
     return searchable.includes(query) && matchesType && matchesPrice;
   });
-  marketGrid.innerHTML = matches.map((listing) => renderMarketplaceListingCard(listing, query)).join('');
+  marketGrid.innerHTML = matches.map((listing) => renderMarketplaceListingCard(listing, query, true)).join('');
   emptyMessage.hidden = matches.length !== 0;
   bindMarketplaceListingCards(marketGrid, matches, query);
 }
@@ -454,7 +454,7 @@ function populateCatalogFilters() {
 }
 
 function listingStatusLabel(status) {
-  return { active: 'Active', paused: 'Pending', completed: 'Sold', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
+  return { active: 'Available', paused: 'Pending', completed: 'Sold', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
 }
 
 function listingTypeLabel(listingType) {
@@ -516,7 +516,7 @@ function renderMyListings() {
   myListingsGrid.querySelectorAll('.my-listing-view').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
   myListingsGrid.querySelectorAll('.my-listing-edit').forEach((button) => button.addEventListener('click', () => {
     const listing = myListings.find((item) => item.id === button.dataset.listingId);
-    if (listing) openListingForm(listing);
+    if (listing) loadCatalog().then(() => openListingForm(listing));
   }));
   myListingsGrid.querySelectorAll('.my-listing-delete').forEach((button) => button.addEventListener('click', async () => {
     const listing = myListings.find((item) => item.id === button.dataset.listingId);
@@ -883,10 +883,11 @@ async function updateListingStatus(status) {
   await Promise.all([loadListings(), loadMyListings()]);
 }
 
-listingEditButton.addEventListener('click', () => {
+listingEditButton.addEventListener('click', async () => {
   const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId);
   if (!listing) return;
   listingDetailsDialog.close();
+  await loadCatalog();
   openListingForm(listing);
 });
 listingPendingButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'paused' ? 'active' : 'paused'));
@@ -1204,15 +1205,15 @@ async function loadListings() {
   let { data, error } = await window.riftTradeSupabase
     .from('listings')
     .select(listingSelect())
-    .eq('status', 'active')
+    .in('status', ['active', 'paused'])
     .order('created_at', { ascending: false });
-  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil'))).eq('status', 'active').order('created_at', { ascending: false }));
+  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil'))).in('status', ['active', 'paused']).order('created_at', { ascending: false }));
   if (error) {
     marketStatus.textContent = `Could not load listings: ${error.message}`;
     return;
   }
   listings = data || [];
-  marketStatus.textContent = listings.length ? `${listings.length} active listings` : 'No active listings yet. Be the first to list a card.';
+  marketStatus.textContent = listings.length ? `${listings.length} marketplace listing${listings.length === 1 ? '' : 's'}` : 'No available listings yet. Be the first to list a card.';
   renderListings();
 }
 

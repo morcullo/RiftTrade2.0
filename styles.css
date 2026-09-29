@@ -160,7 +160,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .card-badges { position: absolute; right: 8px; bottom: 8px; left: 8px; z-index: 2; display: flex; flex-wrap: wrap; gap: 5px; }.card-badge { width: fit-content; padding: 4px 6px; color: var(--ink) !important; border: 1px solid var(--ink); background: var(--yellow); font: 500 .56rem "DM Mono", monospace !important; text-transform: uppercase; }.card-badge + .card-badge { background: var(--blue); color: white !important; border-color: white; }
 .empty-message { color: var(--muted); text-align: center; }
 .my-listings-grid { margin-top: 30px; }
-.my-listing-row { display: grid; grid-template-columns: auto 112px minmax(0, 1fr) 204px; gap: 16px; align-items: center; min-height: 108px; border-bottom: 1px solid var(--line); }
+.my-listing-row { display: grid; grid-template-columns: 92px 112px minmax(0, 1fr) 204px; gap: 16px; align-items: center; min-height: 108px; border-bottom: 1px solid var(--line); }
 .my-listing-preview { display: flex; align-items: center; min-width: 0; padding-left: 4px; }
 .my-listing-preview-card { position: relative; flex: 0 0 42px; width: 42px; height: 58px; overflow: hidden; margin-left: -6px; border: 1px solid var(--ink); background: var(--paper); }
 .my-listing-preview-card:first-child { margin-left: 0; }
@@ -171,7 +171,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .my-listing-main strong { font-size: .9rem; }
 .my-listing-main span { overflow: hidden; color: var(--muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
 .my-listing-main small { color: var(--muted); font: .62rem "DM Mono", monospace; }
-.my-listing-status { justify-self: start; padding: 6px 8px; border-radius: 999px; font: 500 .58rem "DM Mono", monospace; text-transform: uppercase; white-space: nowrap; }
+.my-listing-status { width: 92px; box-sizing: border-box; justify-self: start; padding: 6px 8px; border-radius: 999px; font: 500 .58rem "DM Mono", monospace; text-align: center; text-transform: uppercase; white-space: nowrap; }
 .my-listing-status.status-active { color: #286641; background: #e4f1e8; }
 .my-listing-status.status-pending { color: #5f6265; background: #eceeed; }
 .my-listing-status.status-sold { color: #a02f27; background: #f8e5e2; }
@@ -363,6 +363,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .profile-listings .listing-summary strong { min-width: 0; overflow: visible; overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
 .profile-listings .listing-summary b { justify-self: end; }
 .profile-listings .listing-poster { min-width: 0; flex-wrap: wrap; }
+.listing-status-inactive .card-art img { filter: grayscale(1); opacity: .55; }
 .profile-listing-inactive .card-art img { filter: grayscale(1); }
 .profile-listing-status-overlay { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(17,17,17,.38); pointer-events: none; }
 .profile-listing-status-overlay .my-listing-status { align-self: center; justify-self: center; padding: 8px 12px; font-size: .68rem; }
@@ -371,9 +372,10 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 @media (max-width: 700px) { .profile-dialog { padding: 24px 18px; }.profile-info { grid-template-columns: 1fr; gap: 12px; }.profile-listings { grid-template-columns: 1fr; gap: 12px; } }
 @media (max-width: 700px) {
 	.my-listings-heading-tools { width: 100%; justify-content: space-between; }
-	.my-listing-row { grid-template-columns: 54px 66px minmax(0, 1fr); grid-template-areas: "status preview main" ". . actions"; gap: 7px; min-height: 0; padding: 14px 0; }
+	.my-listing-row { grid-template-columns: 58px 66px minmax(0, 1fr); grid-template-areas: "status preview main" ". . actions"; gap: 7px; min-height: 0; padding: 14px 0; }
 	.my-listing-preview { grid-area: preview; }
 	.my-listing-main { grid-area: main; }
 	.my-listing-status { grid-area: status; }
+	.my-listings-grid .my-listing-status { width: 58px; padding-right: 4px; padding-left: 4px; }
 	.my-listing-actions { grid-area: actions; }
 }
