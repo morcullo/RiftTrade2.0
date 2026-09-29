@@ -1,0 +1,69 @@
+{
+  "databaseId": "rifttrade",
+  "databaseName": "RiftTrade",
+  "storageBucketId": "card-images",
+  "collections": {
+    "profiles": {
+      "name": "Profiles",
+      "documentSecurity": true,
+      "attributes": {
+        "username": { "type": "string", "size": 32, "required": false },
+        "display_name": { "type": "string", "size": 120, "required": false },
+        "avatar_url": { "type": "url", "required": false }
+      }
+    },
+    "cards": {
+      "name": "Cards",
+      "documentSecurity": false,
+      "attributes": {
+        "name": { "type": "string", "size": 255, "required": true },
+        "code": { "type": "string", "size": 32, "required": false },
+        "public_code": { "type": "string", "size": 64, "required": false },
+        "set_code": { "type": "string", "size": 32, "required": false },
+        "set_name": { "type": "string", "size": 120, "required": false },
+        "collector_number": { "type": "integer", "required": false },
+        "rarity": { "type": "string", "size": 32, "required": false },
+        "type": { "type": "string", "size": 32, "required": false },
+        "cost": { "type": "integer", "required": false },
+        "might": { "type": "integer", "required": false },
+        "power": { "type": "integer", "required": false },
+        "domains": { "type": "string", "size": 64, "required": false, "array": true },
+        "tags": { "type": "string", "size": 120, "required": false, "array": true },
+        "ability_text": { "type": "string", "size": 10000, "required": false },
+        "artists": { "type": "string", "size": 255, "required": false, "array": true },
+        "orientation": { "type": "string", "size": 16, "required": false },
+        "image_file": { "type": "string", "size": 255, "required": false },
+        "image_url": { "type": "url", "required": false },
+        "is_alternate_art": { "type": "boolean", "required": false, "default": false },
+        "is_signed": { "type": "boolean", "required": false, "default": false },
+        "is_overnumbered": { "type": "boolean", "required": false, "default": false },
+        "is_variant": { "type": "boolean", "required": false, "default": false }
+      }
+    },
+    "listings": {
+      "name": "Listings",
+      "documentSecurity": true,
+      "attributes": {
+        "seller_id": { "type": "string", "size": 36, "required": true },
+        "title": { "type": "string", "size": 255, "required": true },
+        "description": { "type": "string", "size": 5000, "required": false },
+        "listing_type": { "type": "enum", "elements": ["trade", "sale", "trade_or_sale"], "required": true, "default": "trade" },
+        "price": { "type": "double", "required": false },
+        "currency": { "type": "string", "size": 3, "required": true, "default": "USD" },
+        "status": { "type": "enum", "elements": ["draft", "active", "paused", "completed", "cancelled"], "required": true, "default": "active" }
+      }
+    },
+    "listing_cards": {
+      "name": "Listing cards",
+      "documentSecurity": true,
+      "attributes": {
+        "listing_id": { "type": "string", "size": 36, "required": true },
+        "card_id": { "type": "string", "size": 64, "required": true },
+        "quantity": { "type": "integer", "required": true, "default": 1 },
+        "condition": { "type": "enum", "elements": ["near_mint", "lightly_played", "moderately_played", "heavily_played", "damaged"], "required": true, "default": "near_mint" },
+        "language": { "type": "string", "size": 32, "required": true, "default": "English" },
+        "notes": { "type": "string", "size": 1000, "required": false }
+      }
+    }
+  }
+}

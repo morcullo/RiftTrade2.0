@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f7f5" />
+    <title>RiftTrade | Riftbound cards, traded simply</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <a class="wordmark" href="#home" aria-label="RiftTrade home"><span>R</span>IFTTRADE</a>
+        <nav class="desktop-nav" aria-label="Primary navigation">
+          <button class="nav-link is-active" data-view="home">Home</button>
+          <button class="nav-link" data-view="marketplace">Marketplace</button>
+          <button class="nav-link" data-view="trades">My trades</button>
+          <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b>2</b></button>
+        </nav>
+        <button class="profile-button" type="button" aria-label="Open profile menu"><span>MK</span></button>
+      </header>
+
+      <main>
+        <section class="view is-visible" data-page="home">
+          <div class="home-intro">
+            <div>
+              <p class="eyebrow">RIFTBOUND / TRADING NETWORK</p>
+              <h1>Trade what<br /><em>you play.</em></h1>
+              <p class="lede">A focused marketplace for finding the cards you want and moving the ones you do not.</p>
+              <button class="button button-dark" data-go="marketplace">Explore marketplace <span>↗</span></button>
+            </div>
+            <div class="hero-card-stack" aria-label="Featured Riftbound cards">
+              <div class="hero-card hero-card-back"><span>R</span></div>
+              <div class="hero-card hero-card-front"><span class="card-index">01 / 03</span><strong>SPARK<br />OF<br />REBELLION</strong><small>Riftbound · Spiritforged</small></div>
+            </div>
+          </div>
+
+          <div class="section-heading"><h2>Good things, moving</h2><span>01 / 03</span></div>
+          <div class="stat-grid">
+            <article class="stat-card stat-card-dark"><span>Cards listed</span><strong>12,480</strong><small>Across every set</small></article>
+            <article class="stat-card"><span>Active traders</span><strong>3,921</strong><small>Finding their next deck</small></article>
+            <article class="stat-card"><span>Trades completed</span><strong>8,204</strong><small>Since launch</small></article>
+          </div>
+        </section>
+
+        <section class="view" data-page="marketplace" hidden>
+          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 01</p><h1>Marketplace</h1></div><button class="button button-outline" type="button">List a card <span>＋</span></button></div>
+          <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" type="button">Filter <span>☷</span></button></div>
+          <div class="market-grid" id="market-grid">
+            <article class="listing" data-search="viego king of the rift spiritforged"><div class="card-art art-red"><span>VIEGO</span><strong>KING<br />OF THE<br />RIFT</strong><small>SPIRITFORGED · 034/221</small></div><div class="listing-copy"><div><strong>Viego, King of the Rift</strong><span>Near mint · English</span></div><b>$18.00</b></div><button class="trade-button" type="button">Make an offer <span>→</span></button></article>
+            <article class="listing" data-search="jinx loose cannon origins"><div class="card-art art-yellow"><span>JINX</span><strong>LOOSE<br />CANNON</strong><small>ORIGINS · 118/221</small></div><div class="listing-copy"><div><strong>Jinx, Loose Cannon</strong><span>Lightly played · English</span></div><b>$9.50</b></div><button class="trade-button" type="button">Make an offer <span>→</span></button></article>
+            <article class="listing" data-search="sett enlightened spiritforged"><div class="card-art art-blue"><span>SETT</span><strong>THE<br />BOSS</strong><small>SPIRITFORGED · 061/221</small></div><div class="listing-copy"><div><strong>Sett, The Boss</strong><span>Near mint · English</span></div><b>$24.00</b></div><button class="trade-button" type="button">Make an offer <span>→</span></button></article>
+          </div>
+          <p class="empty-message" id="market-empty" hidden>No cards match that search.</p>
+        </section>
+
+        <section class="view" data-page="trades" hidden>
+          <div class="page-heading"><div><p class="eyebrow">YOUR ACTIVITY / 02</p><h1>My trades</h1></div><span class="status-tag">3 active</span></div>
+          <div class="trade-list">
+            <article class="trade-row"><div class="avatar avatar-red">AM</div><div class="trade-person"><strong>Alex M.</strong><span>Wants 2 cards from you</span></div><div class="trade-cards"><span class="mini-card mini-red">V</span><span class="mini-card mini-yellow">J</span></div><span class="trade-status pending">Review offer</span><button class="row-arrow" aria-label="Open trade with Alex M.">→</button></article>
+            <article class="trade-row"><div class="avatar avatar-blue">TS</div><div class="trade-person"><strong>Taylor S.</strong><span>You sent an offer · yesterday</span></div><div class="trade-cards"><span class="mini-card mini-blue">S</span><span class="mini-card mini-black">R</span></div><span class="trade-status waiting">Waiting</span><button class="row-arrow" aria-label="Open trade with Taylor S.">→</button></article>
+            <article class="trade-row"><div class="avatar avatar-yellow">JR</div><div class="trade-person"><strong>Jamie R.</strong><span>Trade completed · Sep 21</span></div><div class="trade-cards"><span class="mini-card mini-red">V</span><span class="mini-card mini-blue">S</span></div><span class="trade-status complete">Complete</span><button class="row-arrow" aria-label="Open trade with Jamie R.">→</button></article>
+          </div>
+        </section>
+
+        <section class="view" data-page="inbox" hidden>
+          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 03</p><h1>Inbox</h1></div><span class="status-tag dark-tag">2 unread</span></div>
+          <div class="message-list">
+            <button class="message-row unread" type="button"><div class="avatar avatar-red">AM</div><div><strong>Alex M.</strong><p>“Would you take a Viego for your Jinx?”</p><small>12 min ago</small></div><span>●</span></button>
+            <button class="message-row unread" type="button"><div class="avatar avatar-blue">TS</div><div><strong>Taylor S.</strong><p>“Offer updated with shipping included.”</p><small>Yesterday</small></div><span>●</span></button>
+            <button class="message-row" type="button"><div class="avatar avatar-yellow">JR</div><div><strong>Jamie R.</strong><p>Trade marked complete. Thanks!</p><small>Sep 21</small></div><span>›</span></button>
+          </div>
+        </section>
+      </main>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <button class="nav-link is-active" data-view="home"><span>⌂</span>Home</button><button class="nav-link" data-view="marketplace"><span>＋</span>Market</button><button class="nav-link" data-view="trades"><span>⇄</span>Trades</button><button class="nav-link nav-link-inbox" data-view="inbox"><span>□</span>Inbox <b>2</b></button>
+      </nav>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@17"></script>
+    <script src="appwrite-config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
