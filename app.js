@@ -105,7 +105,7 @@ function renderListings() {
 }
 
 function renderHeroCards() {
-  const imageCards = cards.filter((card) => getCardImageUrl(card));
+  const imageCards = cards.filter((card) => card.is_signed && getCardImageUrl(card));
   if (imageCards.length < 2) return;
   const firstIndex = Math.floor(Math.random() * imageCards.length);
   let secondIndex = Math.floor(Math.random() * imageCards.length);
