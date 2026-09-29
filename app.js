@@ -37,6 +37,14 @@ const authEmail = document.querySelector('#auth-email');
 const authPassword = document.querySelector('#auth-password');
 const authNewPassword = document.querySelector('#auth-new-password');
 const authName = document.querySelector('#auth-name');
+const cardDialog = document.querySelector('#card-dialog');
+const cardDialogClose = document.querySelector('#card-close');
+const cardDialogArt = document.querySelector('#card-dialog-art');
+const cardDialogTitle = document.querySelector('#card-dialog-title');
+const cardDialogSet = document.querySelector('#card-dialog-set');
+const cardDialogStats = document.querySelector('#card-dialog-stats');
+const cardDialogAbility = document.querySelector('#card-dialog-ability');
+const cardDialogTags = document.querySelector('#card-dialog-tags');
 
 let cards = [];
 let authMode = 'signin';
@@ -58,22 +66,39 @@ function renderCards() {
   });
   marketGrid.innerHTML = matches.map((card) => {
     const imageUrl = getCardImageUrl(card);
-    const setLabel = [card.set_name || card.set_code, card.collector_number].filter(Boolean).join(' · ');
     return `<article class="listing" data-search="${escapeHtml(card.name)}">
       <div class="card-art${imageUrl ? ' has-image' : ''}">
-        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : ''}
-        <span>${escapeHtml(card.name)}</span><strong>${escapeHtml(card.rarity || card.type || 'CARD')}</strong><small>${escapeHtml(setLabel || 'RIFTBOUND')}</small>
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name)}</span>`}
       </div>
       <div class="listing-copy"><div><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.set_name || card.set_code || 'Riftbound catalog')}</span></div><b>Catalog</b></div>
-      <button class="trade-button" type="button">View card <span>→</span></button>
+      <button class="trade-button" data-card-id="${escapeHtml(card.id)}" type="button">View card <span>→</span></button>
     </article>`;
   }).join('');
   emptyMessage.hidden = matches.length !== 0;
+  marketGrid.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
 }
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }
+
+function openCardDialog(cardId) {
+  const card = cards.find((item) => item.id === cardId);
+  if (!card) return;
+  const imageUrl = getCardImageUrl(card);
+  cardDialogTitle.textContent = card.name;
+  cardDialogSet.textContent = [card.set_name || card.set_code, card.collector_number].filter(Boolean).join(' · ') || 'Riftbound catalog';
+  cardDialogArt.className = `card-dialog-art${imageUrl ? ' has-image' : ''}`;
+  cardDialogArt.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`;
+  const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains]];
+  cardDialogStats.innerHTML = stats.filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
+  cardDialogAbility.textContent = card.ability_text || 'No ability text listed.';
+  cardDialogTags.textContent = Array.isArray(card.tags) && card.tags.length ? `Tags: ${card.tags.join(', ')}` : '';
+  cardDialog.showModal();
+}
+
+cardDialogClose.addEventListener('click', () => cardDialog.close());
+cardDialog.addEventListener('click', (event) => { if (event.target === cardDialog) cardDialog.close(); });
 
 async function loadCards() {
   if (!window.riftTradeSupabase) {
@@ -82,7 +107,7 @@ async function loadCards() {
   }
   const { data, error } = await window.riftTradeSupabase
     .from('cards')
-    .select('id, name, set_code, set_name, collector_number, rarity, type, ability_text, image_file, image_path, image_url')
+    .select('id, name, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url')
     .order('name')
     .limit(120);
   if (error) {
@@ -135,7 +160,6 @@ async function refreshAuthState() {
   authLinks.hidden = Boolean(user);
   if (user) {
     signedInEmail.textContent = user.email || 'your account';
-    profileButton.querySelector('span').textContent = (user.user_metadata?.display_name || user.email || 'RT').slice(0, 2).toUpperCase();
   }
 }
 
