@@ -88,6 +88,10 @@ const discordNameSubmit = document.querySelector('#discord-name-submit');
 const profileDialog = document.querySelector('#profile-dialog');
 const profileClose = document.querySelector('#profile-close');
 const profileTitle = document.querySelector('#profile-title');
+const profileAvatarButton = document.querySelector('#profile-avatar-button');
+const profileAvatar = document.querySelector('#profile-avatar');
+const profileAvatarStatic = document.querySelector('#profile-avatar-static');
+const profileAvatarInput = document.querySelector('#profile-avatar-input');
 const profileDisplayName = document.querySelector('#profile-display-name');
 const profileEmail = document.querySelector('#profile-email');
 const profileMemberSince = document.querySelector('#profile-member-since');
@@ -115,6 +119,7 @@ const inboxConversationFilter = document.querySelector('#inbox-conversation-filt
 const inboxConversationList = document.querySelector('#inbox-conversation-list');
 const inboxEmptyState = document.querySelector('#inbox-empty-state');
 const inboxActive = document.querySelector('#inbox-active');
+const inboxPeerAvatar = document.querySelector('#inbox-peer-avatar');
 const inboxPeerProfile = document.querySelector('#inbox-peer-profile');
 const inboxBack = document.querySelector('#inbox-back');
 const inboxThread = document.querySelector('#inbox-thread');
@@ -630,7 +635,7 @@ async function openProfileDialog(profileId) {
   profileDialog.showModal();
 
   const profileRequest = (async () => {
-    let fields = ['id', 'display_name', 'username', 'email', 'discord_id', 'created_at'];
+    let fields = ['id', 'display_name', 'username', 'email', 'discord_id', 'avatar_url', 'created_at'];
     let emailColumnMissing = false;
     let discordColumnMissing = false;
     let result;
@@ -663,6 +668,9 @@ async function openProfileDialog(profileId) {
   const profile = profileResult.data;
   const displayName = profile.display_name || profile.username || 'RiftTrade member';
   profileTitle.textContent = displayName;
+  renderProfileAvatar(displayName, profile.avatar_url);
+  profileAvatarButton.hidden = !signedInUser || signedInUser.id !== profile.id;
+  profileAvatarStatic.hidden = Boolean(signedInUser && signedInUser.id === profile.id);
   profileDisplayName.textContent = displayName;
   profileEditButton.hidden = !signedInUser || signedInUser.id !== profile.id;
   profileMessageButton.hidden = !signedInUser || signedInUser.id === profile.id;
@@ -710,6 +718,37 @@ listingMessageButton.addEventListener('click', () => {
 });
 profileClose.addEventListener('click', () => profileDialog.close());
 profileDialog.addEventListener('click', (event) => { if (event.target === profileDialog) profileDialog.close(); });
+profileAvatarButton.addEventListener('click', () => profileAvatarInput.click());
+profileAvatarInput.addEventListener('change', async () => {
+  const file = profileAvatarInput.files?.[0];
+  if (!file || !signedInUser) return;
+  profileAvatarInput.value = '';
+  if (!file.type.startsWith('image/')) return;
+  if (file.size > 8 * 1024 * 1024) return;
+  profileAvatarButton.disabled = true;
+  profileListingsStatus.hidden = false;
+  profileListingsStatus.textContent = 'Uploading profile photo...';
+  const extension = file.type.split('/')[1].replace('jpeg', 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
+  const path = `${signedInUser.id}/avatar.${extension}`;
+  const { error: uploadError } = await window.riftTradeSupabase.storage.from('profile-images').upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadError) {
+    profileAvatarButton.disabled = false;
+    profileListingsStatus.textContent = `Could not upload photo: ${uploadError.message}`;
+    return;
+  }
+  const { data: publicUrlData } = window.riftTradeSupabase.storage.from('profile-images').getPublicUrl(path);
+  const avatarUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+  const { error: profileError } = await window.riftTradeSupabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', signedInUser.id);
+  profileAvatarButton.disabled = false;
+  if (profileError) {
+    profileListingsStatus.textContent = `Could not save photo: ${profileError.message}`;
+    return;
+  }
+  renderProfileAvatar(profileDisplayName.textContent.trim(), avatarUrl);
+  profileListingsStatus.textContent = profileListings.length ? '' : 'No visible listings.';
+  profileListingsStatus.hidden = profileListings.length > 0;
+  await refreshInboxConversations();
+});
 profileEditClose.addEventListener('click', () => profileEditDialog.close());
 profileEditDialog.addEventListener('click', (event) => { if (event.target === profileEditDialog) profileEditDialog.close(); });
 profileEditButton.addEventListener('click', () => {
@@ -1200,6 +1239,17 @@ function inboxInitials(name) {
   return String(name || 'RiftTrade member').trim().split(/\s+/).slice(0, 2).map((part) => part[0] || '').join('').toUpperCase() || 'RT';
 }
 
+function avatarMarkup(name, avatarUrl, className = 'inbox-avatar') {
+  const safeUrl = String(avatarUrl || '');
+  return `<span class="${className}">${safeUrl ? `<img src="${escapeHtml(safeUrl)}" alt="" loading="lazy" />` : escapeHtml(inboxInitials(name))}</span>`;
+}
+
+function renderProfileAvatar(name, avatarUrl) {
+  const content = avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="" />` : escapeHtml(inboxInitials(name));
+  profileAvatar.innerHTML = content;
+  profileAvatarStatic.innerHTML = content;
+}
+
 function inboxTimeLabel(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -1225,7 +1275,7 @@ function renderInboxConversations() {
     const peerName = conversation.peer_display_name || 'RiftTrade member';
     const unread = Number(conversation.unread_count || 0);
     const preview = conversation.last_message_body || 'Start a conversation';
-    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}"><span class="inbox-avatar" aria-hidden="true">${escapeHtml(inboxInitials(peerName))}</span><span class="inbox-conversation-copy"><strong>${escapeHtml(peerName)}</strong><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
+    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}">${avatarMarkup(peerName, conversation.peer_avatar_url)}<span class="inbox-conversation-copy"><strong>${escapeHtml(peerName)}</strong><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
   }).join('');
   updateInboxUnreadBadge();
 }
@@ -1293,6 +1343,7 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   inboxEmptyState.hidden = true;
   inboxActive.hidden = false;
   inboxPeerProfile.textContent = conversation.peer_display_name || 'RiftTrade member';
+  inboxPeerAvatar.innerHTML = avatarMarkup(conversation.peer_display_name, conversation.peer_avatar_url, 'inbox-peer-avatar').replace(/^<span[^>]*>|<\/span>$/g, '');
   inboxPeerProfile.dataset.profileId = conversation.peer_id;
   inboxMessageStatus.textContent = '';
   inboxThread.innerHTML = '<p class="inbox-thread-loading">Loading messages...</p>';
@@ -1389,7 +1440,7 @@ async function searchInboxRecipients() {
   }
   const pattern = query.replace(/[\\%_]/g, '\\$&');
   const { data, error } = await window.riftTradeSupabase.from('profiles')
-    .select('id, display_name, username')
+    .select('id, display_name, username, avatar_url')
     .neq('id', inboxUser.id)
     .ilike('display_name', `%${pattern}%`)
     .limit(8);
@@ -1402,7 +1453,7 @@ async function searchInboxRecipients() {
   const matches = data || [];
   inboxRecipientResults.innerHTML = matches.length ? matches.map((profile) => {
     const name = profile.display_name || profile.username || 'RiftTrade member';
-    return `<button type="button" role="option" data-inbox-recipient-id="${escapeHtml(profile.id)}"><span class="inbox-avatar" aria-hidden="true">${escapeHtml(inboxInitials(name))}</span><span>${escapeHtml(name)}</span></button>`;
+    return `<button type="button" role="option" data-inbox-recipient-id="${escapeHtml(profile.id)}">${avatarMarkup(name, profile.avatar_url)}<span>${escapeHtml(name)}</span></button>`;
   }).join('') : '<p>No members found.</p>';
   inboxRecipientResults.hidden = false;
 }

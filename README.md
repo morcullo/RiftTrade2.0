@@ -35,6 +35,10 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 4. In Supabase **Authentication → URL Configuration**, set the production Site URL and add the local app URL (for example, `http://127.0.0.1:3000/**`) and deployed app URL to the redirect URL allowlist.
 5. Open the app's account dialog and select **Continue with Discord**.
 
+### Profile photos
+
+Run [`supabase-migration-profile-avatar.sql`](supabase-migration-profile-avatar.sql) in the Supabase SQL Editor to create the public profile image bucket and its owner-only upload policies. Members can then select a photo or use their device camera from their profile header; the same image appears in Inbox conversations.
+
 Keep the Discord Client Secret in Supabase only; never add it to the browser config.
 
 ## Data model
