@@ -15,6 +15,7 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 2. Run [`supabase-schema.sql`](supabase-schema.sql) in the Supabase SQL Editor.
    If the project already exists, also run [`supabase-migration-card-prices.sql`](supabase-migration-card-prices.sql) to enable per-card prices, [`supabase-migration-card-foil.sql`](supabase-migration-card-foil.sql) to enable foil finishes, and [`supabase-migration-buy-listings.sql`](supabase-migration-buy-listings.sql) to enable buying listings.
    Run [`supabase-migration-home-stats.sql`](supabase-migration-home-stats.sql) to enable the aggregate metrics on the home page.
+   Run or rerun [`supabase-migration-direct-messaging.sql`](supabase-migration-direct-messaging.sql) to enable private user-to-user conversations, unread tracking, live message updates, listing cards shared in messages, and repair earlier recursive listing-sharing policies.
 3. Set the browser URL and anon key in [`supabase-config.js`](supabase-config.js). The anon key is safe in the browser when the RLS policies are enabled.
 4. Import the catalog and images with a server-side service-role key:
 

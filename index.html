@@ -80,11 +80,28 @@
         </section>
 
         <section class="view" data-page="inbox" hidden>
-          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 03</p><h1>Inbox</h1></div><span class="status-tag dark-tag">2 unread</span></div>
-          <div class="message-list">
-            <button class="message-row unread" type="button"><div class="avatar avatar-red">AM</div><div><strong>Alex M.</strong><p>“Would you take a Viego for your Jinx?”</p><small>12 min ago</small></div><span>●</span></button>
-            <button class="message-row unread" type="button"><div class="avatar avatar-blue">TS</div><div><strong>Taylor S.</strong><p>“Offer updated with shipping included.”</p><small>Yesterday</small></div><span>●</span></button>
-            <button class="message-row" type="button"><div class="avatar avatar-yellow">JR</div><div><strong>Jamie R.</strong><p>Trade marked complete. Thanks!</p><small>Sep 21</small></div><span>›</span></button>
+          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 03</p><h1>Inbox</h1></div><div class="inbox-heading-actions"><button class="button button-outline" id="inbox-new-message" type="button">New message</button><span class="status-tag dark-tag" id="inbox-unread-count">0 unread</span></div></div>
+          <div class="inbox-layout" id="inbox-layout">
+            <aside class="inbox-sidebar" aria-label="Conversations">
+              <form class="inbox-recipient-form" id="inbox-recipient-form">
+                <label for="inbox-recipient-search">New message</label>
+                <input id="inbox-recipient-search" type="search" autocomplete="off" placeholder="Find a member" />
+                <div class="inbox-recipient-results" id="inbox-recipient-results" role="listbox" aria-label="Members" hidden></div>
+              </form>
+              <label class="inbox-conversation-filter">Conversations<input id="inbox-conversation-filter" type="search" placeholder="Search conversations" /></label>
+              <p class="inbox-status" id="inbox-status" aria-live="polite">Loading conversations...</p>
+              <button class="button button-outline inbox-sign-in" id="inbox-sign-in" type="button" hidden>Sign in</button>
+              <div class="inbox-conversation-list" id="inbox-conversation-list"></div>
+            </aside>
+            <section class="inbox-main" aria-label="Message conversation">
+              <div class="inbox-empty-state" id="inbox-empty-state">Select a conversation or find a member to message.</div>
+              <div class="inbox-active" id="inbox-active" hidden>
+                <header class="inbox-thread-header"><button class="inbox-back" id="inbox-back" type="button" aria-label="Back to conversations">←</button><div><button class="profile-link" id="inbox-peer-profile" type="button"></button><small>RiftTrade member</small></div></header>
+                <div class="inbox-thread" id="inbox-thread" role="log" aria-live="polite" aria-relevant="additions text"></div>
+                <p class="inbox-message-status" id="inbox-message-status" role="status" aria-live="polite"></p>
+                <form class="inbox-composer" id="inbox-message-form"><textarea id="inbox-message-input" rows="2" maxlength="4000" placeholder="Write a message..." required aria-label="Message"></textarea><button class="button button-dark" id="inbox-send" type="submit">Send <span>→</span></button></form>
+              </div>
+            </section>
           </div>
         </section>
       </main>
@@ -147,6 +164,7 @@
         <p class="listing-details-description" id="listing-details-description"></p>
         <div class="listing-details-cards" id="listing-details-cards"></div>
         <div class="listing-details-actions" id="listing-details-actions" hidden><button class="button button-outline" id="listing-edit" type="button">Edit listing</button><button class="button button-outline" id="listing-pending" type="button">Mark pending</button><button class="button button-outline" id="listing-sold" type="button">Mark sold</button><button class="button button-danger" id="listing-delete" type="button">Delete listing</button></div>
+        <div class="listing-details-contact" id="listing-details-contact" hidden><button class="button button-dark" id="listing-contact-message" type="button">Send a message <span>→</span></button></div>
       </dialog>
 
       <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
@@ -154,6 +172,7 @@
         <p class="eyebrow">RIFTTRADE / MEMBER PROFILE</p>
         <h2 id="profile-title">Member profile</h2>
         <dl class="profile-info"><div><dt>Display name</dt><dd id="profile-display-name"></dd></div><div><dt>Email</dt><dd><a id="profile-email"></a></dd></div><div><dt>Member since</dt><dd id="profile-member-since"></dd></div><div id="profile-discord-field" hidden><dt>Discord</dt><dd><a id="profile-discord-link" target="_blank" rel="noopener noreferrer">Message on Discord ↗</a></dd></div></dl>
+        <button class="button button-dark profile-message-button" id="profile-message" type="button" hidden>Message <span>→</span></button>
         <div class="profile-listings-heading"><h3>Listings</h3><span id="profile-listing-count"></span></div>
         <p class="profile-listings-status" id="profile-listings-status" aria-live="polite">Loading listings...</p>
         <div class="market-grid profile-listings" id="profile-listings"></div>
@@ -165,6 +184,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=listing-card-finish-pill-1"></script>
+    <script src="app.js?v=direct-messaging-1"></script>
   </body>
 </html>

@@ -14,6 +14,7 @@ function showView(viewName) {
   else if (viewName === 'marketplace') loadListings();
   else if (viewName === 'catalog') loadCatalog();
   else if (viewName === 'trades') loadMyListings();
+  else if (viewName === 'inbox') inboxLoadPromise = loadInbox();
 }
 
 navItems.forEach((item) => item.addEventListener('click', () => showView(item.dataset.view)));
@@ -85,9 +86,29 @@ const profileEmail = document.querySelector('#profile-email');
 const profileMemberSince = document.querySelector('#profile-member-since');
 const profileDiscordField = document.querySelector('#profile-discord-field');
 const profileDiscordLink = document.querySelector('#profile-discord-link');
+const profileMessageButton = document.querySelector('#profile-message');
 const profileListingCount = document.querySelector('#profile-listing-count');
 const profileListingsStatus = document.querySelector('#profile-listings-status');
 const profileListingsGrid = document.querySelector('#profile-listings');
+const inboxUnreadCount = document.querySelector('#inbox-unread-count');
+const inboxLayout = document.querySelector('#inbox-layout');
+const inboxStatus = document.querySelector('#inbox-status');
+const inboxSignInButton = document.querySelector('#inbox-sign-in');
+const inboxRecipientForm = document.querySelector('#inbox-recipient-form');
+const inboxRecipientSearch = document.querySelector('#inbox-recipient-search');
+const inboxRecipientResults = document.querySelector('#inbox-recipient-results');
+const inboxConversationFilter = document.querySelector('#inbox-conversation-filter');
+const inboxConversationList = document.querySelector('#inbox-conversation-list');
+const inboxEmptyState = document.querySelector('#inbox-empty-state');
+const inboxActive = document.querySelector('#inbox-active');
+const inboxPeerProfile = document.querySelector('#inbox-peer-profile');
+const inboxBack = document.querySelector('#inbox-back');
+const inboxThread = document.querySelector('#inbox-thread');
+const inboxMessageStatus = document.querySelector('#inbox-message-status');
+const inboxMessageForm = document.querySelector('#inbox-message-form');
+const inboxMessageInput = document.querySelector('#inbox-message-input');
+const inboxSend = document.querySelector('#inbox-send');
+const inboxNewMessage = document.querySelector('#inbox-new-message');
 const authEmail = document.querySelector('#auth-email');
 const authPassword = document.querySelector('#auth-password');
 const authNewPassword = document.querySelector('#auth-new-password');
@@ -117,6 +138,8 @@ const listingDetailsMeta = document.querySelector('#listing-details-meta');
 const listingDetailsDescription = document.querySelector('#listing-details-description');
 const listingDetailsCards = document.querySelector('#listing-details-cards');
 const listingDetailsActions = document.querySelector('#listing-details-actions');
+const listingDetailsContact = document.querySelector('#listing-details-contact');
+const listingMessageButton = document.querySelector('#listing-contact-message');
 const listingEditButton = document.querySelector('#listing-edit');
 const listingPendingButton = document.querySelector('#listing-pending');
 const listingSoldButton = document.querySelector('#listing-sold');
@@ -135,6 +158,13 @@ let myListings = [];
 let profileListings = [];
 let signedInUser = null;
 let authStateReady = false;
+let inboxConversations = [];
+let activeConversationId = null;
+let inboxSharedListings = [];
+let inboxRealtimeChannel = null;
+let inboxRealtimeConversationId = null;
+let inboxLoadPromise = null;
+let inboxRecipientSearchTimer = null;
 let catalogPage = 0;
 const catalogPageSize = 25;
 let selectedListingCardIds = [];
@@ -523,7 +553,7 @@ function openCardDialog(cardId) {
 }
 
 function openListingDetails(listingId) {
-  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId) || profileListings.find((item) => item.id === listingId);
+  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId) || profileListings.find((item) => item.id === listingId) || inboxSharedListings.find((item) => item.id === listingId);
   if (!listing) return;
   listingDetailsDialog.dataset.listingId = listing.id;
   listingDetailsDialog.dataset.listingStatus = listing.status;
@@ -541,6 +571,7 @@ function openListingDetails(listingId) {
   listingDetailsMeta.textContent = [listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
+  listingDetailsContact.hidden = true;
   listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, foil, price }) => {
     const imageUrl = getCardImageUrl(card || {});
     const conditionLabel = condition ? condition.replaceAll('_', ' ').replace(/^./, (character) => character.toUpperCase()) : '';
@@ -553,6 +584,7 @@ function openListingDetails(listingId) {
     const canChangeStatus = ['active', 'paused'].includes(listing.status);
     const isSold = listing.status === 'completed';
     listingDetailsActions.hidden = !isOwner;
+    listingDetailsContact.hidden = isOwner;
     listingPendingButton.hidden = !canChangeStatus;
     listingPendingButton.textContent = listing.status === 'paused' ? 'Remove pending' : 'Mark pending';
     listingSoldButton.hidden = !canChangeStatus && !isSold;
@@ -567,6 +599,8 @@ async function openProfileDialog(profileId) {
   profileDialog.dataset.profileId = requestedProfileId;
   profileTitle.textContent = 'Loading profile...';
   profileDisplayName.textContent = '';
+  profileMessageButton.hidden = true;
+  profileMessageButton.dataset.profileId = '';
   profileEmail.textContent = '';
   profileEmail.removeAttribute('href');
   profileDiscordField.hidden = true;
@@ -612,6 +646,8 @@ async function openProfileDialog(profileId) {
   const displayName = profile.display_name || profile.username || 'RiftTrade member';
   profileTitle.textContent = displayName;
   profileDisplayName.textContent = displayName;
+  profileMessageButton.hidden = !signedInUser || signedInUser.id === profile.id;
+  profileMessageButton.dataset.profileId = profile.id;
   profileEmail.textContent = profile.email || (profileResult.emailColumnMissing ? 'Run the profile email migration to enable email display.' : 'Email not provided.');
   profileMemberSince.textContent = profile.created_at ? new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(profile.created_at)) : 'Unknown';
   if (profile.email) profileEmail.href = `mailto:${profile.email}`;
@@ -644,8 +680,22 @@ cardDialogMarketplace.addEventListener('click', () => {
 });
 listingDetailsClose.addEventListener('click', () => listingDetailsDialog.close());
 listingDetailsDialog.addEventListener('click', (event) => { if (event.target === listingDetailsDialog) listingDetailsDialog.close(); });
+listingMessageButton.addEventListener('click', () => {
+  const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
+    || myListings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
+    || profileListings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
+    || inboxSharedListings.find((item) => item.id === listingDetailsDialog.dataset.listingId);
+  if (!listing) return;
+  listingDetailsDialog.close();
+  startDirectConversation(listing.seller_id, listing.id);
+});
 profileClose.addEventListener('click', () => profileDialog.close());
 profileDialog.addEventListener('click', (event) => { if (event.target === profileDialog) profileDialog.close(); });
+profileMessageButton.addEventListener('click', () => {
+  const recipientId = profileMessageButton.dataset.profileId;
+  profileDialog.close();
+  startDirectConversation(recipientId);
+});
 signedInName.addEventListener('click', () => openProfileDialog(signedInName.dataset.profileId));
 
 function openListingForm(listing = null) {
@@ -1047,6 +1097,307 @@ async function loadMyListings() {
   renderMyListings();
 }
 
+function inboxInitials(name) {
+  return String(name || 'RiftTrade member').trim().split(/\s+/).slice(0, 2).map((part) => part[0] || '').join('').toUpperCase() || 'RT';
+}
+
+function inboxTimeLabel(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+  if (date.getFullYear() === now.getFullYear()) return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' }).format(date);
+}
+
+function updateInboxUnreadBadge() {
+  const unread = inboxConversations.reduce((total, conversation) => total + Number(conversation.unread_count || 0), 0);
+  inboxUnreadCount.textContent = `${unread} unread`;
+  document.querySelectorAll('.nav-link-inbox b').forEach((badge) => {
+    badge.textContent = String(unread);
+    badge.hidden = unread === 0;
+  });
+}
+
+function renderInboxConversations() {
+  const query = inboxConversationFilter.value.trim().toLowerCase();
+  const visibleConversations = inboxConversations.filter((conversation) => `${conversation.peer_display_name || ''} ${conversation.last_message_body || ''}`.toLowerCase().includes(query));
+  inboxConversationList.innerHTML = visibleConversations.map((conversation) => {
+    const peerName = conversation.peer_display_name || 'RiftTrade member';
+    const unread = Number(conversation.unread_count || 0);
+    const preview = conversation.last_message_body || 'Start a conversation';
+    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}"><span class="inbox-avatar" aria-hidden="true">${escapeHtml(inboxInitials(peerName))}</span><span class="inbox-conversation-copy"><strong>${escapeHtml(peerName)}</strong><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
+  }).join('');
+  updateInboxUnreadBadge();
+}
+
+async function refreshInboxConversations() {
+  const { data, error } = await window.riftTradeSupabase.rpc('list_direct_conversations');
+  if (error) {
+    inboxStatus.hidden = false;
+    inboxStatus.textContent = `Could not load messages: ${error.message}. Run the direct messaging migration in Supabase.`;
+    return false;
+  }
+  inboxConversations = data || [];
+  renderInboxConversations();
+  inboxStatus.textContent = inboxConversations.length ? '' : 'No conversations yet.';
+  inboxStatus.hidden = inboxConversations.length > 0;
+  return true;
+}
+
+function closeInboxRealtime() {
+  if (inboxRealtimeChannel && window.riftTradeSupabase) window.riftTradeSupabase.removeChannel(inboxRealtimeChannel);
+  inboxRealtimeChannel = null;
+  inboxRealtimeConversationId = null;
+}
+
+function watchInboxConversation(conversationId) {
+  if (inboxRealtimeConversationId === String(conversationId)) return;
+  closeInboxRealtime();
+  inboxRealtimeConversationId = String(conversationId);
+  inboxRealtimeChannel = window.riftTradeSupabase.channel(`direct-messages-${conversationId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'direct_messages', filter: `conversation_id=eq.${conversationId}` }, async () => {
+      if (String(activeConversationId) === String(conversationId)) await openInboxConversation(conversationId, false);
+      await refreshInboxConversations();
+    })
+    .subscribe();
+}
+
+function renderInboxSharedListing(listing) {
+  if (!listing) return '';
+  const firstCard = listing.listing_cards?.[0]?.card || {};
+  const imageUrl = getCardImageUrl(firstCard);
+  const cardCount = listingCardCount(listing.listing_cards || []);
+  return `<button class="inbox-shared-listing" data-shared-listing-id="${escapeHtml(listing.id)}" type="button"><span class="inbox-shared-listing-art">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : escapeHtml(firstCard.name || 'Riftbound')}</span><span class="inbox-shared-listing-copy"><small>Shared listing</small><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml([listingTypeLabel(listing.listing_type), listingPriceLabel(listing), `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</span></span><span class="inbox-shared-listing-arrow" aria-hidden="true">↗</span></button>`;
+}
+
+function renderInboxMessages(messages) {
+  inboxThread.innerHTML = messages.map((message) => {
+    const isMine = message.sender_id === inboxUser.id;
+    const readState = isMine ? `<small class="inbox-message-read">${message.read_at ? 'Seen' : 'Sent'}</small>` : '';
+    const sharedListing = message.shared_listing ? renderInboxSharedListing(message.shared_listing) : '';
+    return `<article class="inbox-message${isMine ? ' is-mine' : ''}"><div class="inbox-message-bubble">${message.body ? `<p>${escapeHtml(message.body).replaceAll('\n', '<br>')}</p>` : ''}${sharedListing}<footer><time>${escapeHtml(inboxTimeLabel(message.created_at))}</time>${readState}</footer></div></article>`;
+  }).join('');
+  inboxSharedListings = messages.map((message) => message.shared_listing).filter(Boolean);
+  inboxThread.querySelectorAll('[data-shared-listing-id]').forEach((button) => button.addEventListener('click', () => {
+    const listing = inboxSharedListings.find((item) => String(item.id) === String(button.dataset.sharedListingId));
+    if (listing) openListingDetails(listing.id);
+  }));
+  inboxThread.scrollTop = inboxThread.scrollHeight;
+}
+
+async function openInboxConversation(conversationId, markAsRead = true) {
+  const conversation = inboxConversations.find((item) => String(item.conversation_id) === String(conversationId));
+  if (!conversation) return;
+  activeConversationId = conversation.conversation_id;
+  inboxLayout.classList.add('is-conversation-open');
+  inboxEmptyState.hidden = true;
+  inboxActive.hidden = false;
+  inboxPeerProfile.textContent = conversation.peer_display_name || 'RiftTrade member';
+  inboxPeerProfile.dataset.profileId = conversation.peer_id;
+  inboxMessageStatus.textContent = '';
+  inboxThread.innerHTML = '<p class="inbox-thread-loading">Loading messages...</p>';
+  renderInboxConversations();
+
+  const { data, error } = await window.riftTradeSupabase.from('direct_messages')
+    .select(`id, conversation_id, sender_id, body, created_at, read_at, shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_file, image_path, image_url)))`)
+    .eq('conversation_id', conversation.conversation_id)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (String(activeConversationId) !== String(conversationId)) return;
+  if (error) {
+    inboxThread.innerHTML = '';
+    inboxMessageStatus.textContent = `Could not load messages: ${error.message}. Run the direct messaging migration in Supabase.`;
+    return;
+  }
+
+  const messages = (data || []).reverse();
+  renderInboxMessages(messages);
+  watchInboxConversation(conversation.conversation_id);
+  if (markAsRead) {
+    const { error: readError } = await window.riftTradeSupabase.rpc('mark_direct_conversation_read', { target_conversation_id: conversation.conversation_id });
+    if (readError) inboxMessageStatus.textContent = readError.message;
+    else {
+      const readAt = new Date().toISOString();
+      messages.forEach((message) => { if (message.sender_id !== inboxUser.id) message.read_at = readAt; });
+      renderInboxMessages(messages);
+      await refreshInboxConversations();
+    }
+  }
+}
+
+async function loadInbox() {
+  if (!window.riftTradeSupabase) {
+    inboxStatus.hidden = false;
+    inboxStatus.textContent = 'Add your Supabase URL and anon key to use direct messages.';
+    inboxSignInButton.hidden = false;
+    return;
+  }
+  inboxStatus.hidden = false;
+  inboxStatus.textContent = 'Loading conversations...';
+  const { data: { user }, error } = await window.riftTradeSupabase.auth.getUser();
+  if (error) {
+    inboxStatus.textContent = error.message;
+    inboxSignInButton.hidden = false;
+    return;
+  }
+  inboxUser = user || null;
+  signedInUser = user || null;
+  if (!user) {
+    closeInboxRealtime();
+    inboxConversations = [];
+    activeConversationId = null;
+    inboxRecipientForm.hidden = true;
+    inboxConversationFilter.hidden = true;
+    inboxSignInButton.hidden = false;
+    inboxActive.hidden = true;
+    inboxEmptyState.hidden = false;
+    inboxLayout.classList.remove('is-conversation-open');
+    inboxStatus.textContent = 'Sign in to access your messages.';
+    renderInboxConversations();
+    return;
+  }
+
+  inboxRecipientForm.hidden = false;
+  inboxConversationFilter.hidden = false;
+  inboxSignInButton.hidden = true;
+  const canLoad = await refreshInboxConversations();
+  if (!canLoad) return;
+  if (activeConversationId && inboxConversations.some((item) => String(item.conversation_id) === String(activeConversationId))) {
+    await openInboxConversation(activeConversationId, false);
+  } else {
+    activeConversationId = null;
+    inboxActive.hidden = true;
+    inboxEmptyState.hidden = false;
+    inboxLayout.classList.remove('is-conversation-open');
+  }
+}
+
+async function searchInboxRecipients() {
+  const query = inboxRecipientSearch.value.trim();
+  const searchId = (searchInboxRecipients.requestId || 0) + 1;
+  searchInboxRecipients.requestId = searchId;
+  if (!inboxUser || query.length < 2) {
+    inboxRecipientResults.hidden = true;
+    inboxRecipientResults.innerHTML = '';
+    return;
+  }
+  const pattern = query.replace(/[\\%_]/g, '\\$&');
+  const { data, error } = await window.riftTradeSupabase.from('profiles')
+    .select('id, display_name, username')
+    .neq('id', inboxUser.id)
+    .ilike('display_name', `%${pattern}%`)
+    .limit(8);
+  if (searchId !== searchInboxRecipients.requestId) return;
+  if (error) {
+    inboxRecipientResults.innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+    inboxRecipientResults.hidden = false;
+    return;
+  }
+  const matches = data || [];
+  inboxRecipientResults.innerHTML = matches.length ? matches.map((profile) => {
+    const name = profile.display_name || profile.username || 'RiftTrade member';
+    return `<button type="button" role="option" data-inbox-recipient-id="${escapeHtml(profile.id)}"><span class="inbox-avatar" aria-hidden="true">${escapeHtml(inboxInitials(name))}</span><span>${escapeHtml(name)}</span></button>`;
+  }).join('') : '<p>No members found.</p>';
+  inboxRecipientResults.hidden = false;
+}
+
+async function startDirectConversation(recipientId, sharedListingId = null) {
+  if (!window.riftTradeSupabase) return;
+  const { data: { user } } = await window.riftTradeSupabase.auth.getUser();
+  if (!user) return openAccount();
+  if (user.id === recipientId) return;
+  signedInUser = inboxUser = user;
+  const { data: conversationId, error } = await window.riftTradeSupabase.rpc('get_or_create_direct_conversation', { target_user_id: recipientId });
+  if (error) {
+    inboxStatus.hidden = false;
+    inboxStatus.textContent = error.message;
+    if (!views.find((view) => view.dataset.page === 'inbox')?.classList.contains('is-visible')) showView('inbox');
+    return;
+  }
+  inboxRecipientSearch.value = '';
+  inboxRecipientResults.hidden = true;
+  activeConversationId = null;
+  if (!views.find((view) => view.dataset.page === 'inbox')?.classList.contains('is-visible')) showView('inbox');
+  else inboxLoadPromise = loadInbox();
+  await inboxLoadPromise;
+  await refreshInboxConversations();
+  await openInboxConversation(conversationId);
+  if (sharedListingId) {
+    const { error: shareError } = await window.riftTradeSupabase.from('direct_messages').insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      body: "I'm interested in this listing.",
+      shared_listing_id: sharedListingId,
+    });
+    if (shareError) {
+      inboxMessageStatus.textContent = `Could not share listing: ${shareError.message}`;
+      return;
+    }
+    await Promise.all([openInboxConversation(conversationId, false), refreshInboxConversations()]);
+  }
+}
+
+inboxNewMessage.addEventListener('click', () => {
+  inboxRecipientSearch.value = '';
+  inboxRecipientResults.hidden = true;
+  inboxRecipientSearch.focus();
+});
+inboxSignInButton.addEventListener('click', openAccount);
+inboxRecipientForm.addEventListener('submit', (event) => event.preventDefault());
+inboxRecipientSearch.addEventListener('input', () => {
+  clearTimeout(inboxRecipientSearchTimer);
+  inboxRecipientSearchTimer = setTimeout(searchInboxRecipients, 180);
+});
+inboxRecipientResults.addEventListener('click', (event) => {
+  const result = event.target.closest('[data-inbox-recipient-id]');
+  if (result) startDirectConversation(result.dataset.inboxRecipientId);
+});
+inboxConversationFilter.addEventListener('input', renderInboxConversations);
+inboxConversationList.addEventListener('click', (event) => {
+  const conversation = event.target.closest('[data-inbox-conversation-id]');
+  if (conversation) openInboxConversation(conversation.dataset.inboxConversationId);
+});
+inboxPeerProfile.addEventListener('click', () => openProfileDialog(inboxPeerProfile.dataset.profileId));
+inboxBack.addEventListener('click', () => {
+  activeConversationId = null;
+  closeInboxRealtime();
+  inboxActive.hidden = true;
+  inboxEmptyState.hidden = false;
+  inboxLayout.classList.remove('is-conversation-open');
+  renderInboxConversations();
+});
+inboxMessageForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const body = inboxMessageInput.value.trim();
+  if (!body || !activeConversationId || !inboxUser || !window.riftTradeSupabase) return;
+  inboxSend.disabled = true;
+  inboxMessageStatus.textContent = 'Sending...';
+  const { error } = await window.riftTradeSupabase.from('direct_messages').insert({
+    conversation_id: activeConversationId,
+    sender_id: inboxUser.id,
+    body,
+  });
+  inboxSend.disabled = false;
+  if (error) {
+    inboxMessageStatus.textContent = `Could not send message: ${error.message}`;
+    return;
+  }
+  inboxMessageInput.value = '';
+  inboxMessageStatus.textContent = '';
+  await Promise.all([openInboxConversation(activeConversationId, false), refreshInboxConversations()]);
+  inboxMessageInput.focus();
+});
+inboxMessageInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    inboxMessageForm.requestSubmit();
+  }
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.inbox-recipient-form')) inboxRecipientResults.hidden = true;
+});
+
 searchInput.addEventListener('input', renderListings);
 myListingsFilter.addEventListener('change', renderMyListings);
 marketFilterButton.addEventListener('click', () => {
@@ -1146,6 +1497,7 @@ async function refreshAuthState() {
     signedInEmail.textContent = user.email || 'your account';
   }
   if (views.find((view) => view.dataset.page === 'trades')?.classList.contains('is-visible')) loadMyListings();
+  if (views.find((view) => view.dataset.page === 'inbox')?.classList.contains('is-visible')) inboxLoadPromise = loadInbox();
 }
 
 function closeProfileMenu(restoreFocus = false) {
