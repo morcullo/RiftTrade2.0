@@ -62,6 +62,9 @@ const authNewPassword = document.querySelector('#auth-new-password');
 const authName = document.querySelector('#auth-name');
 const heroCardBack = document.querySelector('#hero-card-back');
 const heroCardFront = document.querySelector('#hero-card-front');
+const metricCardsListed = document.querySelector('#metric-cards-listed');
+const metricActiveTraders = document.querySelector('#metric-active-traders');
+const metricTradesCompleted = document.querySelector('#metric-trades-completed');
 const cardDialog = document.querySelector('#card-dialog');
 const cardDialogClose = document.querySelector('#card-close');
 const cardDialogArt = document.querySelector('#card-dialog-art');
@@ -653,6 +656,36 @@ async function loadCatalog() {
   renderCatalog();
 }
 
+function formatMetric(value) {
+  if (value === null || value === undefined) return '—';
+  const number = Number(value);
+  return Number.isFinite(number) ? new Intl.NumberFormat().format(number) : '—';
+}
+
+function renderHomeStats(stats) {
+  metricCardsListed.textContent = formatMetric(stats.cards_listed);
+  metricActiveTraders.textContent = formatMetric(stats.active_traders);
+  metricTradesCompleted.textContent = formatMetric(stats.trades_completed);
+}
+
+async function loadHomeStats() {
+  if (!window.riftTradeSupabase) return;
+  const { data, error } = await window.riftTradeSupabase.rpc('get_public_stats');
+  if (!error && data?.[0]) {
+    renderHomeStats(data[0]);
+    return;
+  }
+  const [{ count: activeTraders }, { data: activeCards }] = await Promise.all([
+    window.riftTradeSupabase.from('profiles').select('id', { count: 'exact', head: true }),
+    window.riftTradeSupabase.from('listing_cards').select('quantity, listings!inner(status)').eq('listings.status', 'active'),
+  ]);
+  renderHomeStats({
+    cards_listed: (activeCards || []).reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0),
+    active_traders: activeTraders,
+    trades_completed: null,
+  });
+}
+
 function listingSelect(includeCardPrice = true) {
   return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${includeCardPrice ? 'price, ' : ''}language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))`;
 }
@@ -725,6 +758,7 @@ catalogGrid.addEventListener('click', (event) => {
 document.querySelector('[data-view="trades"]').addEventListener('click', loadMyListings);
 loadCatalog();
 loadListings();
+loadHomeStats();
 
 function setAuthMessage(message, isError = false) {
   authMessage.textContent = message;
