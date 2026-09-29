@@ -62,7 +62,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .filter-button span { margin-left: 16px; }
 .market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .listing { border: 1px solid var(--line); background: white; }
-.card-art { aspect-ratio: 5 / 7; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; color: var(--ink); border-bottom: 1px solid var(--ink); }
+.card-art { aspect-ratio: 5 / 7; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; color: var(--ink); }
 .card-art.has-image { color: white; background-color: var(--ink); }
 .card-art.has-image::after { display: none; }
 .card-art { position: relative; overflow: hidden; border-radius: 12px; }
