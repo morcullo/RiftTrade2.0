@@ -30,8 +30,6 @@ const listingMessage = document.querySelector('#listing-message');
 const listingSubmit = document.querySelector('#listing-submit');
 const listingName = document.querySelector('#listing-name');
 const listingType = document.querySelector('#listing-type');
-const listingPrice = document.querySelector('#listing-price');
-const listingCondition = document.querySelector('#listing-condition');
 const listingLanguage = document.querySelector('#listing-language');
 const listingDescription = document.querySelector('#listing-description');
 const accountDialog = document.querySelector('#account-dialog');
@@ -86,6 +84,8 @@ let listings = [];
 let myListings = [];
 let selectedListingCardIds = [];
 let selectedListingCardQuantities = {};
+let selectedListingCardConditions = {};
+let selectedListingCardPrices = {};
 let authMode = 'signin';
 
 function getCardImageUrl(card) {
@@ -271,10 +271,10 @@ function openListingDetails(listingId) {
   listingDetailsMeta.textContent = [listingType, price, `${listingCards.length} card${listingCards.length === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
-  listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language }) => {
+  listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, price }) => {
     const imageUrl = getCardImageUrl(card || {});
     const badge = renderCardBadges(card || {});
-    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${badge}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language, quantity > 1 ? `Quantity ${quantity}` : ''].filter(Boolean).join(' · '))}</span></span></button>`;
+    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${badge}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language, quantity > 1 ? `Quantity ${quantity}` : ''].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`USD ${Number(price).toFixed(2)} each`)}</small>` : ''}</span></button>`;
   }).join('');
   listingDetailsCards.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
   window.riftTradeSupabase?.auth.getUser().then(({ data: { user } }) => {
@@ -293,18 +293,18 @@ listingDetailsDialog.addEventListener('click', (event) => { if (event.target ===
 
 function openListingForm(listing = null) {
   editingListingId = listing?.id || null;
-  listingDialogTitle.textContent = listing ? 'Edit listing' : 'List a card';
-  listingSubmit.innerHTML = listing ? 'Save changes <span>→</span>' : 'Publish listing <span>→</span>';
+  listingDialogTitle.textContent = listing ? 'Edit listing' : 'Create a listing';
+  listingSubmit.innerHTML = listing ? 'Save changes <span>→</span>' : 'Create listing <span>→</span>';
   if (listing) {
     listingName.value = listing.title || '';
     listingType.value = listing.listing_type || 'trade';
-    listingPrice.value = listing.price ?? '';
     listingDescription.value = listing.description || '';
     selectedListingCardQuantities = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity }) => [card.id, Math.max(Number(quantity) || 1, 1)]));
+    selectedListingCardConditions = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, condition }) => [card.id, condition || 'near_mint']));
+    selectedListingCardPrices = Object.fromEntries((listing.listing_cards || []).filter(({ card, price }) => card?.id && price !== null && price !== undefined).map(({ card, price }) => [card.id, price]));
     selectedListingCardIds = Object.keys(selectedListingCardQuantities);
     listingCardSearch.value = '';
     renderSelectedListingCards();
-    listingCondition.value = listing.listing_cards?.[0]?.condition || 'near_mint';
     listingLanguage.value = listing.listing_cards?.[0]?.language || 'English';
   } else {
     listingForm.reset();
@@ -373,7 +373,9 @@ listingForm.addEventListener('submit', async (event) => {
     listingSubmit.disabled = false;
     return setListingMessage('Choose at least one card for the listing.', true);
   }
-  const listingPayload = { title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: listingPrice.value ? Number(listingPrice.value) : null };
+  const totalPrice = selectedListingCardIds.reduce((total, cardId) => total + (Number(selectedListingCardPrices[cardId]) || 0), 0);
+  const hasCardPrice = selectedListingCardIds.some((cardId) => selectedListingCardPrices[cardId] !== '');
+  const listingPayload = { title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: hasCardPrice ? totalPrice : null };
   const listingRequest = editingListingId
     ? window.riftTradeSupabase.from('listings').update(listingPayload).eq('id', editingListingId).select('id').single()
     : window.riftTradeSupabase.from('listings').insert({ ...listingPayload, seller_id: user.id }).select('id').single();
@@ -385,7 +387,7 @@ listingForm.addEventListener('submit', async (event) => {
   if (editingListingId) await window.riftTradeSupabase.from('listing_cards').delete().eq('listing_id', editingListingId);
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
+    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: selectedListingCardConditions[cardId] || 'near_mint', price: selectedListingCardPrices[cardId] === '' ? null : Number(selectedListingCardPrices[cardId]) || null, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
   if (cardError) {
     if (!editingListingId) await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
@@ -411,6 +413,8 @@ function populateListingCards() {
   listingCardSearch.value = '';
   selectedListingCardIds = [];
   selectedListingCardQuantities = {};
+  selectedListingCardConditions = {};
+  selectedListingCardPrices = {};
   listingCardSelected.innerHTML = '';
   listingCardSearch.setCustomValidity('Choose at least one card from the search results.');
 }
@@ -427,6 +431,8 @@ listingCardResults.addEventListener('click', (event) => {
   if (!selectedListingCardIds.includes(card.id)) {
     selectedListingCardIds.push(card.id);
     selectedListingCardQuantities[card.id] = 1;
+    selectedListingCardConditions[card.id] = 'near_mint';
+    selectedListingCardPrices[card.id] = '';
   }
   listingCardSearch.value = '';
   renderSelectedListingCards();
@@ -440,7 +446,9 @@ function renderSelectedListingCards() {
     if (!card) return '';
     const imageUrl = getCardImageUrl(card);
       const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : '';
-      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
+      const condition = selectedListingCardConditions[card.id] || 'near_mint';
+      const price = selectedListingCardPrices[card.id] ?? '';
+      return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}</span><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(card.id)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(card.id)}" aria-label="Price for ${escapeHtml(card.name)}" /></label><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
   }).join('');
   listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
 }
@@ -450,6 +458,8 @@ listingCardSelected.addEventListener('click', (event) => {
   if (!removeButton) return;
   selectedListingCardIds = selectedListingCardIds.filter((cardId) => cardId !== removeButton.dataset.removeListingCard);
     delete selectedListingCardQuantities[removeButton.dataset.removeListingCard];
+    delete selectedListingCardConditions[removeButton.dataset.removeListingCard];
+    delete selectedListingCardPrices[removeButton.dataset.removeListingCard];
   renderSelectedListingCards();
   listingCardResults.hidden = true;
 });
@@ -458,6 +468,13 @@ listingCardSelected.addEventListener('input', (event) => {
   const quantityInput = event.target.closest('[data-listing-card-quantity]');
   if (!quantityInput) return;
   selectedListingCardQuantities[quantityInput.dataset.listingCardQuantity] = Math.max(Number(quantityInput.value) || 1, 1);
+});
+
+listingCardSelected.addEventListener('change', (event) => {
+  const conditionSelect = event.target.closest('[data-listing-card-condition]');
+  if (conditionSelect) selectedListingCardConditions[conditionSelect.dataset.listingCardCondition] = conditionSelect.value;
+  const priceInput = event.target.closest('[data-listing-card-price]');
+  if (priceInput) selectedListingCardPrices[priceInput.dataset.listingCardPrice] = priceInput.value;
 });
 
 document.addEventListener('pointerdown', (event) => {
@@ -482,13 +499,18 @@ async function loadCatalog() {
   renderHeroCards();
 }
 
+function listingSelect(includeCardPrice = true) {
+  return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${includeCardPrice ? 'price, ' : ''}language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))`;
+}
+
 async function loadListings() {
   if (!window.riftTradeSupabase) return;
-  const { data, error } = await window.riftTradeSupabase
+  let { data, error } = await window.riftTradeSupabase
     .from('listings')
-    .select('id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))')
+    .select(listingSelect())
     .eq('status', 'active')
     .order('created_at', { ascending: false });
+  if (error?.message?.includes('listing_cards_1.price')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(false)).eq('status', 'active').order('created_at', { ascending: false }));
   if (error) {
     marketStatus.textContent = `Could not load listings: ${error.message}`;
     return;
@@ -513,11 +535,12 @@ async function loadMyListings() {
     myListingsEmpty.hidden = true;
     return;
   }
-  const { data, error } = await window.riftTradeSupabase
+  let { data, error } = await window.riftTradeSupabase
     .from('listings')
-    .select('id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, notes, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))')
+    .select(listingSelect())
     .eq('seller_id', user.id)
     .order('created_at', { ascending: false });
+  if (error?.message?.includes('listing_cards_1.price')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(false)).eq('seller_id', user.id).order('created_at', { ascending: false }));
   if (error) {
     myListingsStatus.textContent = `Could not load your listings: ${error.message}`;
     return;

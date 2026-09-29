@@ -13,6 +13,7 @@ Open `index.html` directly in a browser, or serve this folder with any static we
 
 1. Create a Supabase project and enable Email or OAuth providers under Authentication.
 2. Run [`supabase-schema.sql`](supabase-schema.sql) in the Supabase SQL Editor.
+   If the project already exists, also run [`supabase-migration-card-prices.sql`](supabase-migration-card-prices.sql) to enable per-card prices.
 3. Set the browser URL and anon key in [`supabase-config.js`](supabase-config.js). The anon key is safe in the browser when the RLS policies are enabled.
 4. Import the catalog and images with a server-side service-role key:
 

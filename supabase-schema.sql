@@ -68,10 +68,13 @@ create table if not exists public.listing_cards (
   card_id text not null references public.cards(id) on delete restrict,
   quantity integer not null default 1 check (quantity > 0),
   condition text not null default 'near_mint' check (condition in ('near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged')),
+  price numeric(10, 2) check (price is null or price >= 0),
   language text not null default 'English',
   notes text,
   primary key (listing_id, card_id)
 );
+
+alter table public.listing_cards add column if not exists price numeric(10, 2) check (price is null or price >= 0);
 
 create index if not exists cards_name_search_idx on public.cards using gin (to_tsvector('simple', name));
 create index if not exists cards_set_code_idx on public.cards (set_code);

@@ -4,6 +4,7 @@
 .listing-card-selected-item .listing-card-option-badge { font-size: .48rem !important; }
 :root { --paper: #f7f7f5; --ink: #111; --muted: #777; --line: #deded9; --red: #e6392f; --yellow: #f2bd29; --blue: #6086b5; }
 .listing-card-quantity { display: grid; gap: 3px; color: var(--muted); font: .52rem "DM Mono", monospace; text-transform: uppercase; }.listing-card-quantity input { width: 48px; border: 1px solid var(--line); padding: 5px 4px; background: white; font: .7rem "DM Mono", monospace; }
+.listing-card-condition, .listing-card-price { display: grid; gap: 3px; color: var(--muted); font: .52rem "DM Mono", monospace; text-transform: uppercase; }.listing-card-condition select, .listing-card-price input { width: 92px; border: 1px solid var(--line); padding: 5px 4px; background: white; font: .64rem "DM Mono", monospace; }.listing-card-price input { width: 70px; }
 * { box-sizing: border-box; }
 html { background: var(--paper); scroll-behavior: smooth; }
 body { margin: 0; color: var(--ink); background: var(--paper); font-family: "Space Grotesk", sans-serif; }
