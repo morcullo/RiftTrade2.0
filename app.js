@@ -163,9 +163,11 @@ function renderListings() {
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
     const price = listingPriceLabel(listing);
     const cardArt = isGrid || isCarousel
-      ? visibleCards.map(({ card: listingCard }) => {
+      ? visibleCards.map(({ card: listingCard, quantity: listingQuantity }) => {
         const listingImageUrl = getCardImageUrl(listingCard || {});
-        return `<span class="listing-card-tile">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}</span>`;
+        const quantity = Math.max(Number(listingQuantity) || 1, 1);
+        const quantityBadge = isCarousel && quantity > 1 ? `<span class="listing-card-quantity-badge">X${quantity}</span>` : '';
+        return `<span class="listing-card-tile">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
       }).join('')
       : imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`;
     const carouselControls = isCarousel ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card page">←</button><span class="listing-image-count">${activeCarouselPage + 1} / ${totalCarouselPages}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card page">→</button>` : '';
