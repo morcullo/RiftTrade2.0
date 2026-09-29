@@ -41,7 +41,7 @@ h1 em { color: var(--red); font-style: normal; }
 .button-outline { background: transparent; }
 .hero-card-stack { position: relative; height: 370px; }
 .hero-card { position: absolute; width: 230px; height: auto; aspect-ratio: 744 / 1039; border: 1px solid var(--ink); box-shadow: 10px 12px 0 var(--ink); }
-.hero-card-back { top: 30px; left: 42px; display: grid; place-items: center; background: var(--yellow); transform: rotate(-9deg); font-size: 5rem; font-weight: 700; }
+.hero-card-back { top: 30px; left: 8px; display: grid; place-items: center; background: var(--yellow); transform: rotate(-9deg); font-size: 5rem; font-weight: 700; }
 .hero-card-back span { border: 2px solid var(--ink); padding: 30px 25px; border-radius: 50%; }
 .hero-card-front { top: 0; left: 110px; display: flex; flex-direction: column; justify-content: space-between; padding: 18px; color: white; background: var(--red); transform: rotate(7deg); }
 .hero-card.has-image { overflow: hidden; border-color: transparent; border-radius: 12px; background: transparent; box-shadow: 0 14px 26px rgba(17,17,17,.18); }.hero-card.has-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
