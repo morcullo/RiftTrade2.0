@@ -70,6 +70,7 @@ const profileMenuSignOut = document.querySelector('#profile-menu-sign-out');
 const accountClose = document.querySelector('#account-close');
 const authForm = document.querySelector('#auth-form');
 const authLinks = document.querySelector('#auth-links');
+const authModeToggle = authLinks.querySelector('button[data-auth-mode="signup"]');
 const authMessage = document.querySelector('#auth-message');
 const authTitle = document.querySelector('#account-title');
 const authIntro = document.querySelector('#account-intro');
@@ -1561,6 +1562,8 @@ function setAuthMode(mode) {
   authNewPassword.required = isRecovery;
   authSubmit.innerHTML = `${isSignup ? 'Create account' : isForgot ? 'Send reset link' : isRecovery ? 'Update password' : 'Sign in'} <span>→</span>`;
   authLinks.hidden = isRecovery;
+  authModeToggle.dataset.authMode = isSignup ? 'signin' : 'signup';
+  authModeToggle.textContent = isSignup ? 'Sign in with existing account' : 'Create an account';
   setAuthMessage('');
 }
 
