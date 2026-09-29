@@ -96,6 +96,44 @@ function getCardImageUrl(card) {
   return window.riftTradeSupabase.storage.from('card-images').getPublicUrl(imageName).data.publicUrl;
 }
 
+function getListingMeta(listing, cardIndex) {
+  const listingCards = listing.listing_cards || [];
+  return [listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade', listingCards[cardIndex]?.condition?.replaceAll('_', ' '), listingCards[cardIndex]?.language].filter(Boolean).join(' · ');
+}
+
+function updateListingCard(listing) {
+  const article = marketGrid.querySelector(`[data-listing-id="${CSS.escape(listing.id)}"]`);
+  if (!article) return;
+  const listingCards = listing.listing_cards || [];
+  const activeCardIndex = Math.min(Number(listing.activeCardIndex || 0), Math.max(listingCards.length - 1, 0));
+  const card = listingCards[activeCardIndex]?.card || {};
+  const imageUrl = getCardImageUrl(card);
+  const cardArt = article.querySelector('.card-art');
+  const image = cardArt.querySelector('img');
+  const placeholder = cardArt.querySelector(':scope > span:not(.listing-image-count)');
+  cardArt.classList.toggle('has-image', Boolean(imageUrl));
+  if (imageUrl) {
+    if (image) {
+      image.src = imageUrl;
+      image.alt = `${card.name || 'Riftbound card'} card art`;
+    } else {
+      cardArt.insertAdjacentHTML('afterbegin', `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name || 'Riftbound card')} card art" loading="lazy" />`);
+    }
+    placeholder?.remove();
+  } else {
+    image?.remove();
+    if (!placeholder) cardArt.insertAdjacentHTML('afterbegin', `<span>${escapeHtml(card.name || listing.title)}</span>`);
+    else placeholder.textContent = card.name || listing.title;
+  }
+  const badges = cardArt.querySelector('.card-badges');
+  if (badges) badges.outerHTML = renderCardBadges(card);
+  else if (renderCardBadges(card)) cardArt.insertAdjacentHTML('beforeend', renderCardBadges(card));
+  const count = cardArt.querySelector('.listing-image-count');
+  if (count) count.textContent = `${activeCardIndex + 1} / ${listingCards.length}`;
+  const copy = article.querySelector('.listing-copy');
+  copy.querySelector('span').textContent = `${card.name || 'Riftbound card'}${listingCards.length > 1 ? ` + ${listingCards.length - 1} more` : ''} · ${getListingMeta(listing, activeCardIndex)}`;
+}
+
 function renderListings() {
   const query = searchInput.value.trim().toLowerCase();
   const matches = listings.filter((listing) => {
@@ -109,7 +147,7 @@ function renderListings() {
     const card = listingCards[activeCardIndex]?.card || {};
     const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
-    const listingMeta = [listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade', listingCards[activeCardIndex]?.condition?.replaceAll('_', ' '), listingCards[activeCardIndex]?.language].filter(Boolean).join(' · ');
+    const listingMeta = getListingMeta(listing, activeCardIndex);
     const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
     return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}">
       <div class="card-art${imageUrl ? ' has-image' : ''}">
@@ -130,8 +168,29 @@ function renderListings() {
     const cardsInListing = listing.listing_cards || [];
     const currentIndex = Number(listing.activeCardIndex || 0);
     listing.activeCardIndex = (currentIndex + Number(button.dataset.direction) + cardsInListing.length) % cardsInListing.length;
-    renderListings();
+    updateListingCard(listing);
   }));
+  marketGrid.querySelectorAll('.card-art').forEach((cardArt) => {
+    let startX = 0;
+    let startY = 0;
+    cardArt.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse') return;
+      startX = event.clientX;
+      startY = event.clientY;
+    });
+    cardArt.addEventListener('pointerup', (event) => {
+      if (event.pointerType === 'mouse') return;
+      const deltaX = event.clientX - startX;
+      const deltaY = event.clientY - startY;
+      if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+      const listing = listings.find((item) => item.id === cardArt.closest('.listing')?.dataset.listingId);
+      const cardsInListing = listing?.listing_cards || [];
+      if (!listing || cardsInListing.length < 2) return;
+      const currentIndex = Number(listing.activeCardIndex || 0);
+      listing.activeCardIndex = (currentIndex + (deltaX < 0 ? 1 : -1) + cardsInListing.length) % cardsInListing.length;
+      updateListingCard(listing);
+    });
+  });
 }
 
 function listingStatusLabel(status) {
