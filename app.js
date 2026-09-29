@@ -152,8 +152,8 @@ function renderListings() {
   });
   marketGrid.innerHTML = matches.map((listing) => {
     const listingCards = listing.listing_cards || [];
-    const isGrid = listingCards.length > 1 && listingCards.length <= 8;
-    const isCarousel = listingCards.length > 8;
+    const isGrid = listingCards.length > 1 && listingCards.length <= 4;
+    const isCarousel = listingCards.length > 4;
     const carouselPageSize = 4;
     const totalCarouselPages = Math.ceil(listingCards.length / carouselPageSize);
     const activeCarouselPage = isCarousel ? Math.min(Math.floor(Number(listing.activeCardIndex || 0) / carouselPageSize), totalCarouselPages - 1) : 0;
