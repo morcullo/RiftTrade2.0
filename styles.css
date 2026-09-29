@@ -324,6 +324,10 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .profile-info dt { color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
 .profile-info dd { overflow-wrap: anywhere; margin: 6px 0 0; font-size: .86rem; }
 .profile-info a { color: var(--ink); text-decoration-color: var(--red); text-underline-offset: 3px; }
+.profile-display-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.profile-display-row dd { min-width: 0; }
+.profile-message-button { flex: 0 0 auto; padding: 8px 11px; }
+.profile-message-button span { margin-left: 8px; }
 .profile-listings-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--ink); padding-bottom: 10px; }
 .profile-listings-heading h3 { margin: 0; font-size: 1.1rem; }
 .profile-listings-heading span, .profile-listings-status { color: var(--muted); font: .62rem "DM Mono", monospace; }
