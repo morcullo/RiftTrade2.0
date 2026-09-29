@@ -1625,7 +1625,7 @@ async function refreshAuthState() {
     signedInEmail.textContent = user.email || 'your account';
   }
   if (views.find((view) => view.dataset.page === 'trades')?.classList.contains('is-visible')) loadMyListings();
-  if (views.find((view) => view.dataset.page === 'inbox')?.classList.contains('is-visible')) inboxLoadPromise = loadInbox();
+  inboxLoadPromise = loadInbox();
 }
 
 function closeProfileMenu(restoreFocus = false) {
