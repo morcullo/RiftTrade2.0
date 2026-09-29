@@ -22,6 +22,8 @@ const emptyMessage = document.querySelector('#market-empty');
 const marketFilterButton = document.querySelector('#market-filter-button');
 const marketFilterPanel = document.querySelector('#market-filter-panel');
 const marketTypeFilter = document.querySelector('#market-type-filter');
+const marketMinPrice = document.querySelector('#market-min-price');
+const marketMaxPrice = document.querySelector('#market-max-price');
 const marketFilterClear = document.querySelector('#market-filter-clear');
 const catalogSearch = document.querySelector('#catalog-search');
 const catalogGrid = document.querySelector('#catalog-grid');
@@ -154,11 +156,22 @@ function updateListingCard(listing) {
 function renderListings() {
   const query = searchInput.value.trim().toLowerCase();
   const selectedListingType = marketTypeFilter.value;
-  marketFilterButton.classList.toggle('is-active', Boolean(selectedListingType));
+  const minimumPrice = Number(marketMinPrice.value);
+  const maximumPrice = Number(marketMaxPrice.value);
+  const hasMinimumPrice = Number.isFinite(minimumPrice) && marketMinPrice.value !== '';
+  const hasMaximumPrice = Number.isFinite(maximumPrice) && marketMaxPrice.value !== '';
+  marketFilterButton.classList.toggle('is-active', Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
   const matches = listings.filter((listing) => {
     const listingCards = listing.listing_cards || [];
     const searchable = [listing.title, listing.description, listing.seller?.display_name, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code])].filter(Boolean).join(' ').toLowerCase();
-    return searchable.includes(query) && (!selectedListingType || listing.listing_type === selectedListingType);
+    const prices = listingCards.map(({ price }) => Number(price)).filter(Number.isFinite);
+    const lowestPrice = prices.length ? Math.min(...prices) : Number(listing.price);
+    const highestPrice = prices.length ? Math.max(...prices) : Number(listing.price);
+    const matchesPrice = (!hasMinimumPrice && !hasMaximumPrice)
+      || (Number.isFinite(lowestPrice) && Number.isFinite(highestPrice)
+        && (!hasMinimumPrice || highestPrice >= minimumPrice)
+        && (!hasMaximumPrice || lowestPrice <= maximumPrice));
+    return searchable.includes(query) && (!selectedListingType || listing.listing_type === selectedListingType) && matchesPrice;
   });
   marketGrid.innerHTML = matches.map((listing) => {
     const listingCards = listing.listing_cards || [];
@@ -802,8 +815,12 @@ marketFilterButton.addEventListener('click', () => {
   marketFilterButton.setAttribute('aria-expanded', String(!marketFilterPanel.hidden));
 });
 marketTypeFilter.addEventListener('change', renderListings);
+marketMinPrice.addEventListener('input', renderListings);
+marketMaxPrice.addEventListener('input', renderListings);
 marketFilterClear.addEventListener('click', () => {
   marketTypeFilter.value = '';
+  marketMinPrice.value = '';
+  marketMaxPrice.value = '';
   renderListings();
 });
 catalogSearch.addEventListener('input', renderCatalog);

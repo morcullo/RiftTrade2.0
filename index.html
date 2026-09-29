@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=search-highlight-2" />
-    <link rel="stylesheet" href="styles.css?v=catalog-filters-1" />
+    <link rel="stylesheet" href="styles.css?v=market-price-filters-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -51,7 +51,7 @@
         <section class="view" data-page="marketplace" hidden>
           <div class="page-heading"><div><p class="eyebrow">THE MARKET / 01</p><h1>Marketplace</h1></div><button class="button button-outline" id="open-listing" type="button">List a card <span>＋</span></button></div>
           <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" id="market-filter-button" type="button" aria-expanded="false" aria-controls="market-filter-panel">Filter <span>☷</span></button></div>
-          <div class="market-filter-panel" id="market-filter-panel" hidden><label>Listing type<select id="market-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><button class="filter-clear" id="market-filter-clear" type="button">Clear</button></div>
+          <div class="market-filter-panel" id="market-filter-panel" hidden><label>Listing type<select id="market-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><label>Min price<input id="market-min-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0" /></label><label>Max price<input id="market-max-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="No max" /></label><button class="filter-clear" id="market-filter-clear" type="button">Clear</button></div>
           <p class="market-status" id="market-status" aria-live="polite">Loading listings...</p>
           <div class="market-grid" id="market-grid"></div>
           <p class="empty-message" id="market-empty" hidden>No listings match that search.</p>
@@ -154,6 +154,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=catalog-filters-1"></script>
+    <script src="app.js?v=market-price-filters-1"></script>
   </body>
 </html>
