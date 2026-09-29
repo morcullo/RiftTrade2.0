@@ -28,6 +28,8 @@ const catalogGrid = document.querySelector('#catalog-grid');
 const catalogCount = document.querySelector('#catalog-count');
 const catalogStatus = document.querySelector('#catalog-status');
 const catalogEmpty = document.querySelector('#catalog-empty');
+const catalogFilterButton = document.querySelector('#catalog-filter-button');
+const catalogFilterPanel = document.querySelector('#catalog-filter-panel');
 const catalogSetFilter = document.querySelector('#catalog-set-filter');
 const catalogDomainOptions = document.querySelector('#catalog-domain-options');
 const catalogRarityFilter = document.querySelector('#catalog-rarity-filter');
@@ -232,6 +234,8 @@ function renderCatalog() {
   const selectedDomains = [...catalogDomainOptions.querySelectorAll('input:checked')].map((input) => input.value);
   const selectedRarity = catalogRarityFilter.value;
   const selectedType = catalogTypeFilter.value;
+  const activeFilterCount = [selectedSet, selectedRarity, selectedType].filter(Boolean).length + selectedDomains.length;
+  catalogFilterButton.classList.toggle('is-active', activeFilterCount > 0);
   const matches = cards.filter((card) => {
     if (selectedSet && card.set_name !== selectedSet) return false;
     if (selectedRarity && card.rarity !== selectedRarity) return false;
@@ -245,7 +249,6 @@ function renderCatalog() {
     return `<button class="catalog-card" data-catalog-card-id="${escapeHtml(card.id)}" type="button" aria-label="View details for ${escapeHtml(card.name)}"><div class="catalog-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name)}</span>`}${renderCardBadges(card)}</div><span class="catalog-card-copy"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(details || 'Riftbound card')}</small></span></button>`;
   }).join('');
   catalogCount.textContent = `${matches.length} / ${cards.length} cards`;
-  const activeFilterCount = [selectedSet, selectedRarity, selectedType].filter(Boolean).length + selectedDomains.length;
   catalogStatus.textContent = query || activeFilterCount ? `Showing ${matches.length} matching card${matches.length === 1 ? '' : 's'}.` : `${cards.length} cards in the catalog.`;
   catalogEmpty.hidden = matches.length !== 0;
 }
@@ -815,6 +818,10 @@ catalogFilterClear.addEventListener('click', () => {
   catalogRarityFilter.value = '';
   catalogTypeFilter.value = '';
   renderCatalog();
+});
+catalogFilterButton.addEventListener('click', () => {
+  catalogFilterPanel.hidden = !catalogFilterPanel.hidden;
+  catalogFilterButton.setAttribute('aria-expanded', String(!catalogFilterPanel.hidden));
 });
 catalogGrid.addEventListener('click', (event) => {
   const cardButton = event.target.closest('[data-catalog-card-id]');

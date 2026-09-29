@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=search-highlight-2" />
-    <link rel="stylesheet" href="styles.css?v=market-filters-1" />
+    <link rel="stylesheet" href="styles.css?v=catalog-filters-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -59,14 +59,14 @@
 
         <section class="view" data-page="catalog" hidden>
           <div class="page-heading"><div><p class="eyebrow">THE ARCHIVE / 02</p><h1>Card catalog</h1></div><span class="status-tag" id="catalog-count">Loading...</span></div>
-          <div class="market-tools catalog-tools"><label class="search-box"><span>⌕</span><input id="catalog-search" type="search" aria-label="Search card catalog" placeholder="Search every card, set, or code" /></label></div>
-          <div class="catalog-filters" aria-label="Filter card catalog">
+          <div class="market-tools catalog-tools"><label class="search-box"><span>⌕</span><input id="catalog-search" type="search" aria-label="Search card catalog" placeholder="Search every card, set, or code" /></label><button class="filter-button" id="catalog-filter-button" type="button" aria-expanded="false" aria-controls="catalog-filter-panel">Filter <span>☷</span></button></div>
+          <div class="market-filter-panel catalog-filter-panel" id="catalog-filter-panel" hidden><div class="catalog-filters" aria-label="Filter card catalog">
             <label>Set<select id="catalog-set-filter"><option value="">All sets</option></select></label>
             <div class="catalog-domain-control"><span>Domains</span><details class="catalog-domain-filter"><summary>Choose domains</summary><div id="catalog-domain-options" role="group" aria-label="Filter by domains"></div></details></div>
             <label>Rarity<select id="catalog-rarity-filter"><option value="">All rarities</option></select></label>
             <label>Type<select id="catalog-type-filter"><option value="">All types</option></select></label>
             <button class="filter-clear" id="catalog-filter-clear" type="button">Clear filters</button>
-          </div>
+          </div></div>
           <p class="market-status" id="catalog-status" aria-live="polite">Loading catalog...</p>
           <div class="catalog-grid" id="catalog-grid"></div>
           <p class="empty-message" id="catalog-empty" hidden>No cards match that search.</p>
@@ -154,6 +154,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=market-filters-1"></script>
+    <script src="app.js?v=catalog-filters-1"></script>
   </body>
 </html>
