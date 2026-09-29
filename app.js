@@ -201,7 +201,7 @@ function renderListings() {
     const listing = listings.find((item) => item.id === button.dataset.listingId);
     if (!listing) return;
     const cardsInListing = listing.listing_cards || [];
-    const pageSize = 8;
+    const pageSize = 4;
     const totalPages = Math.ceil(cardsInListing.length / pageSize);
     const currentPage = Math.floor(Number(listing.activeCardIndex || 0) / pageSize);
     const nextPage = (currentPage + Number(button.dataset.direction) + totalPages) % totalPages;
