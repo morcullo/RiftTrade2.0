@@ -301,8 +301,12 @@ function renderMyListings() {
 
 function renderHeroCards() {
   const imageCards = cards.filter((card) => card.is_signed && getCardImageUrl(card));
-  const heroNames = ['green father', 'bloodharbor ripper'];
-  const heroCards = heroNames.map((name) => imageCards.find((card) => card.name.trim().toLowerCase() === name)).filter(Boolean);
+  const normalizedCardName = (card) => normalizeCardSearch(card.name);
+  const heroCards = [
+    imageCards.find((card) => normalizedCardName(card).includes('ahri') && normalizedCardName(card).includes('inquisitive'))
+      || imageCards.find((card) => normalizedCardName(card).includes('ahri')),
+    imageCards.find((card) => normalizedCardName(card).includes('kai sa')),
+  ].filter(Boolean);
   if (heroCards.length < 2) return;
   const [backCard, frontCard] = heroCards;
   heroCardBack.classList.add('has-image');
