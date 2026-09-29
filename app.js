@@ -403,10 +403,73 @@ listingForm.addEventListener('submit', async (event) => {
 });
 
 function renderListingCardResults() {
-  const query = listingCardSearch.value.trim().toLowerCase();
-  const matches = cards.filter((card) => !selectedListingCardIds.includes(card.id) && [card.name, card.code, card.public_code, card.set_name, card.set_code].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 12);
+  const query = normalizeCardSearch(listingCardSearch.value);
+  const matches = cards
+    .filter((card) => !selectedListingCardIds.includes(card.id))
+    .map((card) => ({ card, score: scoreCardSearchMatch(card, query) }))
+    .filter(({ score }) => score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 12)
+    .map(({ card }) => card);
     listingCardResults.innerHTML = matches.map((card) => { const imageUrl = getCardImageUrl(card); const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : ''; return `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : '<span class="listing-card-option-placeholder">R</span>'}<span class="listing-card-option-copy"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span>${badge ? `<em class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</em>` : ''}</span></button>`; }).join('');
   listingCardResults.hidden = matches.length === 0;
+}
+
+function normalizeCardSearch(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function cardSearchFields(card) {
+  return [card.name, card.code, card.public_code, card.set_name, card.set_code]
+    .filter(Boolean)
+    .map(normalizeCardSearch);
+}
+
+function editDistance(left, right) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return previous[right.length];
+}
+
+function scoreSearchToken(queryToken, candidateTokens) {
+  let bestScore = 0;
+  candidateTokens.forEach((candidateToken) => {
+    if (candidateToken === queryToken) bestScore = Math.max(bestScore, 100);
+    else if (candidateToken.startsWith(queryToken) || queryToken.startsWith(candidateToken)) bestScore = Math.max(bestScore, 80);
+    else if (queryToken.length >= 3 && candidateToken.length >= 3) {
+      const distance = editDistance(queryToken, candidateToken);
+      const allowedDistance = queryToken.length >= 8 ? 2 : queryToken.length >= 5 ? 1 : 0;
+      if (distance <= allowedDistance) bestScore = Math.max(bestScore, 60 - distance * 10);
+    }
+  });
+  return bestScore;
+}
+
+function scoreCardSearchMatch(card, query) {
+  if (!query) return 1;
+  const fields = cardSearchFields(card);
+  const combined = fields.join(' ');
+  if (combined.includes(query)) return 300;
+  const queryTokens = query.split(' ');
+  const fieldTokens = fields.flatMap((field) => field.split(' '));
+  const tokenScores = queryTokens.map((token) => scoreSearchToken(token, fieldTokens));
+  if (tokenScores.some((score) => score === 0)) return 0;
+  return tokenScores.reduce((total, score) => total + score, 0);
 }
 
 function populateListingCards() {
