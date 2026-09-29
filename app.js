@@ -1776,6 +1776,8 @@ document.querySelector('#sign-out').addEventListener('click', async () => {
   setAuthMessage('You are signed out.');
 });
 
+const oauthCallbackHash = /(?:^#|&)access_token=|(?:^#|&)code=|(?:^#|&)error=/.test(window.location.hash);
+
 if (window.riftTradeSupabase) {
   window.riftTradeSupabase.auth.onAuthStateChange(() => refreshAuthState());
   refreshAuthState();
@@ -1786,4 +1788,14 @@ if (window.riftTradeSupabase) {
 }
 
 const initialView = window.location.hash.slice(1);
-showView(views.some((view) => view.dataset.page === initialView) ? initialView : 'home');
+if (oauthCallbackHash) {
+  views.forEach((view) => {
+    const isHome = view.dataset.page === 'home';
+    view.hidden = !isHome;
+    view.classList.toggle('is-visible', isHome);
+  });
+  navItems.forEach((item) => item.classList.toggle('is-active', item.dataset.view === 'home'));
+  window.riftTradeSupabase?.auth.getSession().finally(() => history.replaceState(null, '', '#home'));
+} else {
+  showView(views.some((view) => view.dataset.page === initialView) ? initialView : 'home');
+}
