@@ -372,12 +372,19 @@ function renderMyListings() {
   myListingsGrid.innerHTML = myListings.map((listing) => {
     const listingCards = listing.listing_cards || [];
     const cardNames = listingCards.map(({ card, quantity }) => `${quantity > 1 ? `${quantity}× ` : ''}${card?.name || 'Riftbound card'}`).join(', ');
+    const cardPreviews = listingCards.slice(0, 3).map(({ card }) => {
+      const imageUrl = getCardImageUrl(card || {});
+      return imageUrl
+        ? `<span class="my-listing-preview-card"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /></span>`
+        : `<span class="my-listing-preview-card my-listing-preview-placeholder" aria-hidden="true">${escapeHtml((card?.name || '?').slice(0, 1))}</span>`;
+    }).join('');
+    const remainingCards = listingCardCount(listingCards.slice(3));
     const listingType = listingTypeLabel(listing.listing_type);
     const price = listingPriceLabel(listing);
     const cardCount = listingCardCount(listingCards);
     const status = listingStatusLabel(listing.status);
     const statusClass = listing.status === 'completed' ? 'complete' : listing.status === 'active' ? 'pending' : 'waiting';
-    return `<article class="my-listing-row"><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="trade-status ${statusClass}">${escapeHtml(status)}</span><button class="row-arrow my-listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></article>`;
+    return `<article class="my-listing-row"><div class="my-listing-preview" aria-hidden="true">${cardPreviews}${remainingCards > 0 ? `<span class="my-listing-preview-more">+${remainingCards}</span>` : ''}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><span class="trade-status ${statusClass}">${escapeHtml(status)}</span><button class="row-arrow my-listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></article>`;
   }).join('');
   myListingsCount.textContent = `${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
   myListingsEmpty.hidden = myListings.length !== 0;
