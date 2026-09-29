@@ -158,18 +158,26 @@ function renderListings() {
     const isCarousel = listingCards.length > 4;
     const carouselPageSize = 4;
     const totalCarouselPages = Math.ceil(listingCards.length / carouselPageSize);
-    const activeCarouselPage = isCarousel ? Math.min(Math.floor(Number(listing.activeCardIndex || 0) / carouselPageSize), totalCarouselPages - 1) : 0;
+      const matchingCardIndex = query ? listingCards.findIndex(({ card }) => card && scoreCardSearchMatch(card, query) > 0) : -1;
+      const activeCarouselPage = isCarousel
+        ? matchingCardIndex >= 0
+          ? Math.floor(matchingCardIndex / carouselPageSize)
+          : Math.min(Math.floor(Number(listing.activeCardIndex || 0) / carouselPageSize), totalCarouselPages - 1)
+        : 0;
+      if (isCarousel && matchingCardIndex >= 0) listing.activeCardIndex = activeCarouselPage * carouselPageSize;
     const visibleCards = isCarousel ? listingCards.slice(activeCarouselPage * carouselPageSize, (activeCarouselPage + 1) * carouselPageSize) : listingCards;
     const card = listingCards[0]?.card || {};
     const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
     const price = listingPriceLabel(listing);
     const cardArt = isGrid || isCarousel
-      ? visibleCards.map(({ card: listingCard, quantity: listingQuantity }) => {
+      ? visibleCards.map(({ card: listingCard, quantity: listingQuantity }, visibleCardIndex) => {
         const listingImageUrl = getCardImageUrl(listingCard || {});
         const quantity = Math.max(Number(listingQuantity) || 1, 1);
         const quantityBadge = quantity > 1 ? `<span class="listing-card-quantity-badge">X${quantity}</span>` : '';
-        return `<span class="listing-card-tile">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
+        const cardIndex = activeCarouselPage * carouselPageSize + visibleCardIndex;
+        const isSearchMatch = matchingCardIndex === cardIndex;
+        return `<span class="listing-card-tile${isSearchMatch ? ' is-search-match' : ''}">${listingImageUrl ? `<img src="${escapeHtml(listingImageUrl)}" alt="${escapeHtml(listingCard?.name || 'Riftbound card')} card art" loading="lazy" />` : `<span>${escapeHtml(listingCard?.name || 'Riftbound card')}</span>`}${quantityBadge}</span>`;
       }).join('')
       : imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`;
     const singleQuantity = Math.max(Number(listingCards[0]?.quantity) || 1, 1);
