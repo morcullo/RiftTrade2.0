@@ -19,6 +19,11 @@ const searchInput = document.querySelector('#card-search');
 const marketGrid = document.querySelector('#market-grid');
 const marketStatus = document.querySelector('#market-status');
 const emptyMessage = document.querySelector('#market-empty');
+const catalogSearch = document.querySelector('#catalog-search');
+const catalogGrid = document.querySelector('#catalog-grid');
+const catalogCount = document.querySelector('#catalog-count');
+const catalogStatus = document.querySelector('#catalog-status');
+const catalogEmpty = document.querySelector('#catalog-empty');
 const openListingButton = document.querySelector('#open-listing');
 const listingDialog = document.querySelector('#listing-dialog');
 const listingClose = document.querySelector('#listing-close');
@@ -199,6 +204,22 @@ function renderListings() {
       updateListingCard(listing);
     });
   });
+}
+
+function renderCatalog() {
+  const query = normalizeCardSearch(catalogSearch.value);
+  const matches = cards.filter((card) => {
+    if (!query) return true;
+    return scoreCardSearchMatch(card, query) > 0;
+  });
+  catalogGrid.innerHTML = matches.map((card) => {
+    const imageUrl = getCardImageUrl(card);
+    const details = [card.code || card.public_code, card.set_name, card.rarity].filter(Boolean).join(' · ');
+    return `<button class="catalog-card" data-catalog-card-id="${escapeHtml(card.id)}" type="button" aria-label="View details for ${escapeHtml(card.name)}"><div class="catalog-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name)}</span>`}${renderCardBadges(card)}</div><span class="catalog-card-copy"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(details || 'Riftbound card')}</small></span></button>`;
+  }).join('');
+  catalogCount.textContent = `${matches.length} / ${cards.length} cards`;
+  catalogStatus.textContent = query ? `Showing ${matches.length} matching card${matches.length === 1 ? '' : 's'}.` : `${cards.length} cards in the catalog.`;
+  catalogEmpty.hidden = matches.length !== 0;
 }
 
 function listingStatusLabel(status) {
@@ -571,6 +592,7 @@ async function loadCatalog() {
   cards = catalog;
   populateListingCards();
   renderHeroCards();
+  renderCatalog();
 }
 
 function listingSelect(includeCardPrice = true) {
@@ -625,6 +647,11 @@ async function loadMyListings() {
 }
 
 searchInput.addEventListener('input', renderListings);
+catalogSearch.addEventListener('input', renderCatalog);
+catalogGrid.addEventListener('click', (event) => {
+  const cardButton = event.target.closest('[data-catalog-card-id]');
+  if (cardButton) openCardDialog(cardButton.dataset.catalogCardId);
+});
 document.querySelector('[data-view="trades"]').addEventListener('click', loadMyListings);
 loadCatalog();
 loadListings();

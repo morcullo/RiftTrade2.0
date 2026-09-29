@@ -17,6 +17,7 @@
         <nav class="desktop-nav" aria-label="Primary navigation">
           <button class="nav-link is-active" data-view="home">Home</button>
           <button class="nav-link" data-view="marketplace">Marketplace</button>
+          <button class="nav-link" data-view="catalog">Card catalog</button>
           <button class="nav-link" data-view="trades">My trades</button>
           <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b>2</b></button>
         </nav>
@@ -52,6 +53,14 @@
           <p class="market-status" id="market-status" aria-live="polite">Loading listings...</p>
           <div class="market-grid" id="market-grid"></div>
           <p class="empty-message" id="market-empty" hidden>No listings match that search.</p>
+        </section>
+
+        <section class="view" data-page="catalog" hidden>
+          <div class="page-heading"><div><p class="eyebrow">THE ARCHIVE / 02</p><h1>Card catalog</h1></div><span class="status-tag" id="catalog-count">Loading...</span></div>
+          <div class="market-tools catalog-tools"><label class="search-box"><span>⌕</span><input id="catalog-search" type="search" aria-label="Search card catalog" placeholder="Search every card, set, or code" /></label></div>
+          <p class="market-status" id="catalog-status" aria-live="polite">Loading catalog...</p>
+          <div class="catalog-grid" id="catalog-grid"></div>
+          <p class="empty-message" id="catalog-empty" hidden>No cards match that search.</p>
         </section>
 
         <section class="view" data-page="trades" hidden>
@@ -130,7 +139,7 @@
       </dialog>
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
-        <button class="nav-link is-active" data-view="home"><span>⌂</span>Home</button><button class="nav-link" data-view="marketplace"><span>＋</span>Market</button><button class="nav-link" data-view="trades"><span>⇄</span>Trades</button><button class="nav-link nav-link-inbox" data-view="inbox"><span>□</span>Inbox <b>2</b></button>
+        <button class="nav-link is-active" data-view="home"><span>⌂</span>Home</button><button class="nav-link" data-view="marketplace"><span>＋</span>Market</button><button class="nav-link" data-view="catalog"><span>▦</span>Catalog</button><button class="nav-link" data-view="trades"><span>⇄</span>Trades</button><button class="nav-link nav-link-inbox" data-view="inbox"><span>□</span>Inbox <b>2</b></button>
       </nav>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
