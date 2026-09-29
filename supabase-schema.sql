@@ -9,11 +9,15 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create unique index if not exists profiles_display_name_unique_idx
+  on public.profiles (lower(btrim(display_name)))
+  where display_name is not null and btrim(display_name) <> '';
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data ->> 'display_name', new.email));
+  values (new.id, coalesce(nullif(btrim(new.raw_user_meta_data ->> 'display_name'), ''), new.email));
   return new;
 end;
 $$;

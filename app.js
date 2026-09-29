@@ -985,6 +985,11 @@ function setAuthMode(mode) {
   setAuthMessage('');
 }
 
+async function findProfileByDisplayName(displayName) {
+  const pattern = displayName.replace(/[\\%_]/g, '\\$&');
+  return window.riftTradeSupabase.from('profiles').select('id').ilike('display_name', pattern).limit(1).maybeSingle();
+}
+
 function openAccount() {
   if (accountDialog.open) return;
   accountDialog.showModal();
@@ -1016,7 +1021,22 @@ authForm.addEventListener('submit', async (event) => {
   setAuthMessage('Working...');
   let result;
   if (authMode === 'signup') {
-    result = await window.riftTradeSupabase.auth.signUp({ email: authEmail.value, password: authPassword.value, options: { data: { display_name: authName.value.trim() } } });
+    const displayName = authName.value.trim();
+    if (!displayName) {
+      authSubmit.disabled = false;
+      return setAuthMessage('Enter a display name.', true);
+    }
+    const { data: existingProfile, error: profileLookupError } = await findProfileByDisplayName(displayName);
+    if (profileLookupError) {
+      authSubmit.disabled = false;
+      return setAuthMessage(profileLookupError.message, true);
+    }
+    if (existingProfile) {
+      authSubmit.disabled = false;
+      authName.focus();
+      return setAuthMessage('That display name is already in use. Choose another.', true);
+    }
+    result = await window.riftTradeSupabase.auth.signUp({ email: authEmail.value, password: authPassword.value, options: { data: { display_name: displayName } } });
   } else if (authMode === 'forgot') {
     result = await window.riftTradeSupabase.auth.resetPasswordForEmail(authEmail.value, { redirectTo: `${window.location.origin}${window.location.pathname}#reset-password` });
   } else if (authMode === 'recovery') {
@@ -1025,7 +1045,13 @@ authForm.addEventListener('submit', async (event) => {
     result = await window.riftTradeSupabase.auth.signInWithPassword({ email: authEmail.value, password: authPassword.value });
   }
   authSubmit.disabled = false;
-  if (result.error) return setAuthMessage(result.error.message, true);
+  if (result.error) {
+    if (authMode === 'signup' && result.error.message.includes('Database error saving new user')) {
+      const { data: conflictingProfile } = await findProfileByDisplayName(authName.value.trim());
+      if (conflictingProfile) return setAuthMessage('That display name is already in use. Choose another.', true);
+    }
+    return setAuthMessage(result.error.message, true);
+  }
   if (authMode === 'signup') return setAuthMessage('Account created. Check your email if confirmation is enabled.');
   if (authMode === 'forgot') return setAuthMessage('Reset link sent. Check your email.');
   if (authMode === 'recovery') { setAuthMode('signin'); return setAuthMessage('Password updated. You can sign in now.'); }
