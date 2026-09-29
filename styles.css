@@ -159,7 +159,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .listing-poster span { color: var(--muted); font: .62rem "DM Mono", monospace; }.listing-poster .listing-type-indicator { padding: 3px 5px; color: var(--ink); border: 1px solid var(--ink); background: var(--yellow); font-size: .52rem; text-transform: uppercase; }.listing-poster .listing-type-indicator.type-sale { color: white; background: var(--red); }.listing-poster .listing-type-indicator.type-trade-or-sale { color: white; background: var(--blue); }
 .card-badges { position: absolute; right: 8px; bottom: 8px; left: 8px; z-index: 2; display: flex; flex-wrap: wrap; gap: 5px; }.card-badge { width: fit-content; padding: 4px 6px; color: var(--ink) !important; border: 1px solid var(--ink); background: var(--yellow); font: 500 .56rem "DM Mono", monospace !important; text-transform: uppercase; }.card-badge + .card-badge { background: var(--blue); color: white !important; border-color: white; }
 .empty-message { color: var(--muted); text-align: center; }
-.my-listings-grid { margin-top: 30px; border-top: 1px solid var(--ink); }
+.my-listings-grid { margin-top: 30px; }
 .my-listing-row { display: grid; grid-template-columns: auto 112px minmax(0, 1fr) 204px; gap: 16px; align-items: center; min-height: 108px; border-bottom: 1px solid var(--line); }
 .my-listing-preview { display: flex; align-items: center; min-width: 0; padding-left: 4px; }
 .my-listing-preview-card { position: relative; flex: 0 0 42px; width: 42px; height: 58px; overflow: hidden; margin-left: -6px; border: 1px solid var(--ink); background: var(--paper); }
