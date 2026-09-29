@@ -24,6 +24,11 @@ const catalogGrid = document.querySelector('#catalog-grid');
 const catalogCount = document.querySelector('#catalog-count');
 const catalogStatus = document.querySelector('#catalog-status');
 const catalogEmpty = document.querySelector('#catalog-empty');
+const catalogSetFilter = document.querySelector('#catalog-set-filter');
+const catalogDomainFilter = document.querySelector('#catalog-domain-filter');
+const catalogRarityFilter = document.querySelector('#catalog-rarity-filter');
+const catalogTypeFilter = document.querySelector('#catalog-type-filter');
+const catalogFilterClear = document.querySelector('#catalog-filter-clear');
 const openListingButton = document.querySelector('#open-listing');
 const listingDialog = document.querySelector('#listing-dialog');
 const listingClose = document.querySelector('#listing-close');
@@ -208,9 +213,16 @@ function renderListings() {
 
 function renderCatalog() {
   const query = normalizeCardSearch(catalogSearch.value);
+  const selectedSet = catalogSetFilter.value;
+  const selectedDomains = [...catalogDomainFilter.selectedOptions].map((option) => option.value);
+  const selectedRarity = catalogRarityFilter.value;
+  const selectedType = catalogTypeFilter.value;
   const matches = cards.filter((card) => {
-    if (!query) return true;
-    return scoreCardSearchMatch(card, query) > 0;
+    if (selectedSet && card.set_name !== selectedSet) return false;
+    if (selectedRarity && card.rarity !== selectedRarity) return false;
+    if (selectedType && card.type !== selectedType) return false;
+    if (selectedDomains.length && !selectedDomains.every((domain) => cardDomains(card).includes(domain))) return false;
+    return !query || scoreCardSearchMatch(card, query) > 0;
   });
   catalogGrid.innerHTML = matches.map((card) => {
     const imageUrl = getCardImageUrl(card);
@@ -218,8 +230,26 @@ function renderCatalog() {
     return `<button class="catalog-card" data-catalog-card-id="${escapeHtml(card.id)}" type="button" aria-label="View details for ${escapeHtml(card.name)}"><div class="catalog-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name)}</span>`}${renderCardBadges(card)}</div><span class="catalog-card-copy"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(details || 'Riftbound card')}</small></span></button>`;
   }).join('');
   catalogCount.textContent = `${matches.length} / ${cards.length} cards`;
-  catalogStatus.textContent = query ? `Showing ${matches.length} matching card${matches.length === 1 ? '' : 's'}.` : `${cards.length} cards in the catalog.`;
+  const activeFilterCount = [selectedSet, selectedRarity, selectedType].filter(Boolean).length + selectedDomains.length;
+  catalogStatus.textContent = query || activeFilterCount ? `Showing ${matches.length} matching card${matches.length === 1 ? '' : 's'}.` : `${cards.length} cards in the catalog.`;
   catalogEmpty.hidden = matches.length !== 0;
+}
+
+function cardDomains(card) {
+  if (Array.isArray(card.domains)) return card.domains;
+  return String(card.domains || '').split(/[|,]/).map((domain) => domain.trim()).filter(Boolean);
+}
+
+function populateCatalogFilters() {
+  const values = (getValue) => [...new Set(cards.flatMap((card) => getValue(card)).filter(Boolean))].sort((left, right) => left.localeCompare(right));
+  const setOptions = values((card) => [card.set_name]);
+  const domainOptions = values((card) => cardDomains(card));
+  const rarityOptions = values((card) => [card.rarity]);
+  const typeOptions = values((card) => [card.type]);
+  catalogSetFilter.innerHTML = '<option value="">All sets</option>' + setOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+  catalogDomainFilter.innerHTML = domainOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+  catalogRarityFilter.innerHTML = '<option value="">All rarities</option>' + rarityOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+  catalogTypeFilter.innerHTML = '<option value="">All types</option>' + typeOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
 }
 
 function listingStatusLabel(status) {
@@ -591,6 +621,7 @@ async function loadCatalog() {
   }
   cards = catalog;
   populateListingCards();
+  populateCatalogFilters();
   renderHeroCards();
   renderCatalog();
 }
@@ -648,6 +679,18 @@ async function loadMyListings() {
 
 searchInput.addEventListener('input', renderListings);
 catalogSearch.addEventListener('input', renderCatalog);
+catalogSetFilter.addEventListener('change', renderCatalog);
+catalogDomainFilter.addEventListener('change', renderCatalog);
+catalogRarityFilter.addEventListener('change', renderCatalog);
+catalogTypeFilter.addEventListener('change', renderCatalog);
+catalogFilterClear.addEventListener('click', () => {
+  catalogSearch.value = '';
+  catalogSetFilter.value = '';
+  catalogDomainFilter.selectedIndex = -1;
+  catalogRarityFilter.value = '';
+  catalogTypeFilter.value = '';
+  renderCatalog();
+});
 catalogGrid.addEventListener('click', (event) => {
   const cardButton = event.target.closest('[data-catalog-card-id]');
   if (cardButton) openCardDialog(cardButton.dataset.catalogCardId);

@@ -58,6 +58,13 @@
         <section class="view" data-page="catalog" hidden>
           <div class="page-heading"><div><p class="eyebrow">THE ARCHIVE / 02</p><h1>Card catalog</h1></div><span class="status-tag" id="catalog-count">Loading...</span></div>
           <div class="market-tools catalog-tools"><label class="search-box"><span>⌕</span><input id="catalog-search" type="search" aria-label="Search card catalog" placeholder="Search every card, set, or code" /></label></div>
+          <div class="catalog-filters" aria-label="Filter card catalog">
+            <label>Set<select id="catalog-set-filter"><option value="">All sets</option></select></label>
+            <label>Domains<select id="catalog-domain-filter" multiple size="4" aria-label="Filter by domains"></select></label>
+            <label>Rarity<select id="catalog-rarity-filter"><option value="">All rarities</option></select></label>
+            <label>Type<select id="catalog-type-filter"><option value="">All types</option></select></label>
+            <button class="filter-clear" id="catalog-filter-clear" type="button">Clear filters</button>
+          </div>
           <p class="market-status" id="catalog-status" aria-live="polite">Loading catalog...</p>
           <div class="catalog-grid" id="catalog-grid"></div>
           <p class="empty-message" id="catalog-empty" hidden>No cards match that search.</p>
