@@ -14,6 +14,7 @@ button { color: inherit; cursor: pointer; }
 .site-header { position: sticky; z-index: 10; top: 0; height: 92px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(247,247,245,.96); backdrop-filter: blur(12px); }
 .wordmark { color: var(--ink); text-decoration: none; font-size: 1.05rem; font-weight: 700; letter-spacing: .08em; }
 .wordmark span { margin-right: 0; }
+.wordmark-accent { color: var(--red); }
 .desktop-nav { display: flex; gap: 34px; height: 100%; align-items: center; }
 .nav-link { border: 0; border-bottom: 2px solid transparent; padding: 5px 0; background: transparent; color: var(--muted); font-size: .84rem; }
 .nav-link.is-active, .nav-link:hover { color: var(--ink); border-bottom-color: var(--ink); }
