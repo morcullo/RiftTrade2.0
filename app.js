@@ -308,7 +308,7 @@ function renderHeroCards() {
     imageCards.find((card) => normalizedCardName(card).includes('kai sa')),
   ].filter(Boolean);
   if (heroCards.length < 2) return;
-  const [backCard, frontCard] = heroCards;
+  const [frontCard, backCard] = heroCards;
   heroCardBack.classList.add('has-image');
   heroCardFront.classList.add('has-image');
   heroCardBack.innerHTML = `<img src="${escapeHtml(getCardImageUrl(backCard))}" alt="${escapeHtml(backCard.name)} card art" />`;
