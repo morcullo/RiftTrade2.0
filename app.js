@@ -10,7 +10,10 @@ function showView(viewName) {
   navItems.forEach((item) => item.classList.toggle('is-active', item.dataset.view === viewName));
   history.replaceState(null, '', `#${viewName}`);
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (viewName === 'home') loadHomeStats();
+    if (viewName === 'home') {
+      loadHomeStats();
+      if (!cards.length) loadCatalog();
+    }
   else if (viewName === 'marketplace') loadListings();
   else if (viewName === 'catalog') loadCatalog();
   else if (viewName === 'trades') loadMyListings();
