@@ -464,10 +464,14 @@ function scoreCardSearchMatch(card, query) {
   if (!query) return 1;
   const fields = cardSearchFields(card);
   const combined = fields.join(' ');
+  if (fields[0].includes(query)) return 500;
   if (combined.includes(query)) return 300;
   const queryTokens = query.split(' ');
-  const fieldTokens = fields.flatMap((field) => field.split(' '));
-  const tokenScores = queryTokens.map((token) => scoreSearchToken(token, fieldTokens));
+  const tokenScores = queryTokens.map((token) => {
+    const nameScore = scoreSearchToken(token, fields[0].split(' '));
+    const metadataScore = scoreSearchToken(token, fields.slice(1).flatMap((field) => field.split(' ')));
+    return Math.max(nameScore + (nameScore ? 100 : 0), metadataScore);
+  });
   if (tokenScores.some((score) => score === 0)) return 0;
   return tokenScores.reduce((total, score) => total + score, 0);
 }
