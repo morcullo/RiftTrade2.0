@@ -28,7 +28,7 @@ button { color: inherit; cursor: pointer; }
 .nav-link { border: 0; border-bottom: 2px solid transparent; padding: 5px 0; background: transparent; color: var(--muted); font-size: .84rem; }
 .nav-link.is-active, .nav-link:hover { color: var(--ink); border-bottom-color: var(--ink); }
 .nav-link-inbox { display: flex; align-items: center; gap: 7px; }
-.nav-link b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: #fff; font: 500 .65rem "DM Mono", monospace; }
+.nav-link b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: #fff; font: 500 .65rem "DM Mono", monospace; }.nav-link b[hidden] { display: none; }
 .profile-button { display: grid; place-items: center; border: 1px solid var(--ink); width: 36px; height: 36px; border-radius: 50%; background: transparent; }.profile-glyph { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .profile-menu-wrap { position: relative; }
 .profile-menu { position: absolute; z-index: 20; top: calc(100% + 10px); right: 0; display: grid; width: 168px; border: 1px solid var(--ink); background: var(--paper); box-shadow: 5px 5px 0 var(--ink); }
