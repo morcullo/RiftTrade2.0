@@ -240,7 +240,8 @@ listingCardResults.addEventListener('click', (event) => {
   if (!selectedListingCardIds.includes(card.id)) selectedListingCardIds.push(card.id);
   listingCardSearch.value = '';
   renderSelectedListingCards();
-  renderListingCardResults();
+  listingCardSearch.blur();
+  listingCardResults.hidden = true;
 });
 
 function renderSelectedListingCards() {
@@ -258,7 +259,11 @@ listingCardSelected.addEventListener('click', (event) => {
   if (!removeButton) return;
   selectedListingCardIds = selectedListingCardIds.filter((cardId) => cardId !== removeButton.dataset.removeListingCard);
   renderSelectedListingCards();
-  renderListingCardResults();
+  listingCardResults.hidden = true;
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!event.target.closest('.listing-card-picker')) listingCardResults.hidden = true;
 });
 
 async function loadCatalog() {
