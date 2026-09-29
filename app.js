@@ -74,6 +74,7 @@ const cardDialogSet = document.querySelector('#card-dialog-set');
 const cardDialogStats = document.querySelector('#card-dialog-stats');
 const cardDialogAbility = document.querySelector('#card-dialog-ability');
 const cardDialogTags = document.querySelector('#card-dialog-tags');
+const cardDialogMarketplace = document.querySelector('#card-dialog-marketplace');
 const listingDetailsDialog = document.querySelector('#listing-details-dialog');
 const listingDetailsClose = document.querySelector('#listing-details-close');
 const listingDetailsTitle = document.querySelector('#listing-details-title');
@@ -329,6 +330,7 @@ function renderCardBadges(card) {
 function openCardDialog(cardId) {
   const card = cards.find((item) => item.id === cardId);
   if (!card) return;
+  cardDialogMarketplace.dataset.cardName = card.name;
   const imageUrl = getCardImageUrl(card);
   cardDialogTitle.textContent = card.name;
   cardDialogBadges.innerHTML = renderCardBadges(card);
@@ -373,6 +375,13 @@ function openListingDetails(listingId) {
 
 cardDialogClose.addEventListener('click', () => cardDialog.close());
 cardDialog.addEventListener('click', (event) => { if (event.target === cardDialog) cardDialog.close(); });
+cardDialogMarketplace.addEventListener('click', () => {
+  searchInput.value = cardDialogMarketplace.dataset.cardName || '';
+  cardDialog.close();
+  showView('marketplace');
+  renderListings();
+  searchInput.focus();
+});
 listingDetailsClose.addEventListener('click', () => listingDetailsDialog.close());
 listingDetailsDialog.addEventListener('click', (event) => { if (event.target === listingDetailsDialog) listingDetailsDialog.close(); });
 
