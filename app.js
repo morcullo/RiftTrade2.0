@@ -326,7 +326,7 @@ function openCardDialog(cardId) {
   const imageUrl = getCardImageUrl(card);
   cardDialogTitle.textContent = card.name;
   cardDialogBadges.innerHTML = renderCardBadges(card);
-  cardDialogSet.textContent = [card.set_name || card.set_code, card.collector_number].filter(Boolean).join(' · ') || 'Riftbound catalog';
+  cardDialogSet.textContent = [card.set_name || card.set_code, card.public_code].filter(Boolean).join(' · ') || 'Riftbound catalog';
   cardDialogArt.className = `card-dialog-art${imageUrl ? ' has-image' : ''}`;
   cardDialogArt.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`;
   const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains]];
