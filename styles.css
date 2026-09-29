@@ -48,6 +48,10 @@ h1 em { color: var(--red); font-style: normal; }
 .button span { margin-left: 20px; font-size: 1rem; }
 .button-dark { background: var(--ink); color: white; }
 .button-outline { background: transparent; }
+.card-dialog-tcgplayer { display: inline-flex; align-items: center; justify-content: center; color: var(--ink); text-decoration: none; }
+.card-dialog-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.card-dialog-actions > .button { flex: 1 1 140px; min-width: 0; padding: 10px 8px; text-align: center; white-space: nowrap; }
+.card-dialog-actions > .button span { margin-left: 6px; }
 .hero-card-stack { position: relative; height: 370px; }
 .hero-card { position: absolute; width: 230px; height: auto; aspect-ratio: 744 / 1039; border: 1px solid var(--ink); box-shadow: 10px 12px 0 var(--ink); }
 .hero-card-back { top: 58px; left: -28px; display: grid; place-items: center; background: var(--yellow); transform: rotate(-9deg); font-size: 5rem; font-weight: 700; }
