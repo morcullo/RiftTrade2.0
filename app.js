@@ -202,20 +202,20 @@ listingForm.addEventListener('submit', async (event) => {
 function renderListingCardResults() {
   const query = listingCardSearch.value.trim().toLowerCase();
   const matches = cards.filter((card) => [card.name, card.code, card.public_code, card.set_name, card.set_code].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 12);
-  listingCardResults.innerHTML = matches.map((card) => `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span></button>`).join('');
+  listingCardResults.innerHTML = matches.map((card) => { const imageUrl = getCardImageUrl(card); return `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : '<span class="listing-card-option-placeholder">R</span>'}<span class="listing-card-option-copy"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span></span></button>`; }).join('');
   listingCardResults.hidden = matches.length === 0;
 }
 
 function populateListingCards() {
   listingCardSearch.value = '';
   listingCardInput.value = '';
-  listingCardSelected.textContent = '';
+  listingCardSelected.innerHTML = '';
   listingCardSearch.setCustomValidity('Choose a card from the search results.');
 }
 
 listingCardSearch.addEventListener('input', () => {
   listingCardInput.value = '';
-  listingCardSelected.textContent = '';
+  listingCardSelected.innerHTML = '';
   listingCardSearch.setCustomValidity('Choose a card from the search results.');
   renderListingCardResults();
 });
@@ -227,7 +227,8 @@ listingCardResults.addEventListener('click', (event) => {
   if (!card) return;
   listingCardInput.value = card.id;
   listingCardSearch.value = card.name;
-  listingCardSelected.textContent = `${card.name} · ${card.code || card.public_code || card.id}`;
+  const imageUrl = getCardImageUrl(card);
+  listingCardSelected.innerHTML = `${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)} · ${escapeHtml(card.code || card.public_code || card.id)}</span>`;
   listingCardSearch.setCustomValidity('');
   listingCardResults.hidden = true;
 });
