@@ -96,11 +96,6 @@ function getCardImageUrl(card) {
   return window.riftTradeSupabase.storage.from('card-images').getPublicUrl(imageName).data.publicUrl;
 }
 
-function getListingMeta(listing, cardIndex) {
-  const listingCards = listing.listing_cards || [];
-  return [listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade', listingCards[cardIndex]?.condition?.replaceAll('_', ' '), listingCards[cardIndex]?.language].filter(Boolean).join(' · ');
-}
-
 function updateListingCard(listing) {
   const article = marketGrid.querySelector(`[data-listing-id="${CSS.escape(listing.id)}"]`);
   if (!article) return;
@@ -130,8 +125,6 @@ function updateListingCard(listing) {
   else if (renderCardBadges(card)) cardArt.insertAdjacentHTML('beforeend', renderCardBadges(card));
   const count = cardArt.querySelector('.listing-image-count');
   if (count) count.textContent = `${activeCardIndex + 1} / ${listingCards.length}`;
-  const copy = article.querySelector('.listing-copy');
-  copy.querySelector('span').textContent = `${card.name || 'Riftbound card'}${listingCards.length > 1 ? ` + ${listingCards.length - 1} more` : ''} · ${getListingMeta(listing, activeCardIndex)}`;
 }
 
 function renderListings() {
@@ -147,7 +140,6 @@ function renderListings() {
     const card = listingCards[activeCardIndex]?.card || {};
     const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
-    const listingMeta = getListingMeta(listing, activeCardIndex);
     const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
     return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}">
       <div class="card-art${imageUrl ? ' has-image' : ''}">
@@ -155,12 +147,11 @@ function renderListings() {
         ${renderCardBadges(card)}
         ${listingCards.length > 1 ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card image">←</button><span class="listing-image-count">${activeCardIndex + 1} / ${listingCards.length}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card image">→</button>` : ''}
       </div>
-      <div class="listing-copy"><div><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(card.name || 'Riftbound card')}${listingCards.length > 1 ? ` + ${listingCards.length - 1} more` : ''} · ${escapeHtml(listingMeta)}</span><small>By ${escapeHtml(seller)}${listingCards.length > 1 ? ` · ${listingCards.length} cards` : ''}</small></div><b>${escapeHtml(price)}</b></div>
-      <button class="trade-button" data-listing-id="${escapeHtml(listing.id)}" type="button">View listing <span>→</span></button>
+      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span><button class="listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button" aria-label="Open listing ${escapeHtml(listing.title)}">→</button></div></div>
     </article>`;
   }).join('');
   emptyMessage.hidden = matches.length !== 0;
-  marketGrid.querySelectorAll('.trade-button').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
+  marketGrid.querySelectorAll('.listing-open').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
   marketGrid.querySelectorAll('.listing-image-button').forEach((button) => button.addEventListener('click', (event) => {
     event.stopPropagation();
     const listing = listings.find((item) => item.id === button.dataset.listingId);
