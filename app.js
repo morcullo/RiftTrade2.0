@@ -78,6 +78,7 @@ const cardDialogMarketplace = document.querySelector('#card-dialog-marketplace')
 const listingDetailsDialog = document.querySelector('#listing-details-dialog');
 const listingDetailsClose = document.querySelector('#listing-details-close');
 const listingDetailsTitle = document.querySelector('#listing-details-title');
+const listingDetailsBadges = document.querySelector('#listing-details-badges');
 const listingDetailsSeller = document.querySelector('#listing-details-seller');
 const listingDetailsMeta = document.querySelector('#listing-details-meta');
 const listingDetailsDescription = document.querySelector('#listing-details-description');
@@ -343,15 +344,16 @@ function openListingDetails(listingId) {
   const listingType = listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade';
   const price = listingPriceLabel(listing);
   const cardCount = listingCardCount(listingCards);
+  const badgeLabels = [...new Set(listingCards.map(({ card }) => card?.is_signed ? 'Signature' : card?.is_overnumbered ? 'Overnumbered' : '').filter(Boolean))];
   listingDetailsTitle.textContent = listing.title;
+  listingDetailsBadges.innerHTML = badgeLabels.length ? `<span class="card-badges">${badgeLabels.map((badge) => `<span class="card-badge">${badge}</span>`).join('')}</span>` : '';
   listingDetailsSeller.textContent = `Listed by ${seller}`;
   listingDetailsMeta.textContent = [listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
   listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, price }) => {
     const imageUrl = getCardImageUrl(card || {});
-    const badge = renderCardBadges(card || {});
-    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}${badge}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`${formatDollar(price)} each`)}</small>` : ''}</span><span class="listing-details-quantity">× ${escapeHtml(quantity || 1)}</span></button>`;
+    return `<button class="listing-details-card" data-card-id="${escapeHtml(card?.id || '')}" type="button"><span class="listing-details-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card?.name || 'Riftbound card')}</span>`}</span><span class="listing-details-card-copy"><strong>${escapeHtml(card?.name || 'Riftbound card')}</strong><span>${escapeHtml([condition?.replaceAll('_', ' '), language].filter(Boolean).join(' · '))}</span>${price !== null && price !== undefined ? `<small>${escapeHtml(`${formatDollar(price)} each`)}</small>` : ''}</span><span class="listing-details-quantity">× ${escapeHtml(quantity || 1)}</span></button>`;
   }).join('');
   listingDetailsCards.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
   window.riftTradeSupabase?.auth.getUser().then(({ data: { user } }) => {
