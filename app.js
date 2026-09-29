@@ -25,7 +25,7 @@ const catalogCount = document.querySelector('#catalog-count');
 const catalogStatus = document.querySelector('#catalog-status');
 const catalogEmpty = document.querySelector('#catalog-empty');
 const catalogSetFilter = document.querySelector('#catalog-set-filter');
-const catalogDomainFilter = document.querySelector('#catalog-domain-filter');
+const catalogDomainOptions = document.querySelector('#catalog-domain-options');
 const catalogRarityFilter = document.querySelector('#catalog-rarity-filter');
 const catalogTypeFilter = document.querySelector('#catalog-type-filter');
 const catalogFilterClear = document.querySelector('#catalog-filter-clear');
@@ -214,7 +214,7 @@ function renderListings() {
 function renderCatalog() {
   const query = normalizeCardSearch(catalogSearch.value);
   const selectedSet = catalogSetFilter.value;
-  const selectedDomains = [...catalogDomainFilter.selectedOptions].map((option) => option.value);
+  const selectedDomains = [...catalogDomainOptions.querySelectorAll('input:checked')].map((input) => input.value);
   const selectedRarity = catalogRarityFilter.value;
   const selectedType = catalogTypeFilter.value;
   const matches = cards.filter((card) => {
@@ -247,7 +247,7 @@ function populateCatalogFilters() {
   const rarityOptions = values((card) => [card.rarity]);
   const typeOptions = values((card) => [card.type]);
   catalogSetFilter.innerHTML = '<option value="">All sets</option>' + setOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-  catalogDomainFilter.innerHTML = domainOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+  catalogDomainOptions.innerHTML = domainOptions.map((value) => `<label><input type="checkbox" value="${escapeHtml(value)}" />${escapeHtml(value)}</label>`).join('');
   catalogRarityFilter.innerHTML = '<option value="">All rarities</option>' + rarityOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
   catalogTypeFilter.innerHTML = '<option value="">All types</option>' + typeOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
 }
@@ -680,13 +680,13 @@ async function loadMyListings() {
 searchInput.addEventListener('input', renderListings);
 catalogSearch.addEventListener('input', renderCatalog);
 catalogSetFilter.addEventListener('change', renderCatalog);
-catalogDomainFilter.addEventListener('change', renderCatalog);
+catalogDomainOptions.addEventListener('change', renderCatalog);
 catalogRarityFilter.addEventListener('change', renderCatalog);
 catalogTypeFilter.addEventListener('change', renderCatalog);
 catalogFilterClear.addEventListener('click', () => {
   catalogSearch.value = '';
   catalogSetFilter.value = '';
-  catalogDomainFilter.selectedIndex = -1;
+  catalogDomainOptions.querySelectorAll('input:checked').forEach((input) => { input.checked = false; });
   catalogRarityFilter.value = '';
   catalogTypeFilter.value = '';
   renderCatalog();

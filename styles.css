@@ -83,7 +83,14 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .catalog-filters label { display: grid; gap: 6px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
 .catalog-filters select { min-width: 0; border: 1px solid var(--line); padding: 10px 9px; color: var(--ink); background: white; font: .72rem "Space Grotesk", sans-serif; }
 .catalog-filters select:focus { border-color: var(--ink); outline: 0; }
-.catalog-filters select[multiple] { height: 94px; overflow-y: auto; }
+.catalog-domain-filter { position: relative; align-self: end; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
+.catalog-domain-filter summary { display: flex; min-height: 38px; align-items: center; justify-content: space-between; border: 1px solid var(--line); padding: 10px 9px; color: var(--ink); background: white; cursor: pointer; list-style: none; }
+.catalog-domain-filter summary::after { content: "＋"; color: var(--muted); font-size: .9rem; }
+.catalog-domain-filter[open] summary::after { content: "−"; }
+.catalog-domain-filter summary::-webkit-details-marker { display: none; }
+.catalog-domain-filter > div { position: absolute; z-index: 4; top: calc(100% + 5px); right: 0; left: 0; display: grid; gap: 8px; min-width: 170px; border: 1px solid var(--ink); padding: 11px; background: var(--paper); box-shadow: 5px 5px 0 var(--ink); }
+.catalog-domain-filter > div label { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 8px; color: var(--ink); font: .7rem "Space Grotesk", sans-serif; text-transform: none; }
+.catalog-domain-filter input { accent-color: var(--red); }
 .filter-clear { align-self: end; border: 1px solid var(--line); padding: 10px 12px; background: transparent; color: var(--muted); font-size: .72rem; white-space: nowrap; }
 .filter-clear:hover { border-color: var(--ink); color: var(--ink); }
 .listing { border: 1px solid var(--line); background: white; cursor: pointer; }
