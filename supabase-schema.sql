@@ -1,0 +1,127 @@
+-- RiftTrade Supabase data model. Run in the Supabase SQL Editor.
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  username text unique,
+  display_name text,
+  avatar_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, display_name)
+  values (new.id, coalesce(new.raw_user_meta_data ->> 'display_name', new.email));
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+for each row execute procedure public.handle_new_user();
+
+create table if not exists public.cards (
+  id text primary key,
+  name text not null,
+  code text,
+  public_code text,
+  set_code text,
+  set_name text,
+  collector_number integer,
+  rarity text,
+  type text,
+  cost integer,
+  might integer,
+  power integer,
+  domains text[] not null default '{}',
+  tags text[] not null default '{}',
+  ability_text text,
+  artists text[] not null default '{}',
+  orientation text,
+  image_file text,
+  image_path text,
+  image_url text,
+  is_alternate_art boolean not null default false,
+  is_signed boolean not null default false,
+  is_overnumbered boolean not null default false,
+  is_variant boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.listings (
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  description text,
+  listing_type text not null default 'trade' check (listing_type in ('trade', 'sale', 'trade_or_sale')),
+  price numeric(10, 2) check (price is null or price >= 0),
+  currency text not null default 'USD',
+  status text not null default 'active' check (status in ('draft', 'active', 'paused', 'completed', 'cancelled')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.listing_cards (
+  listing_id uuid not null references public.listings(id) on delete cascade,
+  card_id text not null references public.cards(id) on delete restrict,
+  quantity integer not null default 1 check (quantity > 0),
+  condition text not null default 'near_mint' check (condition in ('near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged')),
+  language text not null default 'English',
+  notes text,
+  primary key (listing_id, card_id)
+);
+
+create index if not exists cards_name_search_idx on public.cards using gin (to_tsvector('simple', name));
+create index if not exists cards_set_code_idx on public.cards (set_code);
+create index if not exists listings_status_created_idx on public.listings (status, created_at desc);
+create index if not exists listings_seller_idx on public.listings (seller_id);
+create index if not exists listing_cards_card_idx on public.listing_cards (card_id);
+
+create or replace function public.set_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at = now(); return new; end;
+$$;
+
+drop trigger if exists profiles_set_updated_at on public.profiles;
+create trigger profiles_set_updated_at before update on public.profiles for each row execute procedure public.set_updated_at();
+drop trigger if exists listings_set_updated_at on public.listings;
+create trigger listings_set_updated_at before update on public.listings for each row execute procedure public.set_updated_at();
+
+alter table public.profiles enable row level security;
+alter table public.cards enable row level security;
+alter table public.listings enable row level security;
+alter table public.listing_cards enable row level security;
+
+drop policy if exists "Public profiles are readable" on public.profiles;
+create policy "Public profiles are readable" on public.profiles for select to anon, authenticated using (true);
+drop policy if exists "Users can update their profile" on public.profiles;
+create policy "Users can update their profile" on public.profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
+drop policy if exists "Anyone can read cards" on public.cards;
+create policy "Anyone can read cards" on public.cards for select to anon, authenticated using (true);
+
+drop policy if exists "Active listings are public" on public.listings;
+create policy "Active listings are public" on public.listings for select to anon, authenticated using (status = 'active' or seller_id = auth.uid());
+drop policy if exists "Users can create listings" on public.listings;
+create policy "Users can create listings" on public.listings for insert to authenticated with check (seller_id = auth.uid());
+drop policy if exists "Owners can update listings" on public.listings;
+create policy "Owners can update listings" on public.listings for update to authenticated using (seller_id = auth.uid()) with check (seller_id = auth.uid());
+drop policy if exists "Owners can delete listings" on public.listings;
+create policy "Owners can delete listings" on public.listings for delete to authenticated using (seller_id = auth.uid());
+
+drop policy if exists "Listing cards follow visible listings" on public.listing_cards;
+create policy "Listing cards follow visible listings" on public.listing_cards for select to anon, authenticated using (
+  exists (select 1 from public.listings where listings.id = listing_cards.listing_id and (listings.status = 'active' or listings.seller_id = auth.uid()))
+);
+drop policy if exists "Owners can manage listing cards" on public.listing_cards;
+create policy "Owners can manage listing cards" on public.listing_cards for all to authenticated using (
+  exists (select 1 from public.listings where listings.id = listing_cards.listing_id and listings.seller_id = auth.uid())
+) with check (
+  exists (select 1 from public.listings where listings.id = listing_cards.listing_id and listings.seller_id = auth.uid())
+);
+
+insert into storage.buckets (id, name, public) values ('card-images', 'card-images', true)
+on conflict (id) do update set public = true;
+drop policy if exists "Anyone can read card images" on storage.objects;
+create policy "Anyone can read card images" on storage.objects for select to anon, authenticated using (bucket_id = 'card-images');

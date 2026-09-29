@@ -49,11 +49,8 @@
         <section class="view" data-page="marketplace" hidden>
           <div class="page-heading"><div><p class="eyebrow">THE MARKET / 01</p><h1>Marketplace</h1></div><button class="button button-outline" type="button">List a card <span>＋</span></button></div>
           <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" type="button">Filter <span>☷</span></button></div>
-          <div class="market-grid" id="market-grid">
-            <article class="listing" data-search="viego king of the rift spiritforged"><div class="card-art art-red"><span>VIEGO</span><strong>KING<br />OF THE<br />RIFT</strong><small>SPIRITFORGED · 034/221</small></div><div class="listing-copy"><div><strong>Viego, King of the Rift</strong><span>Near mint · English</span></div><b>$18.00</b></div><button class="trade-button" type="button">Make an offer <span>→</span></button></article>
-            <article class="listing" data-search="jinx loose cannon origins"><div class="card-art art-yellow"><span>JINX</span><strong>LOOSE<br />CANNON</strong><small>ORIGINS · 118/221</small></div><div class="listing-copy"><div><strong>Jinx, Loose Cannon</strong><span>Lightly played · English</span></div><b>$9.50</b></div><button class="trade-button" type="button">Make an offer <span>→</span></button></article>
-            <article class="listing" data-search="sett enlightened spiritforged"><div class="card-art art-blue"><span>SETT</span><strong>THE<br />BOSS</strong><small>SPIRITFORGED · 061/221</small></div><div class="listing-copy"><div><strong>Sett, The Boss</strong><span>Near mint · English</span></div><b>$24.00</b></div><button class="trade-button" type="button">Make an offer <span>→</span></button></article>
-          </div>
+          <p class="market-status" id="market-status" aria-live="polite">Loading cards...</p>
+          <div class="market-grid" id="market-grid"></div>
           <p class="empty-message" id="market-empty" hidden>No cards match that search.</p>
         </section>
 
@@ -80,8 +77,8 @@
         <button class="nav-link is-active" data-view="home"><span>⌂</span>Home</button><button class="nav-link" data-view="marketplace"><span>＋</span>Market</button><button class="nav-link" data-view="trades"><span>⇄</span>Trades</button><button class="nav-link nav-link-inbox" data-view="inbox"><span>□</span>Inbox <b>2</b></button>
       </nav>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@17"></script>
-    <script src="appwrite-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

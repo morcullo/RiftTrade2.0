@@ -49,6 +49,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .status-tag { padding: 8px 11px; color: var(--red); border: 1px solid var(--red); border-radius: 30px; font: 500 .7rem "DM Mono", monospace; }
 .dark-tag { color: white; border-color: var(--ink); background: var(--ink); }
 .market-tools { display: flex; gap: 10px; margin: 30px 0; }
+.market-status { min-height: 1.2em; margin: -14px 0 18px; color: var(--muted); font: .68rem "DM Mono", monospace; }
 .search-box { flex: 1; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--ink); padding: 12px 2px; }
 .search-box span { font-size: 1.6rem; line-height: .5; }
 .search-box input { width: 100%; border: 0; outline: 0; background: transparent; font-size: .9rem; }
@@ -58,6 +59,10 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .listing { border: 1px solid var(--line); background: white; transition: transform .2s, box-shadow .2s; }
 .listing:hover { transform: translateY(-4px); box-shadow: 6px 6px 0 var(--ink); }
 .card-art { height: 265px; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; color: var(--ink); border-bottom: 1px solid var(--ink); }
+.card-art.has-image { color: white; background-color: var(--ink); background-position: center; background-size: cover; }
+.card-art.has-image::after { position: absolute; inset: 0; content: ""; background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.6)); }
+.card-art { position: relative; overflow: hidden; }
+.card-art > * { position: relative; z-index: 1; }
 .card-art strong { font-size: 2.8rem; line-height: .85; letter-spacing: -.1em; }
 .card-art small { font-size: .57rem; }
 .art-red { background: var(--red); }.art-yellow { background: var(--yellow); }.art-blue { background: var(--blue); color: white; }
