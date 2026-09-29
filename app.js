@@ -1175,8 +1175,9 @@ async function loadMyListings() {
     myListings = [];
     renderMyListings();
     myListingsCount.textContent = 'Sign in required';
-    myListingsStatus.textContent = 'Sign in to see the listings you have posted.';
+    myListingsStatus.textContent = '';
     myListingsEmpty.hidden = true;
+    myListingsStatus.hidden = true;
     return;
   }
   let { data, error } = await window.riftTradeSupabase
@@ -1190,8 +1191,8 @@ async function loadMyListings() {
     return;
   }
   myListings = data || [];
-  myListingsStatus.textContent = myListings.length ? '' : 'Your listings will appear here once you list a card.';
-  myListingsStatus.hidden = myListings.length > 0;
+  myListingsStatus.textContent = '';
+  myListingsStatus.hidden = true;
   renderMyListings();
 }
 
@@ -1345,6 +1346,12 @@ async function loadInbox() {
     closeInboxRealtime();
     inboxConversations = [];
     activeConversationId = null;
+    inboxThread.innerHTML = '';
+    inboxMessageStatus.textContent = '';
+    inboxPeerProfile.textContent = '';
+    inboxPeerProfile.removeAttribute('data-profile-id');
+    inboxRecipientResults.innerHTML = '';
+    inboxRecipientResults.hidden = true;
     inboxRecipientForm.hidden = true;
     inboxConversationFilter.hidden = true;
     inboxSignInButton.hidden = false;
