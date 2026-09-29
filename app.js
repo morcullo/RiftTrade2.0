@@ -24,7 +24,6 @@ const listingDialog = document.querySelector('#listing-dialog');
 const listingClose = document.querySelector('#listing-close');
 const listingForm = document.querySelector('#listing-form');
 const listingCardSearch = document.querySelector('#listing-card-search');
-const listingCardInput = document.querySelector('#listing-card');
 const listingCardResults = document.querySelector('#listing-card-results');
 const listingCardSelected = document.querySelector('#listing-card-selected');
 const listingMessage = document.querySelector('#listing-message');
@@ -66,6 +65,7 @@ const cardDialogTags = document.querySelector('#card-dialog-tags');
 
 let cards = [];
 let listings = [];
+let selectedListingCardIds = [];
 let authMode = 'signin';
 
 function getCardImageUrl(card) {
@@ -80,28 +80,39 @@ function getCardImageUrl(card) {
 function renderListings() {
   const query = searchInput.value.trim().toLowerCase();
   const matches = listings.filter((listing) => {
-    const card = listing.listing_cards?.[0]?.card || {};
-    const searchable = [listing.title, listing.description, card.name, card.set_name, card.code, listing.seller?.display_name].filter(Boolean).join(' ').toLowerCase();
+    const listingCards = listing.listing_cards || [];
+    const searchable = [listing.title, listing.description, listing.seller?.display_name, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code])].filter(Boolean).join(' ').toLowerCase();
     return searchable.includes(query);
   });
   marketGrid.innerHTML = matches.map((listing) => {
-    const card = listing.listing_cards?.[0]?.card || {};
-    const imageUrl = getCardImageUrl(card);
     const listingCards = listing.listing_cards || [];
+    const activeCardIndex = Math.min(Number(listing.activeCardIndex || 0), Math.max(listingCards.length - 1, 0));
+    const card = listingCards[activeCardIndex]?.card || {};
+    const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
-    const listingMeta = [listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade', listingCards[0]?.condition?.replaceAll('_', ' '), listingCards[0]?.language].filter(Boolean).join(' · ');
+    const listingMeta = [listing.listing_type === 'sale' ? 'For sale' : listing.listing_type === 'trade_or_sale' ? 'Trade or sale' : 'For trade', listingCards[activeCardIndex]?.condition?.replaceAll('_', ' '), listingCards[activeCardIndex]?.language].filter(Boolean).join(' · ');
     const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
-    return `<article class="listing" data-search="${escapeHtml(listing.title)}">
+    return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}">
       <div class="card-art${imageUrl ? ' has-image' : ''}">
         ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`}
         ${renderCardBadges(card)}
+        ${listingCards.length > 1 ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card image">←</button><span class="listing-image-count">${activeCardIndex + 1} / ${listingCards.length}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card image">→</button>` : ''}
       </div>
-      <div class="listing-copy"><div><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(card.name || 'Riftbound card')} · ${escapeHtml(listingMeta)}</span><small>By ${escapeHtml(seller)}${listingCards.length > 1 ? ` · ${listingCards.length} cards` : ''}</small></div><b>${escapeHtml(price)}</b></div>
+      <div class="listing-copy"><div><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(card.name || 'Riftbound card')}${listingCards.length > 1 ? ` + ${listingCards.length - 1} more` : ''} · ${escapeHtml(listingMeta)}</span><small>By ${escapeHtml(seller)}${listingCards.length > 1 ? ` · ${listingCards.length} cards` : ''}</small></div><b>${escapeHtml(price)}</b></div>
       <button class="trade-button" data-card-id="${escapeHtml(card.id || '')}" type="button">View card <span>→</span></button>
     </article>`;
   }).join('');
   emptyMessage.hidden = matches.length !== 0;
   marketGrid.querySelectorAll('[data-card-id]').forEach((button) => button.addEventListener('click', () => openCardDialog(button.dataset.cardId)));
+  marketGrid.querySelectorAll('.listing-image-button').forEach((button) => button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const listing = listings.find((item) => item.id === button.dataset.listingId);
+    if (!listing) return;
+    const cardsInListing = listing.listing_cards || [];
+    const currentIndex = Number(listing.activeCardIndex || 0);
+    listing.activeCardIndex = (currentIndex + Number(button.dataset.direction) + cardsInListing.length) % cardsInListing.length;
+    renderListings();
+  }));
 }
 
 function renderHeroCards() {
@@ -174,6 +185,10 @@ listingForm.addEventListener('submit', async (event) => {
     listingSubmit.disabled = false;
     return setListingMessage('Sign in before creating a listing.', true);
   }
+  if (!selectedListingCardIds.length) {
+    listingSubmit.disabled = false;
+    return setListingMessage('Choose at least one card for the listing.', true);
+  }
   const { data: listing, error: listingError } = await window.riftTradeSupabase
     .from('listings')
     .insert({ seller_id: user.id, title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: listingPrice.value ? Number(listingPrice.value) : null })
@@ -185,7 +200,7 @@ listingForm.addEventListener('submit', async (event) => {
   }
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert({ listing_id: listing.id, card_id: listingCardInput.value, quantity: 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null });
+    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: 1, condition: listingCondition.value, language: listingLanguage.value.trim(), notes: listingDescription.value.trim() || null })));
   if (cardError) {
     await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
@@ -201,22 +216,19 @@ listingForm.addEventListener('submit', async (event) => {
 
 function renderListingCardResults() {
   const query = listingCardSearch.value.trim().toLowerCase();
-  const matches = cards.filter((card) => [card.name, card.code, card.public_code, card.set_name, card.set_code].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 12);
+  const matches = cards.filter((card) => !selectedListingCardIds.includes(card.id) && [card.name, card.code, card.public_code, card.set_name, card.set_code].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 12);
   listingCardResults.innerHTML = matches.map((card) => { const imageUrl = getCardImageUrl(card); return `<button class="listing-card-option" type="button" data-listing-card-id="${escapeHtml(card.id)}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />` : '<span class="listing-card-option-placeholder">R</span>'}<span class="listing-card-option-copy"><strong>${escapeHtml(card.name)}</strong><span>${escapeHtml(card.code || card.public_code || card.id)}${card.set_name ? ` · ${escapeHtml(card.set_name)}` : ''}</span></span></button>`; }).join('');
   listingCardResults.hidden = matches.length === 0;
 }
 
 function populateListingCards() {
   listingCardSearch.value = '';
-  listingCardInput.value = '';
+  selectedListingCardIds = [];
   listingCardSelected.innerHTML = '';
-  listingCardSearch.setCustomValidity('Choose a card from the search results.');
+  listingCardSearch.setCustomValidity('Choose at least one card from the search results.');
 }
 
 listingCardSearch.addEventListener('input', () => {
-  listingCardInput.value = '';
-  listingCardSelected.innerHTML = '';
-  listingCardSearch.setCustomValidity('Choose a card from the search results.');
   renderListingCardResults();
 });
 listingCardSearch.addEventListener('focus', renderListingCardResults);
@@ -225,12 +237,28 @@ listingCardResults.addEventListener('click', (event) => {
   if (!option) return;
   const card = cards.find((item) => item.id === option.dataset.listingCardId);
   if (!card) return;
-  listingCardInput.value = card.id;
-  listingCardSearch.value = card.name;
-  const imageUrl = getCardImageUrl(card);
-  listingCardSelected.innerHTML = `${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)} · ${escapeHtml(card.code || card.public_code || card.id)}</span>`;
-  listingCardSearch.setCustomValidity('');
-  listingCardResults.hidden = true;
+  if (!selectedListingCardIds.includes(card.id)) selectedListingCardIds.push(card.id);
+  listingCardSearch.value = '';
+  renderSelectedListingCards();
+  renderListingCardResults();
+});
+
+function renderSelectedListingCards() {
+  listingCardSelected.innerHTML = selectedListingCardIds.map((cardId) => {
+    const card = cards.find((item) => item.id === cardId);
+    if (!card) return '';
+    const imageUrl = getCardImageUrl(card);
+    return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span>${escapeHtml(card.name)}</span><button type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button></span>`;
+  }).join('');
+  listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
+}
+
+listingCardSelected.addEventListener('click', (event) => {
+  const removeButton = event.target.closest('[data-remove-listing-card]');
+  if (!removeButton) return;
+  selectedListingCardIds = selectedListingCardIds.filter((cardId) => cardId !== removeButton.dataset.removeListingCard);
+  renderSelectedListingCards();
+  renderListingCardResults();
 });
 
 async function loadCatalog() {
