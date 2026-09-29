@@ -141,17 +141,31 @@ function renderListings() {
     const imageUrl = getCardImageUrl(card);
     const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
     const price = listing.price !== null && listing.price !== undefined ? `${listing.currency || 'USD'} ${Number(listing.price).toFixed(2)}` : 'Make an offer';
-    return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}">
+    return `<article class="listing" data-listing-id="${escapeHtml(listing.id)}" data-search="${escapeHtml(listing.title)}" tabindex="0" role="button" aria-label="Open listing ${escapeHtml(listing.title)}">
       <div class="card-art${imageUrl ? ' has-image' : ''}">
         ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name || listing.title)}</span>`}
         ${renderCardBadges(card)}
         ${listingCards.length > 1 ? `<button class="listing-image-button listing-image-prev" data-listing-id="${escapeHtml(listing.id)}" data-direction="-1" type="button" aria-label="Previous card image">←</button><span class="listing-image-count">${activeCardIndex + 1} / ${listingCards.length}</span><button class="listing-image-button listing-image-next" data-listing-id="${escapeHtml(listing.id)}" data-direction="1" type="button" aria-label="Next card image">→</button>` : ''}
       </div>
-      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span><button class="listing-open" data-listing-id="${escapeHtml(listing.id)}" type="button">View listing</button></div></div>
+      <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(price)}</b></div><div class="listing-poster"><span>By ${escapeHtml(seller)}</span></div></div>
     </article>`;
   }).join('');
   emptyMessage.hidden = matches.length !== 0;
-  marketGrid.querySelectorAll('.listing-open').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.listingId)));
+  marketGrid.querySelectorAll('.listing').forEach((article) => {
+    const openListing = () => {
+      if (article.querySelector('.card-art')?.dataset.swiped === 'true') return;
+      openListingDetails(article.dataset.listingId);
+    };
+    article.addEventListener('click', (event) => {
+      if (event.target.closest('.listing-image-button')) return;
+      openListing();
+    });
+    article.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      openListing();
+    });
+  });
   marketGrid.querySelectorAll('.listing-image-button').forEach((button) => button.addEventListener('click', (event) => {
     event.stopPropagation();
     const listing = listings.find((item) => item.id === button.dataset.listingId);
@@ -179,6 +193,8 @@ function renderListings() {
       if (!listing || cardsInListing.length < 2) return;
       const currentIndex = Number(listing.activeCardIndex || 0);
       listing.activeCardIndex = (currentIndex + (deltaX < 0 ? 1 : -1) + cardsInListing.length) % cardsInListing.length;
+      cardArt.dataset.swiped = 'true';
+      window.setTimeout(() => delete cardArt.dataset.swiped, 300);
       updateListingCard(listing);
     });
   });
