@@ -146,7 +146,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .trade-cards { display: flex; }.mini-card { display: grid; place-items: center; width: 35px; height: 45px; border: 1px solid var(--ink); margin-left: -7px; font-weight: 600; }.mini-red { background: var(--red); }.mini-yellow { background: var(--yellow); }.mini-blue { background: var(--blue); color: white; }.mini-black { color: white; background: var(--ink); }
 .trade-status { justify-self: start; font: 500 .62rem "DM Mono", monospace; }.pending { color: var(--red); }.waiting { color: var(--muted); }.complete { color: #398552; }.row-arrow { border: 0; background: transparent; font-size: 1.3rem; }
 .message-row { width: 100%; display: grid; grid-template-columns: 42px 1fr 15px; gap: 17px; align-items: center; border: 0; border-bottom: 1px solid var(--line); padding: 20px 0; background: transparent; text-align: left; }.message-row > div:nth-child(2) { display: grid; gap: 4px; }.message-row p { margin: 0; }.message-row small { font: .65rem "DM Mono", monospace; }.message-row > span { color: var(--muted); }.message-row.unread > span { color: var(--red); font-size: .7rem; }
-.mobile-nav { display: none; }
+.mobile-nav { display: none; }.nav-glyph { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .listing-details-card-title { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
 .listing-details-card-title .card-badges { position: static; display: flex; gap: 5px; }
 @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
