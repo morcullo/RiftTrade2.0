@@ -553,15 +553,22 @@ async function loadCatalog() {
     marketStatus.textContent = 'Add your Supabase URL and anon key to load listings.';
     return;
   }
-  const { data, error } = await window.riftTradeSupabase
-    .from('cards')
-    .select('id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed')
-    .order('name');
-  if (error) {
-    marketStatus.textContent = `Could not load cards: ${error.message}`;
-    return;
+  const pageSize = 1000;
+  const catalog = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await window.riftTradeSupabase
+      .from('cards')
+      .select('id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed')
+      .order('name')
+      .range(offset, offset + pageSize - 1);
+    if (error) {
+      marketStatus.textContent = `Could not load cards: ${error.message}`;
+      return;
+    }
+    catalog.push(...(data || []));
+    if (!data || data.length < pageSize) break;
   }
-  cards = data || [];
+  cards = catalog;
   populateListingCards();
   renderHeroCards();
 }
