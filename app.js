@@ -626,16 +626,16 @@ function openListingDetails(listingId) {
 }
 
 const PROFILE_RANKS = [
-  { name: 'Iron', listings: 0, sold: 0, days: 0 },
-  { name: 'Bronze', listings: 3, sold: 0, days: 7 },
-  { name: 'Silver', listings: 10, sold: 1, days: 30 },
-  { name: 'Gold', listings: 25, sold: 5, days: 90 },
-  { name: 'Platinum', listings: 50, sold: 15, days: 180 },
-  { name: 'Emerald', listings: 90, sold: 30, days: 270 },
-  { name: 'Diamond', listings: 160, sold: 60, days: 365 },
-  { name: 'Master', listings: 260, sold: 110, days: 540 },
-  { name: 'Grandmaster', listings: 380, sold: 175, days: 730 },
-  { name: 'Challenger', listings: 500, sold: 250, days: 730 },
+  { name: 'Iron', sold: 0, days: 0 },
+  { name: 'Bronze', sold: 0, days: 7 },
+  { name: 'Silver', sold: 1, days: 30 },
+  { name: 'Gold', sold: 5, days: 90 },
+  { name: 'Platinum', sold: 15, days: 180 },
+  { name: 'Emerald', sold: 30, days: 270 },
+  { name: 'Diamond', sold: 60, days: 365 },
+  { name: 'Master', sold: 110, days: 540 },
+  { name: 'Grandmaster', sold: 175, days: 730 },
+  { name: 'Challenger', sold: 250, days: 730 },
 ];
 
 function getProfileRank(profile, listings) {
@@ -649,14 +649,13 @@ function getProfileRank(profile, listings) {
   let rankIndex = 0;
   for (let index = 1; index < PROFILE_RANKS.length; index += 1) {
     const threshold = PROFILE_RANKS[index];
-    if (metrics.listings >= threshold.listings && metrics.sold >= threshold.sold && metrics.days >= threshold.days) rankIndex = index;
+    if (metrics.sold >= threshold.sold && metrics.days >= threshold.days) rankIndex = index;
     else break;
   }
   const rank = PROFILE_RANKS[rankIndex];
   const nextRank = PROFILE_RANKS[rankIndex + 1] || null;
   const progress = nextRank
     ? Math.min(99, Math.max(0, Math.floor(Math.min(
-      nextRank.listings ? metrics.listings / nextRank.listings : 1,
       nextRank.sold ? metrics.sold / nextRank.sold : 1,
       nextRank.days ? metrics.days / nextRank.days : 1,
     ) * 100)))
