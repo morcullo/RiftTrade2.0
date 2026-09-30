@@ -1096,7 +1096,10 @@ function normalizeCardSearch(value) {
 }
 
 function cardSearchFields(card) {
-  return [card.name, card.code, card.public_code, card.set_name, card.set_code]
+  const tags = Array.isArray(card.tags)
+    ? card.tags
+    : String(card.tags || '').split(/[|,]/).map((tag) => tag.trim()).filter(Boolean);
+  return [card.name, card.code, card.public_code, card.set_name, card.set_code, ...tags]
     .filter(Boolean)
     .map(normalizeCardSearch);
 }
