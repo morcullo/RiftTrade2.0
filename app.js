@@ -1555,6 +1555,11 @@ async function loadInbox() {
     inboxSignInButton.hidden = false;
     return;
   }
+  closeInboxRealtime();
+  activeConversationId = null;
+  inboxActive.hidden = true;
+  inboxEmptyState.hidden = false;
+  inboxLayout.classList.remove('is-conversation-open');
   inboxStatus.hidden = false;
   inboxStatus.textContent = 'Loading conversations...';
   const { data: { user }, error } = await window.riftTradeSupabase.auth.getUser();
@@ -1591,14 +1596,6 @@ async function loadInbox() {
   inboxSignInButton.hidden = true;
   const canLoad = await refreshInboxConversations();
   if (!canLoad) return;
-  if (activeConversationId && inboxConversations.some((item) => String(item.conversation_id) === String(activeConversationId))) {
-    await openInboxConversation(activeConversationId, false);
-  } else {
-    activeConversationId = null;
-    inboxActive.hidden = true;
-    inboxEmptyState.hidden = false;
-    inboxLayout.classList.remove('is-conversation-open');
-  }
 }
 
 async function searchInboxRecipients() {
