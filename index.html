@@ -169,6 +169,18 @@
         <div class="listing-details-contact" id="listing-details-contact" hidden><button class="button button-dark" id="listing-contact-message" type="button">Send a message <span>→</span></button></div>
       </dialog>
 
+      <dialog class="sale-confirmation-dialog" id="sale-confirmation-dialog" aria-labelledby="sale-confirmation-title">
+        <button class="dialog-close" id="sale-confirmation-close" type="button" aria-label="Close sale confirmation">×</button>
+        <p class="eyebrow">MARKETPLACE / SALE VERIFICATION</p>
+        <h2 id="sale-confirmation-title">Confirm the buyer</h2>
+        <p class="account-intro">Choose the buyer from a conversation with messages. They will receive a confirmation request in their Inbox.</p>
+        <form id="sale-confirmation-form">
+          <label class="auth-field">Buyer<select id="sale-confirmation-buyer" required><option value="">Loading message contacts...</option></select></label>
+          <button class="button button-dark auth-submit" id="sale-confirmation-submit" type="submit">Request confirmation <span>→</span></button>
+        </form>
+        <p class="auth-message" id="sale-confirmation-message" role="status" aria-live="polite"></p>
+      </dialog>
+
       <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
         <button class="dialog-close" id="profile-close" type="button" aria-label="Close profile">×</button>
         <p class="eyebrow">RIFTTRADE / MEMBER PROFILE</p>

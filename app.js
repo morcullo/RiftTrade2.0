@@ -169,6 +169,12 @@ const listingEditButton = document.querySelector('#listing-edit');
 const listingPendingButton = document.querySelector('#listing-pending');
 const listingSoldButton = document.querySelector('#listing-sold');
 const listingDeleteButton = document.querySelector('#listing-delete');
+const saleConfirmationDialog = document.querySelector('#sale-confirmation-dialog');
+const saleConfirmationClose = document.querySelector('#sale-confirmation-close');
+const saleConfirmationForm = document.querySelector('#sale-confirmation-form');
+const saleConfirmationBuyer = document.querySelector('#sale-confirmation-buyer');
+const saleConfirmationMessage = document.querySelector('#sale-confirmation-message');
+const saleConfirmationSubmit = document.querySelector('#sale-confirmation-submit');
 const listingDialogTitle = document.querySelector('#listing-title');
 const myListingsGrid = document.querySelector('#my-listings-grid');
 const myListingsCount = document.querySelector('#my-listings-count');
@@ -176,6 +182,7 @@ const myListingsStatus = document.querySelector('#my-listings-status');
 const myListingsEmpty = document.querySelector('#my-listings-empty');
 const myListingsFilter = document.querySelector('#my-listings-filter');
 let editingListingId = null;
+let saleConfirmationListingId = null;
 
 let cards = [];
 let catalogLoadPromise = null;
@@ -934,6 +941,29 @@ async function updateListingStatus(status) {
   await Promise.all([loadListings(), loadMyListings()]);
 }
 
+async function openSaleConfirmationDialog() {
+  const listingId = listingDetailsDialog.dataset.listingId;
+  if (!listingId || !window.riftTradeSupabase) return;
+  saleConfirmationListingId = listingId;
+  saleConfirmationBuyer.innerHTML = '<option value="">Loading message contacts...</option>';
+  saleConfirmationBuyer.disabled = true;
+  saleConfirmationSubmit.disabled = true;
+  saleConfirmationMessage.textContent = '';
+  saleConfirmationDialog.showModal();
+  const { data, error } = await window.riftTradeSupabase.rpc('list_direct_conversations');
+  if (error) {
+    saleConfirmationMessage.textContent = `Could not load message contacts: ${error.message}`;
+    return;
+  }
+  const contacts = (data || []).filter((conversation) => conversation.peer_id && conversation.last_message_body);
+  saleConfirmationBuyer.innerHTML = contacts.length
+    ? `<option value="">Choose the buyer</option>${contacts.map((contact) => `<option value="${escapeHtml(contact.peer_id)}">${escapeHtml(contact.peer_display_name || 'RiftTrade member')}</option>`).join('')}`
+    : '<option value="">No message contacts found</option>';
+  saleConfirmationBuyer.disabled = contacts.length === 0;
+  saleConfirmationSubmit.disabled = contacts.length === 0;
+  if (!contacts.length) saleConfirmationMessage.textContent = 'Message the buyer first, then request sale confirmation here.';
+}
+
 listingEditButton.addEventListener('click', async () => {
   const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId);
   if (!listing) return;
@@ -942,7 +972,7 @@ listingEditButton.addEventListener('click', async () => {
   openListingForm(listing);
 });
 listingPendingButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'paused' ? 'active' : 'paused'));
-listingSoldButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'completed' ? 'active' : 'completed'));
+listingSoldButton.addEventListener('click', () => listingDetailsDialog.dataset.listingStatus === 'completed' ? updateListingStatus('active') : openSaleConfirmationDialog());
 listingDeleteButton.addEventListener('click', async () => {
   const listingId = listingDetailsDialog.dataset.listingId;
   if (!listingId || !window.confirm('Delete this listing?')) return;
@@ -950,6 +980,27 @@ listingDeleteButton.addEventListener('click', async () => {
   if (error) return setListingMessage(error.message, true);
   listingDetailsDialog.close();
   await loadListings();
+});
+saleConfirmationClose.addEventListener('click', () => saleConfirmationDialog.close());
+saleConfirmationDialog.addEventListener('click', (event) => { if (event.target === saleConfirmationDialog) saleConfirmationDialog.close(); });
+saleConfirmationForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!saleConfirmationListingId || !saleConfirmationBuyer.value) return;
+  saleConfirmationSubmit.disabled = true;
+  saleConfirmationMessage.textContent = 'Sending confirmation request...';
+  const { error } = await window.riftTradeSupabase.rpc('request_listing_sale_confirmation', {
+    target_listing_id: saleConfirmationListingId,
+    target_buyer_id: saleConfirmationBuyer.value,
+  });
+  if (error) {
+    saleConfirmationSubmit.disabled = false;
+    saleConfirmationMessage.textContent = error.message;
+    return;
+  }
+  saleConfirmationDialog.close();
+  listingDetailsDialog.close();
+  await refreshInboxConversations();
+  saleConfirmationListingId = null;
 });
 
 function setListingMessage(message, isError = false) {
@@ -1426,14 +1477,33 @@ function renderInboxMessages(messages) {
     const isMine = message.sender_id === inboxUser.id;
     const readState = isMine ? `<small class="inbox-message-read">${message.read_at ? 'Seen' : 'Sent'}</small>` : '';
     const sharedListing = message.shared_listing ? renderInboxSharedListing(message.shared_listing) : '';
-    return `<article class="inbox-message${isMine ? ' is-mine' : ''}"><div class="inbox-message-bubble">${message.body ? `<p>${escapeHtml(message.body).replaceAll('\n', '<br>')}</p>` : ''}${sharedListing}<footer><time>${escapeHtml(inboxTimeLabel(message.created_at))}</time>${readState}</footer></div></article>`;
+    const saleConfirmation = message.sale_confirmation;
+    const saleAction = saleConfirmation?.status === 'pending' && saleConfirmation.buyer_id === inboxUser.id
+      ? `<button class="inbox-sale-confirm" type="button" data-sale-confirmation-id="${escapeHtml(saleConfirmation.id)}">Confirm sale</button>`
+      : saleConfirmation?.status === 'pending' ? '<small class="inbox-sale-pending">Awaiting buyer confirmation</small>' : saleConfirmation?.status === 'confirmed' ? '<small class="inbox-sale-confirmed">Sale confirmed</small>' : '';
+    return `<article class="inbox-message${isMine ? ' is-mine' : ''}"><div class="inbox-message-bubble">${message.body ? `<p>${escapeHtml(message.body).replaceAll('\n', '<br>')}</p>` : ''}${sharedListing}${saleAction}<footer><time>${escapeHtml(inboxTimeLabel(message.created_at))}</time>${readState}</footer></div></article>`;
   }).join('');
   inboxSharedListings = messages.map((message) => message.shared_listing).filter(Boolean);
   inboxThread.querySelectorAll('[data-shared-listing-id]').forEach((button) => button.addEventListener('click', () => {
     const listing = inboxSharedListings.find((item) => String(item.id) === String(button.dataset.sharedListingId));
     if (listing) openListingDetails(listing.id);
   }));
+  inboxThread.querySelectorAll('[data-sale-confirmation-id]').forEach((button) => button.addEventListener('click', () => confirmListingSale(button.dataset.saleConfirmationId)));
   inboxThread.scrollTop = inboxThread.scrollHeight;
+}
+
+async function confirmListingSale(confirmationId) {
+  const button = inboxThread.querySelector(`[data-sale-confirmation-id="${CSS.escape(confirmationId)}"]`);
+  if (button) button.disabled = true;
+  inboxMessageStatus.textContent = 'Confirming sale...';
+  const { error } = await window.riftTradeSupabase.rpc('confirm_listing_sale', { target_confirmation_id: confirmationId });
+  if (error) {
+    if (button) button.disabled = false;
+    inboxMessageStatus.textContent = error.message;
+    return;
+  }
+  inboxMessageStatus.textContent = 'Sale confirmed.';
+  await Promise.all([openInboxConversation(activeConversationId, false), refreshInboxConversations(), loadListings(), loadMyListings()]);
 }
 
 async function openInboxConversation(conversationId, markAsRead = true) {
@@ -1452,7 +1522,7 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   renderInboxConversations();
 
   const { data, error } = await window.riftTradeSupabase.from('direct_messages')
-    .select(`id, conversation_id, sender_id, body, created_at, read_at, shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_file, image_path, image_url)))`)
+    .select(`id, conversation_id, sender_id, body, created_at, read_at, sale_confirmation:listing_sale_confirmations(id, listing_id, seller_id, buyer_id, status, created_at, confirmed_at), shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_file, image_path, image_url)))`)
     .eq('conversation_id', conversation.conversation_id)
     .order('created_at', { ascending: false })
     .limit(100);
