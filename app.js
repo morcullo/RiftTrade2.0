@@ -95,6 +95,12 @@ const profileAvatarStatic = document.querySelector('#profile-avatar-static');
 const profileAvatarInput = document.querySelector('#profile-avatar-input');
 const profileDisplayName = document.querySelector('#profile-display-name');
 const profileMemberSince = document.querySelector('#profile-member-since');
+const profileRankBadge = document.querySelector('#profile-rank-badge');
+const profileRankName = document.querySelector('#profile-rank-name');
+const profileRankSummary = document.querySelector('#profile-rank-summary');
+const profileRankProgress = document.querySelector('#profile-rank-progress');
+const profileRankProgressBar = document.querySelector('#profile-rank-progress-bar');
+const profileRankProgressLabel = document.querySelector('#profile-rank-progress-label');
 const profileEditButton = document.querySelector('#profile-edit');
 const profileMessageButton = document.querySelector('#profile-message');
 const profileEditDialog = document.querySelector('#profile-edit-dialog');
@@ -619,6 +625,58 @@ function openListingDetails(listingId) {
   listingDetailsDialog.showModal();
 }
 
+const PROFILE_RANKS = [
+  { name: 'Iron', listings: 0, sold: 0, days: 0 },
+  { name: 'Bronze', listings: 3, sold: 0, days: 7 },
+  { name: 'Silver', listings: 10, sold: 1, days: 30 },
+  { name: 'Gold', listings: 25, sold: 5, days: 90 },
+  { name: 'Platinum', listings: 50, sold: 15, days: 180 },
+  { name: 'Emerald', listings: 90, sold: 30, days: 270 },
+  { name: 'Diamond', listings: 160, sold: 60, days: 365 },
+  { name: 'Master', listings: 260, sold: 110, days: 540 },
+  { name: 'Grandmaster', listings: 380, sold: 175, days: 730 },
+  { name: 'Challenger', listings: 500, sold: 250, days: 730 },
+];
+
+function getProfileRank(profile, listings) {
+  const listingCount = listings.length;
+  const soldCount = listings.filter((listing) => listing.status === 'completed').length;
+  const memberSince = profile.created_at ? new Date(profile.created_at) : null;
+  const membershipDays = memberSince && !Number.isNaN(memberSince.getTime())
+    ? Math.max(0, Math.floor((Date.now() - memberSince.getTime()) / 86400000))
+    : 0;
+  const metrics = { listings: listingCount, sold: soldCount, days: membershipDays };
+  let rankIndex = 0;
+  for (let index = 1; index < PROFILE_RANKS.length; index += 1) {
+    const threshold = PROFILE_RANKS[index];
+    if (metrics.listings >= threshold.listings && metrics.sold >= threshold.sold && metrics.days >= threshold.days) rankIndex = index;
+    else break;
+  }
+  const rank = PROFILE_RANKS[rankIndex];
+  const nextRank = PROFILE_RANKS[rankIndex + 1] || null;
+  const progress = nextRank
+    ? Math.min(99, Math.max(0, Math.floor(Math.min(
+      nextRank.listings ? metrics.listings / nextRank.listings : 1,
+      nextRank.sold ? metrics.sold / nextRank.sold : 1,
+      nextRank.days ? metrics.days / nextRank.days : 1,
+    ) * 100)))
+    : 100;
+  return { rank, nextRank, progress, metrics };
+}
+
+function renderProfileRank(profile, listings) {
+  const { rank, nextRank, progress, metrics } = getProfileRank(profile, listings);
+  const rankClass = rank.name.toLowerCase().replaceAll(' ', '-');
+  profileRankBadge.className = `profile-rank-badge profile-rank-${rankClass}`;
+  profileRankBadge.textContent = rank.name;
+  profileRankBadge.setAttribute('aria-label', `${rank.name} rank`);
+  profileRankName.textContent = rank.name;
+  profileRankSummary.textContent = `${metrics.listings} listings · ${metrics.sold} sold · ${metrics.days} days as a member`;
+  profileRankProgress.setAttribute('aria-valuenow', String(progress));
+  profileRankProgressBar.style.width = `${progress}%`;
+  profileRankProgressLabel.textContent = nextRank ? `${progress}% to ${nextRank.name}` : 'Highest rank reached';
+}
+
 async function openProfileDialog(profileId) {
   if (!profileId || !window.riftTradeSupabase) return;
   const requestedProfileId = String(profileId);
@@ -629,6 +687,13 @@ async function openProfileDialog(profileId) {
   profileMessageButton.hidden = true;
   profileMessageButton.dataset.profileId = '';
   profileListingCount.textContent = '';
+  profileRankBadge.className = 'profile-rank-badge';
+  profileRankBadge.textContent = '...';
+  profileRankName.textContent = 'Loading rank';
+  profileRankSummary.textContent = '';
+  profileRankProgress.setAttribute('aria-valuenow', '0');
+  profileRankProgressBar.style.width = '0%';
+  profileRankProgressLabel.textContent = '';
   profileListingsStatus.textContent = 'Loading listings...';
   profileListingsGrid.innerHTML = '';
   profileListings = [];
@@ -683,6 +748,7 @@ async function openProfileDialog(profileId) {
   }
 
   profileListings = listingResult.data || [];
+  renderProfileRank(profile, profileListings);
   profileListingCount.textContent = `${profileListings.length} listing${profileListings.length === 1 ? '' : 's'}`;
   profileListingsStatus.textContent = profileListings.length ? '' : 'No visible listings.';
   profileListingsGrid.innerHTML = profileListings.map((listing) => renderMarketplaceListingCard(listing, '', true)).join('');

@@ -347,6 +347,16 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .profile-info a { color: var(--ink); text-decoration-color: var(--red); text-underline-offset: 3px; }
 .profile-display-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .profile-display-row dd { min-width: 0; }
+.profile-rank { margin: 0 0 26px; border: 1px solid var(--ink); padding: 16px; background: #f0eee7; }
+.profile-rank-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.profile-rank-heading .eyebrow { margin: 0 0 4px; }
+.profile-rank-heading h3 { margin: 0; font-size: 1.25rem; }
+.profile-rank-badge { display: inline-grid; min-width: 82px; height: 32px; place-items: center; border: 1px solid var(--ink); color: var(--ink); background: #d5d1c6; font: 700 .64rem "DM Mono", monospace; text-transform: uppercase; }
+.profile-rank-bronze { color: #fff; background: #9a6038; }.profile-rank-silver { background: #c5c9c9; }.profile-rank-gold { background: #e0b83f; }.profile-rank-platinum { color: #fff; background: #3b8d91; }.profile-rank-emerald { color: #fff; background: #27845b; }.profile-rank-diamond { color: #fff; background: #4778b5; }.profile-rank-master { color: #fff; background: #8053a2; }.profile-rank-grandmaster { color: #fff; background: #aa3d36; }.profile-rank-challenger { color: #fff; background: #267f88; }
+.profile-rank-summary { margin: 14px 0 18px; color: var(--muted); font: .64rem "DM Mono", monospace; }
+.profile-rank-progress-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: .6rem "DM Mono", monospace; text-transform: uppercase; }
+.profile-rank-progress { height: 9px; margin-top: 7px; overflow: hidden; border: 1px solid var(--ink); background: white; }
+.profile-rank-progress span { display: block; width: 0; height: 100%; background: var(--red); transition: width .35s ease; }
 .profile-edit-button { flex: 0 0 auto; padding: 6px 9px; font-size: .7rem; }
 .profile-message-button { flex: 0 0 auto; padding: 8px 11px; }
 .profile-message-button span { margin-left: 8px; }
