@@ -366,6 +366,7 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .inbox-sale-confirm:hover, .inbox-sale-confirm:focus-visible { color: white; background: var(--red); outline: 0; }
 .inbox-sale-pending, .inbox-sale-confirmed { display: block; margin-top: 10px; color: var(--muted); font: .6rem "DM Mono", monospace; text-transform: uppercase; }
 .inbox-sale-confirmed { color: var(--red); }
+@media (max-width: 700px) { .inbox-sale-confirm { display: block; width: 100%; min-height: 40px; margin-top: 12px; padding: 10px; } }
 .profile-edit-button { flex: 0 0 auto; padding: 6px 9px; font-size: .7rem; }
 .profile-message-button { flex: 0 0 auto; padding: 8px 11px; }
 .profile-message-button span { margin-left: 8px; }

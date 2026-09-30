@@ -1477,7 +1477,7 @@ function renderInboxMessages(messages) {
     const isMine = message.sender_id === inboxUser.id;
     const readState = isMine ? `<small class="inbox-message-read">${message.read_at ? 'Seen' : 'Sent'}</small>` : '';
     const sharedListing = message.shared_listing ? renderInboxSharedListing(message.shared_listing) : '';
-    const saleConfirmation = message.sale_confirmation;
+    const saleConfirmation = Array.isArray(message.sale_confirmation) ? message.sale_confirmation[0] : message.sale_confirmation;
     const saleAction = saleConfirmation?.status === 'pending' && saleConfirmation.buyer_id === inboxUser.id
       ? `<button class="inbox-sale-confirm" type="button" data-sale-confirmation-id="${escapeHtml(saleConfirmation.id)}">Confirm sale</button>`
       : saleConfirmation?.status === 'pending' ? '<small class="inbox-sale-pending">Awaiting buyer confirmation</small>' : saleConfirmation?.status === 'confirmed' ? '<small class="inbox-sale-confirmed">Sale confirmed</small>' : '';
