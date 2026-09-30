@@ -1522,7 +1522,7 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   renderInboxConversations();
 
   const { data, error } = await window.riftTradeSupabase.from('direct_messages')
-    .select(`id, conversation_id, sender_id, body, created_at, read_at, sale_confirmation:listing_sale_confirmations(id, listing_id, seller_id, buyer_id, status, created_at, confirmed_at), shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_file, image_path, image_url)))`)
+    .select(`id, conversation_id, sender_id, body, created_at, read_at, sale_confirmation:listing_sale_confirmations!direct_messages_sale_confirmation_id_fkey(id, listing_id, seller_id, buyer_id, status, created_at, confirmed_at), shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_file, image_path, image_url)))`)
     .eq('conversation_id', conversation.conversation_id)
     .order('created_at', { ascending: false })
     .limit(100);

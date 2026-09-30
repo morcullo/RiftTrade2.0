@@ -139,6 +139,14 @@ begin
   update public.listings
   set status = 'completed'
   where id = confirmation.listing_id and seller_id = confirmation.seller_id and status <> 'completed';
+  insert into public.direct_messages (conversation_id, sender_id, body, shared_listing_id, sale_confirmation_id)
+  values (
+    confirmation.conversation_id,
+    current_user_id,
+    'Sale confirmed. The listing has been marked sold.',
+    confirmation.listing_id,
+    confirmation.id
+  );
   return confirmation.listing_id;
 end;
 $$;
