@@ -281,7 +281,7 @@ function changeListingCarouselPage(listing, page, container = marketGrid, query 
 
 function renderMarketplaceListingCard(listing, query = '', includeStatus = false) {
   const listingCards = listing.listing_cards || [];
-  const isGrid = listingCards.length > 1 && listingCards.length <= 4;
+    const isGrid = listingCards.length > 1 && listingCards.length <= 5;
   const isCarousel = listingCards.length > 4;
   const pageSize = 4;
   const totalPages = Math.ceil(listingCards.length / pageSize);
@@ -496,7 +496,7 @@ function formatDollar(value) {
 
 function listingPriceLabel(listing) {
   const listingCards = listing.listing_cards || [];
-  const cardPrices = listingCards.map(({ price }) => Number(price)).filter(Number.isFinite);
+    const cardPrices = listingCards.map(({ price }) => Number(price)).filter(Number.isFinite).filter(price => price > 0);
   if (listingCards.length > 1) {
     if (!cardPrices.length) return 'Make an offer';
     const lowest = Math.min(...cardPrices);
