@@ -213,13 +213,13 @@ const discordOnboardingStorageKey = 'riftTradeDiscordOnboarding';
 const displayNameMinLength = 2;
 const displayNameMaxLength = 40;
 
-function getCardImageUrl(card) {
-  if (card.image_url && /^https?:\/\//i.test(card.image_url)) return card.image_url;
-  const imageName = String(card.image_path || card.image_file || '')
-    .replace(/^card-images\//, '')
-    .replace(/^\//, '');
-  if (!imageName || !window.riftTradeSupabase) return '';
-  return window.riftTradeSupabase.storage.from('card-images').getPublicUrl(imageName).data.publicUrl;
+function getCardImageUrl(card, width) {
+  if (!/^https?:\/\//i.test(card?.image_url || '')) return '';
+  if (!width) return card.image_url;
+  const imageUrl = new URL(card.image_url);
+  if (imageUrl.hostname !== 'cmsassets.rgpub.io') return card.image_url;
+  imageUrl.searchParams.set('w', String(width));
+  return imageUrl.toString();
 }
 
 function updateListingCard(listing) {
@@ -428,7 +428,7 @@ function renderCatalog() {
   catalogPage = Math.min(catalogPage, Math.max(pageCount - 1, 0));
   const visibleCards = matches.slice(catalogPage * catalogPageSize, (catalogPage + 1) * catalogPageSize);
   catalogGrid.innerHTML = visibleCards.map((card) => {
-    const imageUrl = getCardImageUrl(card);
+    const imageUrl = getCardImageUrl(card, 300);
     const details = [card.code || card.public_code, card.set_name, card.rarity].filter(Boolean).join(' · ');
     return `<button class="catalog-card" data-catalog-card-id="${escapeHtml(card.id)}" type="button" aria-label="View details for ${escapeHtml(card.name)}"><div class="catalog-card-art${imageUrl ? ' has-image' : ''}">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" loading="lazy" />` : `<span>${escapeHtml(card.name)}</span>`}${renderCardBadges(card)}</div><span class="catalog-card-copy"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(details || 'Riftbound card')}</small></span></button>`;
   }).join('');
@@ -949,6 +949,7 @@ async function openSaleConfirmationDialog() {
   saleConfirmationBuyer.disabled = true;
   saleConfirmationSubmit.disabled = true;
   saleConfirmationMessage.textContent = '';
+  listingDetailsDialog.close();
   saleConfirmationDialog.showModal();
   const { data, error } = await window.riftTradeSupabase.rpc('list_direct_conversations');
   if (error) {
@@ -998,7 +999,6 @@ saleConfirmationForm.addEventListener('submit', async (event) => {
     return;
   }
   saleConfirmationDialog.close();
-  listingDetailsDialog.close();
   await refreshInboxConversations();
   saleConfirmationListingId = null;
 });
@@ -1250,7 +1250,7 @@ async function fetchCatalog() {
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await window.riftTradeSupabase
       .from('cards')
-      .select('id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed')
+      .select('id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_url, is_overnumbered, is_signed')
       .order('name')
       .range(offset, offset + pageSize - 1);
     if (error) {
@@ -1304,7 +1304,7 @@ async function loadHomeStats() {
 
 function listingSelect(includeCardPrice = true, includeCardFoil = true) {
   const listingCardFields = [includeCardPrice ? 'price' : '', 'language', includeCardFoil ? 'foil' : '', 'notes'].filter(Boolean).join(', ');
-  return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${listingCardFields}, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_file, image_path, image_url, is_overnumbered, is_signed))`;
+  return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${listingCardFields}, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_url, is_overnumbered, is_signed))`;
 }
 
 async function loadListings() {
@@ -1522,7 +1522,7 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   renderInboxConversations();
 
   const { data, error } = await window.riftTradeSupabase.from('direct_messages')
-    .select(`id, conversation_id, sender_id, body, created_at, read_at, sale_confirmation:listing_sale_confirmations!direct_messages_sale_confirmation_id_fkey(id, listing_id, seller_id, buyer_id, status, created_at, confirmed_at), shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_file, image_path, image_url)))`)
+    .select(`id, conversation_id, sender_id, body, created_at, read_at, sale_confirmation:listing_sale_confirmations!direct_messages_sale_confirmation_id_fkey(id, listing_id, seller_id, buyer_id, status, created_at, confirmed_at), shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_url)))`)
     .eq('conversation_id', conversation.conversation_id)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -1664,6 +1664,7 @@ async function startDirectConversation(recipientId, sharedListingId = null) {
 }
 
 inboxNewMessage.addEventListener('click', () => {
+  if (window.matchMedia('(max-width: 700px)').matches && inboxLayout.classList.contains('is-conversation-open')) inboxBack.click();
   inboxRecipientSearch.value = '';
   inboxRecipientResults.hidden = true;
   inboxRecipientSearch.focus();

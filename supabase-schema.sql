@@ -147,12 +147,8 @@ create policy "Owners can manage listing cards" on public.listing_cards for all 
   exists (select 1 from public.listings where listings.id = listing_cards.listing_id and listings.seller_id = auth.uid())
 );
 
-insert into storage.buckets (id, name, public) values ('card-images', 'card-images', true)
-on conflict (id) do update set public = true;
 insert into storage.buckets (id, name, public) values ('profile-images', 'profile-images', true)
 on conflict (id) do update set public = true;
-drop policy if exists "Anyone can read card images" on storage.objects;
-create policy "Anyone can read card images" on storage.objects for select to anon, authenticated using (bucket_id = 'card-images');
 drop policy if exists "Anyone can read profile images" on storage.objects;
 create policy "Anyone can read profile images" on storage.objects for select to anon, authenticated using (bucket_id = 'profile-images');
 drop policy if exists "Users can upload profile images" on storage.objects;

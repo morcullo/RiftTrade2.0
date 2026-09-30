@@ -17,7 +17,7 @@ Open `index.html` directly in a browser, or serve this folder with any static we
    Run [`supabase-migration-home-stats.sql`](supabase-migration-home-stats.sql) to enable the aggregate metrics on the home page.
    Run or rerun [`supabase-migration-direct-messaging.sql`](supabase-migration-direct-messaging.sql) to enable private user-to-user conversations, unread tracking, live message updates, listing cards shared in messages, and repair earlier recursive listing-sharing policies.
 3. Set the browser URL and anon key in [`supabase-config.js`](supabase-config.js). The anon key is safe in the browser when the RLS policies are enabled.
-4. Import the catalog and images with a server-side service-role key:
+4. Import the catalog and the direct image URLs from [`riftbound_image_urls.csv`](riftbound_image_urls.csv) with a server-side service-role key:
 
    ```sh
    export SUPABASE_URL="https://your-project.supabase.co"
@@ -25,7 +25,7 @@ Open `index.html` directly in a browser, or serve this folder with any static we
    python3 scripts/import_to_supabase.py
    ```
 
-   Never put the service-role key in the browser or commit it.
+   On Windows PowerShell, use `$env:SUPABASE_URL="https://your-project.supabase.co"`, `$env:SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"`, and `python scripts/import_to_supabase.py` instead. Rerun the import for an existing project to populate `cards.image_url` and clear the old card image filenames/paths. It does not upload images or delete existing storage objects; check that card images load before removing any old `card-images` bucket. Keep the profile image bucket for member photos. Never put the service-role key in the browser or commit it.
 
 ### Discord login
 
