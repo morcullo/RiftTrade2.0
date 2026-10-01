@@ -13,6 +13,7 @@ function showView(viewName) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
     if (viewName === 'home') {
       loadHomeStats();
+      loadRecentListings();
       if (!cards.length) loadCatalog();
     }
   else if (viewName === 'marketplace') loadListings();
@@ -24,6 +25,16 @@ function showView(viewName) {
 
 navItems.forEach((item) => item.addEventListener('click', () => showView(item.dataset.view)));
 document.querySelectorAll('[data-go]').forEach((item) => item.addEventListener('click', () => showView(item.dataset.go)));
+document.querySelectorAll('[data-metric-index]').forEach((metric) => {
+  const resetMetricIndex = () => {
+    if (document.activeElement !== metric && !metric.matches(':hover')) metricSectionIndex.textContent = '01 / 03';
+  };
+  const updateMetricIndex = () => { metricSectionIndex.textContent = `${metric.dataset.metricIndex} / 03`; };
+  metric.addEventListener('mouseenter', updateMetricIndex);
+  metric.addEventListener('mouseleave', resetMetricIndex);
+  metric.addEventListener('focus', updateMetricIndex);
+  metric.addEventListener('blur', resetMetricIndex);
+});
 
 const searchInput = document.querySelector('#card-search');
 const marketGrid = document.querySelector('#market-grid');
@@ -31,6 +42,7 @@ const marketStatus = document.querySelector('#market-status');
 const emptyMessage = document.querySelector('#market-empty');
 const marketFilterButton = document.querySelector('#market-filter-button');
 const marketFilterPanel = document.querySelector('#market-filter-panel');
+const marketStatusFilters = [...document.querySelectorAll('[data-market-status]')];
 const marketTypeFilter = document.querySelector('#market-type-filter');
 const marketMinPrice = document.querySelector('#market-min-price');
 const marketMaxPrice = document.querySelector('#market-max-price');
@@ -147,6 +159,9 @@ const heroCardFront = document.querySelector('#hero-card-front');
 const metricCardsListed = document.querySelector('#metric-cards-listed');
 const metricActiveTraders = document.querySelector('#metric-active-traders');
 const metricTradesCompleted = document.querySelector('#metric-trades-completed');
+const metricSectionIndex = document.querySelector('#metric-section-index');
+const recentListingsStatus = document.querySelector('#recent-listings-status');
+const recentListingsGrid = document.querySelector('#recent-listings-grid');
 const rankingSearch = document.querySelector('#ranking-search');
 const rankingStatus = document.querySelector('#ranking-status');
 const rankingsList = document.querySelector('#rankings-list');
@@ -394,12 +409,13 @@ function bindMarketplaceListingCards(container, sourceListings, query = '') {
 
 function renderListings() {
   const query = searchInput.value.trim().toLowerCase();
+  const selectedStatuses = marketStatusFilters.filter((filter) => filter.checked).map((filter) => filter.dataset.marketStatus);
   const selectedListingType = marketTypeFilter.value;
   const minimumPrice = Number(marketMinPrice.value);
   const maximumPrice = Number(marketMaxPrice.value);
   const hasMinimumPrice = Number.isFinite(minimumPrice) && marketMinPrice.value !== '';
   const hasMaximumPrice = Number.isFinite(maximumPrice) && marketMaxPrice.value !== '';
-  marketFilterButton.classList.toggle('is-active', Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
+  marketFilterButton.classList.toggle('is-active', selectedStatuses.some((status) => status !== 'active') || selectedStatuses.length === 0 || Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
   const matches = listings.filter((listing) => {
     const listingCards = listing.listing_cards || [];
     const searchable = [listing.title, listing.description, listing.seller?.display_name, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code])].filter(Boolean).join(' ').toLowerCase();
@@ -413,7 +429,7 @@ function renderListings() {
     const matchesType = !selectedListingType
       || listing.listing_type === selectedListingType
       || (listing.listing_type === 'trade_or_sale' && ['sale', 'trade'].includes(selectedListingType));
-    return searchable.includes(query) && matchesType && matchesPrice;
+    return selectedStatuses.includes(listing.status) && searchable.includes(query) && matchesType && matchesPrice;
   });
   marketGrid.innerHTML = matches.map((listing) => renderMarketplaceListingCard(listing, query, true)).join('');
   emptyMessage.hidden = matches.length !== 0;
@@ -635,7 +651,7 @@ function openListingDetails(listingId) {
     const canChangeStatus = ['active', 'paused'].includes(listing.status);
     const isSold = listing.status === 'completed';
     listingDetailsActions.hidden = !isOwner;
-    listingDetailsContact.hidden = isOwner;
+    listingDetailsContact.hidden = isOwner || isSold;
     listingPendingButton.hidden = !canChangeStatus;
     listingPendingButton.textContent = listing.status === 'paused' ? 'Remove pending' : 'Mark pending';
     listingSoldButton.hidden = !canChangeStatus && !isSold;
@@ -688,7 +704,7 @@ function renderRankings() {
   const visibleUsers = query
     ? rankedUsers.filter(({ profile }) => [profile.display_name, profile.username].some((value) => String(value || '').toLowerCase().includes(query)))
     : rankedUsers.slice(0, 10);
-  rankingStatus.textContent = query ? `${visibleUsers.length} matching user${visibleUsers.length === 1 ? '' : 's'}` : 'Top 10 users by rank and progress';
+  rankingStatus.textContent = query ? `${visibleUsers.length} matching user${visibleUsers.length === 1 ? '' : 's'}` : '';
   rankingEmpty.hidden = visibleUsers.length !== 0;
   rankingsList.innerHTML = visibleUsers.map(({ profile, rank, nextRank, progress, metrics, position }) => {
     const name = profile.display_name || profile.username || 'RiftTrade member';
@@ -1390,6 +1406,32 @@ async function loadHomeStats() {
   });
 }
 
+async function loadRecentListings() {
+  if (!window.riftTradeSupabase) return;
+  let { data, error } = await window.riftTradeSupabase
+    .from('listings')
+    .select(listingSelect())
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(4);
+  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) {
+    ({ data, error } = await window.riftTradeSupabase
+      .from('listings')
+      .select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil')))
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(4));
+  }
+  if (error) {
+    recentListingsStatus.textContent = 'Could not load recent listings.';
+    return;
+  }
+  const recentListings = data || [];
+  recentListingsStatus.textContent = recentListings.length ? '' : 'No listings available yet.';
+  recentListingsGrid.innerHTML = recentListings.map((listing) => renderMarketplaceListingCard(listing, '', true)).join('');
+  bindMarketplaceListingCards(recentListingsGrid, recentListings);
+}
+
 function listingSelect(includeCardPrice = true, includeCardFoil = true) {
   const listingCardFields = [includeCardPrice ? 'price' : '', 'language', includeCardFoil ? 'foil' : '', 'notes'].filter(Boolean).join(', ');
   return `id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, ${listingCardFields}, card:cards(id, name, code, public_code, set_code, set_name, collector_number, rarity, type, cost, might, power, domains, tags, ability_text, image_url, is_overnumbered, is_signed))`;
@@ -1400,9 +1442,9 @@ async function loadListings() {
   let { data, error } = await window.riftTradeSupabase
     .from('listings')
     .select(listingSelect())
-    .in('status', ['active', 'paused'])
+    .in('status', ['active', 'paused', 'completed'])
     .order('created_at', { ascending: false });
-  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil'))).in('status', ['active', 'paused']).order('created_at', { ascending: false }));
+  if (error?.message?.includes('listing_cards_1.price') || error?.message?.includes('listing_cards_1.foil')) ({ data, error } = await window.riftTradeSupabase.from('listings').select(listingSelect(!error.message.includes('listing_cards_1.price'), !error.message.includes('listing_cards_1.foil'))).in('status', ['active', 'paused', 'completed']).order('created_at', { ascending: false }));
   if (error) {
     marketStatus.textContent = `Could not load listings: ${error.message}`;
     return;
@@ -1829,6 +1871,7 @@ document.addEventListener('click', (event) => {
 });
 
 searchInput.addEventListener('input', renderListings);
+marketStatusFilters.forEach((filter) => filter.addEventListener('change', renderListings));
 myListingsFilter.addEventListener('change', renderMyListings);
 marketFilterButton.addEventListener('click', () => {
   marketFilterPanel.hidden = !marketFilterPanel.hidden;
@@ -1838,6 +1881,7 @@ marketTypeFilter.addEventListener('change', renderListings);
 marketMinPrice.addEventListener('input', renderListings);
 marketMaxPrice.addEventListener('input', renderListings);
 marketFilterClear.addEventListener('click', () => {
+  marketStatusFilters.forEach((filter) => { filter.checked = filter.dataset.marketStatus === 'active'; });
   marketTypeFilter.value = '';
   marketMinPrice.value = '';
   marketMaxPrice.value = '';

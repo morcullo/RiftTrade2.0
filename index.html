@@ -16,7 +16,7 @@
   <body>
     <div class="app-shell">
       <header class="site-header">
-        <a class="wordmark" href="#home" aria-label="RiftTrade home"><span>R</span>IFT<span class="wordmark-accent">TRADE</span></a>
+        <a class="wordmark" href="#home" data-go="home" aria-label="RiftTrade home"><span>R</span>IFT<span class="wordmark-accent">TRADE</span></a>
         <nav class="desktop-nav" aria-label="Primary navigation">
           <button class="nav-link is-active" data-view="home">Home</button>
           <button class="nav-link" data-view="catalog">Card catalog</button>
@@ -43,18 +43,21 @@
             </div>
           </div>
 
-          <div class="section-heading"><h2>Good things, moving</h2><span>01 / 03</span></div>
+          <div class="section-heading"><h2>Marketplace metrics</h2><span id="metric-section-index">01 / 03</span></div>
           <div class="stat-grid">
-            <article class="stat-card stat-card-dark"><span>Cards listed</span><strong id="metric-cards-listed">—</strong><small>Across all listings</small></article>
-            <article class="stat-card"><span>Active traders</span><strong id="metric-active-traders">—</strong><small>Registered users</small></article>
-            <article class="stat-card"><span>Trades completed</span><strong id="metric-trades-completed">—</strong><small>Listings marked completed</small></article>
+            <button class="stat-card" data-go="marketplace" data-metric-index="01" type="button" aria-label="View marketplace listings"><span>Cards listed</span><strong id="metric-cards-listed">—</strong><small>Across all listings</small></button>
+            <button class="stat-card" data-go="rankings" data-metric-index="02" type="button" aria-label="View active traders in rankings"><span>Active traders</span><strong id="metric-active-traders">—</strong><small>Registered users</small></button>
+            <button class="stat-card" data-go="marketplace" data-metric-index="03" type="button" aria-label="View completed listings in marketplace"><span>Trades completed</span><strong id="metric-trades-completed">—</strong><small>Listings marked completed</small></button>
           </div>
+          <div class="section-heading recent-listings-heading"><h2>Recent listings</h2><button class="text-link" data-go="marketplace" type="button">View all <span>↗</span></button></div>
+          <p class="market-status" id="recent-listings-status" aria-live="polite">Loading recent listings...</p>
+          <div class="market-grid recent-listings-grid" id="recent-listings-grid"></div>
         </section>
 
         <section class="view" data-page="marketplace" hidden>
-          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 02</p><h1>Marketplace</h1></div><button class="button button-outline" id="open-listing" type="button">New listing <span>＋</span></button></div>
+          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 03</p><h1>Marketplace</h1></div><button class="button button-outline" id="open-listing" type="button">New listing <span>＋</span></button></div>
           <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" id="market-filter-button" type="button" aria-expanded="false" aria-controls="market-filter-panel">Filter <span>☷</span></button></div>
-          <div class="market-filter-panel" id="market-filter-panel" hidden><label class="market-filter-type">Listing type<select id="market-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="market-filter-min">Min price<input id="market-min-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0" /></label><label class="market-filter-max">Max price<input id="market-max-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="No max" /></label><button class="filter-clear" id="market-filter-clear" type="button">Clear</button></div>
+          <div class="market-filter-panel" id="market-filter-panel" hidden><div class="market-filter-status"><span>Status</span><details class="catalog-domain-filter"><summary>Choose status</summary><div role="group" aria-label="Filter by status"><label><input type="checkbox" data-market-status="active" checked />Active</label><label><input type="checkbox" data-market-status="paused" />Pending</label><label><input type="checkbox" data-market-status="completed" />Completed</label></div></details></div><label class="market-filter-type">Listing type<select id="market-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="market-filter-min">Min price<input id="market-min-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0" /></label><label class="market-filter-max">Max price<input id="market-max-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="No max" /></label><button class="filter-clear" id="market-filter-clear" type="button">Clear filters</button></div>
           <p class="market-status" id="market-status" aria-live="polite">Loading listings...</p>
           <div class="market-grid" id="market-grid"></div>
           <p class="empty-message" id="market-empty" hidden>No listings match that search.</p>
@@ -77,7 +80,7 @@
         </section>
 
         <section class="view" data-page="rankings" hidden>
-          <div class="page-heading"><div><p class="eyebrow">THE LADDER / 05</p><h1>Rankings</h1></div><span class="status-tag dark-tag">Top 10</span></div>
+          <div class="page-heading"><div><p class="eyebrow">THE LADDER / 02</p><h1>Rankings</h1></div><span class="status-tag dark-tag">Top 10</span></div>
           <div class="rankings-tools"><label class="search-box"><span>⌕</span><input id="ranking-search" type="search" placeholder="Search users by name" aria-label="Search users by name" /></label></div>
           <p class="market-status" id="ranking-status" aria-live="polite">Loading rankings...</p>
           <div class="rankings-list" id="rankings-list"></div>
@@ -85,14 +88,14 @@
         </section>
 
         <section class="view" data-page="trades" hidden>
-          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 03</p><h1>My listings</h1></div><div class="my-listings-heading-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option></select></label><span class="status-tag" id="my-listings-count">Loading...</span></div></div>
+          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 04</p><h1>My listings</h1></div><div class="my-listings-heading-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option></select></label><span class="status-tag" id="my-listings-count">Loading...</span></div></div>
           <p class="market-status" id="my-listings-status" aria-live="polite">Loading your listings...</p>
           <div class="my-listings-grid" id="my-listings-grid"></div>
           <p class="empty-message" id="my-listings-empty" hidden>You have not listed any cards yet.</p>
         </section>
 
         <section class="view" data-page="inbox" hidden>
-          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 04</p><h1>Inbox</h1></div><div class="inbox-heading-actions"><button class="button button-outline" id="inbox-new-message" type="button">New message</button><span class="status-tag dark-tag" id="inbox-unread-count">0 unread</span></div></div>
+          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 05</p><h1>Inbox</h1></div><div class="inbox-heading-actions"><button class="button button-outline" id="inbox-new-message" type="button">New message</button><span class="status-tag dark-tag" id="inbox-unread-count">0 unread</span></div></div>
           <div class="inbox-layout" id="inbox-layout">
             <aside class="inbox-sidebar" aria-label="Conversations">
               <form class="inbox-recipient-form" id="inbox-recipient-form">
@@ -224,6 +227,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
-    <script src="app.js?v=ranking-completions-2"></script>
+    <script src="app.js?v=status-filter-1"></script>
   </body>
 </html>

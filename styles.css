@@ -84,13 +84,18 @@ h1 em { color: var(--red); font-style: normal; }
 @keyframes hero-shuffle-front { 0%, 12% { transform: translate(0, 0) rotate(7deg); z-index: 3; } 30%, 48% { transform: translate(-112px, 84px) rotate(-9deg); z-index: 1; } 66%, 100% { transform: translate(0, 0) rotate(7deg); z-index: 3; } }
 @media (prefers-reduced-motion: reduce) { .hero-card-back, .hero-card-front { animation: none; } }
 .section-heading { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ink); padding-bottom: 13px; }
+.text-link { border: 0; padding: 0; color: var(--muted); background: transparent; font: 500 .67rem "DM Mono", monospace; text-transform: uppercase; }
+.text-link:hover, .text-link:focus-visible { color: var(--ink); outline: 0; text-decoration: underline; }
+.text-link span { margin-left: 5px; color: var(--red); }
+.recent-listings-heading { margin-top: 56px; }
+.recent-listings-grid { margin-top: 18px; }
 h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1px; background: var(--ink); }
-.stat-card { min-height: 155px; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; background: var(--paper); }
+.stat-card { min-height: 155px; display: flex; flex-direction: column; justify-content: space-between; border: 0; padding: 20px; color: var(--ink); background: var(--paper); cursor: pointer; text-align: left; }
 .stat-card span, .stat-card small { color: var(--muted); font-size: .75rem; }
 .stat-card strong { font-size: 2.2rem; letter-spacing: -.07em; }
-.stat-card-dark { color: white; background: var(--ink); }
-.stat-card-dark span, .stat-card-dark small { color: #aaa; }
+.stat-card:hover, .stat-card:focus, .stat-card:focus-visible { color: white; background: var(--ink); outline: 0; }
+.stat-card:hover span, .stat-card:hover small, .stat-card:focus span, .stat-card:focus small, .stat-card:focus-visible span, .stat-card:focus-visible small { color: #aaa; }
 .page-heading { display: flex; align-items: end; justify-content: space-between; border-bottom: 1px solid var(--ink); padding-bottom: 25px; }
 .my-listings-heading-tools { display: flex; align-items: center; gap: 12px; }
 .my-listings-filter { display: flex; align-items: center; gap: 8px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
@@ -101,6 +106,8 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .dark-tag { color: white; border-color: var(--ink); background: var(--ink); }
 .market-tools { display: flex; gap: 10px; margin: 30px 0; }
 .market-filter-panel { display: flex; align-items: end; gap: 10px; margin: -16px 0 24px; padding: 12px; border: 1px solid var(--line); background: white; }.market-filter-panel[hidden] { display: none; }.market-filter-panel label { display: grid; gap: 6px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }.market-filter-panel select, .market-filter-panel input { min-width: 170px; border: 1px solid var(--line); padding: 9px 28px 9px 9px; color: var(--ink); background: var(--paper); font: .72rem "Space Grotesk", sans-serif; }.market-filter-panel input { width: 105px; min-width: 105px; padding-right: 9px; }.market-filter-panel .filter-clear { align-self: end; }.filter-button.is-active { border-color: var(--ink); color: var(--ink); background: var(--yellow); }
+.market-filter-status { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
+.market-filter-status .catalog-domain-filter summary { border-color: var(--line); color: var(--ink); background: var(--paper); }
 .market-filter-type select { appearance: none; -webkit-appearance: none; border-radius: 0; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; }
 .market-filter-panel.catalog-filter-panel { display: block; }.market-filter-panel.catalog-filter-panel[hidden] { display: none; }.catalog-filter-panel .catalog-filters { margin: 0; }
 .market-status { min-height: 1.2em; margin: -14px 0 18px; color: var(--muted); font: .68rem "DM Mono", monospace; }
@@ -127,17 +134,19 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .catalog-card-copy small { overflow: hidden; color: var(--muted); font: .59rem "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .catalog-filters { display: grid; grid-template-columns: 1.25fr 1.25fr 1fr 1fr auto; gap: 10px; margin: 0 0 24px; }
 .catalog-filters label { display: grid; gap: 6px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
-.catalog-filters select { min-width: 0; appearance: none; border: 1px solid var(--line); padding: 10px 30px 10px 9px; color: var(--ink); background-color: white; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; font: .72rem "Space Grotesk", sans-serif; }
+.catalog-filters select { min-width: 0; appearance: none; border: 1px solid var(--line); padding: 10px 30px 10px 9px; color: var(--ink); background-color: var(--paper); background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; font: .72rem "Space Grotesk", sans-serif; }
 .catalog-filters select:focus { border-color: var(--ink); outline: 0; }
 .catalog-domain-control { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
-.catalog-domain-filter { position: relative; align-self: end; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
-.catalog-domain-filter summary { display: flex; min-height: 38px; align-items: center; justify-content: space-between; border: 1px solid var(--line); padding: 10px 16px 10px 9px; color: var(--ink); background: white; cursor: pointer; list-style: none; }
+.catalog-domain-filter { position: relative; align-self: end; width: 100%; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
+.catalog-domain-filter summary { position: relative; display: flex; min-height: 38px; align-items: center; justify-content: flex-start; border: 1px solid var(--line); padding: 10px 34px 10px 9px; color: var(--ink); background: var(--paper); cursor: pointer; list-style: none; text-align: left; text-transform: none; font: .72rem "Space Grotesk", sans-serif; }
 .catalog-domain-filter summary::after { content: "＋"; color: var(--muted); font-size: .9rem; }
+.catalog-domain-filter summary::after { position: absolute; right: 12px; }
 .catalog-domain-filter[open] summary::after { content: "−"; }
 .catalog-domain-filter summary::-webkit-details-marker { display: none; }
 .catalog-domain-filter > div { position: absolute; z-index: 4; top: calc(100% + 5px); right: 0; left: 0; display: grid; gap: 8px; min-width: 170px; border: 1px solid var(--ink); padding: 11px; background: var(--paper); box-shadow: 5px 5px 0 var(--ink); }
-.catalog-domain-filter > div label { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 8px; color: var(--ink); font: .7rem "Space Grotesk", sans-serif; text-transform: none; }
-.catalog-domain-filter input { accent-color: var(--red); }
+.catalog-domain-filter > div label { display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: center; gap: 8px; color: var(--ink); font: .7rem "Space Grotesk", sans-serif; text-transform: none; }
+.catalog-domain-filter > div label input { width: 16px; min-width: 16px; height: 16px; margin: 0; accent-color: var(--red); }
+.catalog-domain-filter > div label { overflow-wrap: anywhere; }
 .filter-clear { align-self: end; border: 1px solid var(--line); padding: 10px 12px; background: transparent; color: var(--muted); font-size: .72rem; white-space: nowrap; }
 .filter-clear:hover { border-color: var(--ink); color: var(--ink); }
 .listing { border: 1px solid var(--line); background: white; cursor: pointer; }
