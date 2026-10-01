@@ -1,5 +1,4 @@
 const views = [...document.querySelectorAll('[data-page]')];
-document.querySelector('.mobile-nav')?.insertAdjacentHTML('beforeend', '<button class="nav-link" data-view="rankings">Ranks</button>');
 const navItems = [...document.querySelectorAll('[data-view]')];
 
 function showView(viewName) {
@@ -213,6 +212,7 @@ let catalogLoadPromise = null;
 let rankingsLoadPromise = null;
 let rankedUsers = [];
 let listings = [];
+let listingsLoaded = false;
 let myListings = [];
 let profileListings = [];
 let signedInUser = null;
@@ -418,7 +418,7 @@ function renderListings() {
   marketFilterButton.classList.toggle('is-active', selectedStatuses.some((status) => status !== 'active') || selectedStatuses.length === 0 || Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
   const matches = listings.filter((listing) => {
     const listingCards = listing.listing_cards || [];
-    const searchable = [listing.title, listing.description, listing.seller?.display_name, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code])].filter(Boolean).join(' ').toLowerCase();
+    const searchable = [listing.title, listing.description, listing.seller?.display_name, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code, card?.public_code, ...(Array.isArray(card?.tags) ? card.tags : [card?.tags]), ...(Array.isArray(card?.domains) ? card.domains : [card?.domains])])].filter(Boolean).join(' ').toLowerCase();
     const prices = listingCards.map(({ price }) => Number(price)).filter(Number.isFinite);
     const lowestPrice = prices.length ? Math.min(...prices) : Number(listing.price);
     const highestPrice = prices.length ? Math.max(...prices) : Number(listing.price);
@@ -432,6 +432,7 @@ function renderListings() {
     return selectedStatuses.includes(listing.status) && searchable.includes(query) && matchesType && matchesPrice;
   });
   marketGrid.innerHTML = matches.map((listing) => renderMarketplaceListingCard(listing, query, true)).join('');
+  marketStatus.textContent = `${matches.length} marketplace listing${matches.length === 1 ? '' : 's'}`;
   emptyMessage.hidden = matches.length !== 0;
   bindMarketplaceListingCards(marketGrid, matches, query);
 }
@@ -598,6 +599,7 @@ function renderCardBadges(card) {
 
 async function openCardDialog(cardId) {
   if (!cards.length) await loadCatalog();
+  if (!listingsLoaded) await loadListings();
   const card = cards.find((item) => item.id === cardId);
   if (!card) return;
   cardDialogMarketplace.dataset.cardName = card.name;
@@ -612,7 +614,8 @@ async function openCardDialog(cardId) {
   cardDialogTcgplayer.href = tcgplayerUrl.toString();
   cardDialogArt.className = `card-dialog-art${imageUrl ? ' has-image' : ''}`;
   cardDialogArt.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`;
-  const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains]];
+  const listingCount = listings.filter((listing) => (listing.listing_cards || []).some(({ card: listedCard }) => listedCard?.id === card.id)).length;
+  const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains], ['Listings', listingCount]];
   cardDialogStats.innerHTML = stats.filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
   cardDialogAbility.textContent = card.ability_text || 'No ability text listed.';
   cardDialogTags.textContent = Array.isArray(card.tags) && card.tags.length ? `Tags: ${card.tags.join(', ')}` : '';
@@ -1450,6 +1453,7 @@ async function loadListings() {
     return;
   }
   listings = data || [];
+  listingsLoaded = true;
   marketStatus.textContent = listings.length ? `${listings.length} marketplace listing${listings.length === 1 ? '' : 's'}` : 'No available listings yet. Be the first to list a card.';
   renderListings();
 }
