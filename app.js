@@ -1295,12 +1295,12 @@ async function loadHomeStats() {
     renderHomeStats(data[0]);
     return;
   }
-  const [{ count: activeTraders }, { data: activeCards }] = await Promise.all([
+  const [{ count: activeTraders }, { data: listedCards }] = await Promise.all([
     window.riftTradeSupabase.from('profiles').select('id', { count: 'exact', head: true }),
-    window.riftTradeSupabase.from('listing_cards').select('quantity, listings!inner(status)').eq('listings.status', 'active'),
+    window.riftTradeSupabase.from('listing_cards').select('quantity, listings!inner(status)'),
   ]);
   renderHomeStats({
-    cards_listed: (activeCards || []).reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0),
+    cards_listed: (listedCards || []).reduce((total, { quantity }) => total + Math.max(Number(quantity) || 1, 1), 0),
     active_traders: activeTraders,
     trades_completed: null,
   });

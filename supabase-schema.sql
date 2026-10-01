@@ -169,7 +169,6 @@ as $$
       select sum(listing_cards.quantity)::bigint
       from public.listing_cards
       join public.listings on listings.id = listing_cards.listing_id
-      where listings.status = 'active'
     ), 0),
     (select count(*)::bigint from public.profiles),
     (select count(*)::bigint from public.listings where status = 'completed');
