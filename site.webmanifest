@@ -3,10 +3,9 @@
   "short_name": "RiftTrade",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#f7f7f5",
+  "background_color": "#111111",
+  "theme_color": "#111111",
   "icons": [
-    {
       "src": "./favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
