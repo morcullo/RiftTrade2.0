@@ -614,8 +614,9 @@ async function openCardDialog(cardId) {
   cardDialogTcgplayer.href = tcgplayerUrl.toString();
   cardDialogArt.className = `card-dialog-art${imageUrl ? ' has-image' : ''}`;
   cardDialogArt.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(card.name)} card art" />` : `<span>${escapeHtml(card.name)}</span>`;
-  const listingCount = listings.filter((listing) => (listing.listing_cards || []).some(({ card: listedCard }) => listedCard?.id === card.id)).length;
-  const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains], ['Listings', listingCount]];
+  const listingCount = listings.filter((listing) => listing.status === 'active' && (listing.listing_cards || []).some(({ card: listedCard }) => listedCard?.id === card.id)).length;
+  cardDialogMarketplace.innerHTML = `${listingCount} on marketplace <span>→</span>`;
+  const stats = [['Rarity', card.rarity], ['Type', card.type], ['Cost', card.cost], ['Might', card.might], ['Power', card.power], ['Domains', Array.isArray(card.domains) ? card.domains.join(', ') : card.domains]];
   cardDialogStats.innerHTML = stats.filter(([, value]) => value !== null && value !== undefined && value !== '').map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
   cardDialogAbility.textContent = card.ability_text || 'No ability text listed.';
   cardDialogTags.textContent = Array.isArray(card.tags) && card.tags.length ? `Tags: ${card.tags.join(', ')}` : '';
