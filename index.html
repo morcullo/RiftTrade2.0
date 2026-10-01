@@ -20,6 +20,7 @@
         <nav class="desktop-nav" aria-label="Primary navigation">
           <button class="nav-link is-active" data-view="home">Home</button>
           <button class="nav-link" data-view="catalog">Card catalog</button>
+          <button class="nav-link" data-view="rankings">Rankings</button>
           <button class="nav-link" data-view="marketplace">Marketplace</button>
           <button class="nav-link" data-view="trades">My listings</button>
           <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b hidden>0</b></button>
@@ -75,6 +76,14 @@
           <p class="empty-message" id="catalog-empty" hidden>No cards match that search.</p>
         </section>
 
+        <section class="view" data-page="rankings" hidden>
+          <div class="page-heading"><div><p class="eyebrow">THE LADDER / 05</p><h1>Rankings</h1></div><span class="status-tag dark-tag">Top 10</span></div>
+          <div class="rankings-tools"><label class="search-box"><span>⌕</span><input id="ranking-search" type="search" placeholder="Search users by name" aria-label="Search users by name" /></label></div>
+          <p class="market-status" id="ranking-status" aria-live="polite">Loading rankings...</p>
+          <div class="rankings-list" id="rankings-list"></div>
+          <p class="empty-message" id="ranking-empty" hidden>No users match that search.</p>
+        </section>
+
         <section class="view" data-page="trades" hidden>
           <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 03</p><h1>My listings</h1></div><div class="my-listings-heading-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Sold</option></select></label><span class="status-tag" id="my-listings-count">Loading...</span></div></div>
           <p class="market-status" id="my-listings-status" aria-live="polite">Loading your listings...</p>
@@ -118,12 +127,13 @@
         <form class="discord-name-panel" id="discord-name-form" hidden><p class="account-intro">Choose the name other RiftTrade members will see.</p><label class="auth-field">Display name<input id="discord-name" type="text" autocomplete="nickname" maxlength="40" required /></label><button class="button button-dark auth-submit" id="discord-name-submit" type="submit">Continue <span>→</span></button></form>
         <p class="account-intro" id="account-intro">Sign in to manage your trades and listings.</p>
         <form id="auth-form">
+          <button class="button button-outline discord-auth-button" id="discord-auth" type="button"><svg class="discord-auth-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 5.4a17.4 17.4 0 0 0-4.3-1.3l-.6 1.2a15.8 15.8 0 0 0-5.2 0l-.6-1.2a17.2 17.2 0 0 0-4.3 1.3C1.8 9.4 1.1 13.3 1.5 17.1a17.6 17.6 0 0 0 5.3 2.6l1.2-2a11 11 0 0 1-1.9-.9l.5-.4a12.3 12.3 0 0 0 10.8 0l.5.4a12.3 12.3 0 0 1-1.9.9l1.2 2a17.5 17.5 0 0 0 5.3-2.6c.5-4.4-.8-8.3-3-11.7ZM8.5 14.8c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm7 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z" /></svg>Continue with Discord</button>
+          <div class="auth-divider" aria-hidden="true"><span>or continue with email</span></div>
           <label class="auth-field" id="name-field" hidden>Display name<input id="auth-name" type="text" autocomplete="name" /></label>
           <label class="auth-field">Email<input id="auth-email" type="email" autocomplete="email" required /></label>
           <label class="auth-field" id="password-field">Password<input id="auth-password" type="password" autocomplete="current-password" minlength="6" required /></label>
           <label class="auth-field" id="new-password-field" hidden>New password<input id="auth-new-password" type="password" autocomplete="new-password" minlength="6" /></label>
           <button class="button button-dark auth-submit" id="auth-submit" type="submit">Sign in <span>→</span></button>
-          <button class="button button-outline discord-auth-button" id="discord-auth" type="button"><svg class="discord-auth-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 5.4a17.4 17.4 0 0 0-4.3-1.3l-.6 1.2a15.8 15.8 0 0 0-5.2 0l-.6-1.2a17.2 17.2 0 0 0-4.3 1.3C1.8 9.4 1.1 13.3 1.5 17.1a17.6 17.6 0 0 0 5.3 2.6l1.2-2a11 11 0 0 1-1.9-.9l.5-.4a12.3 12.3 0 0 0 10.8 0l.5.4a12.3 12.3 0 0 1-1.9.9l1.2 2a17.5 17.5 0 0 0 5.3-2.6c.5-4.4-.8-8.3-3-11.7ZM8.5 14.8c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm7 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z" /></svg>Continue with Discord</button>
         </form>
         <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
         <div class="auth-links" id="auth-links"><button type="button" data-auth-mode="signup">Create an account</button><button type="button" data-auth-mode="forgot">Forgot password?</button></div>

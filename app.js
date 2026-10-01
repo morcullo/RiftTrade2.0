@@ -1,4 +1,5 @@
 const views = [...document.querySelectorAll('[data-page]')];
+document.querySelector('.mobile-nav')?.insertAdjacentHTML('beforeend', '<button class="nav-link" data-view="rankings">Ranks</button>');
 const navItems = [...document.querySelectorAll('[data-view]')];
 
 function showView(viewName) {
@@ -16,6 +17,7 @@ function showView(viewName) {
     }
   else if (viewName === 'marketplace') loadListings();
   else if (viewName === 'catalog') loadCatalog();
+  else if (viewName === 'rankings') loadRankings();
   else if (viewName === 'trades') loadMyListings();
   else if (viewName === 'inbox') inboxLoadPromise = loadInbox();
 }
@@ -72,7 +74,9 @@ const accountClose = document.querySelector('#account-close');
 const authForm = document.querySelector('#auth-form');
 const authLinks = document.querySelector('#auth-links');
 const authModeToggle = authLinks.querySelector('button[data-auth-mode="signup"]');
+const authForgotToggle = authLinks.querySelector('button[data-auth-mode="forgot"]');
 const authMessage = document.querySelector('#auth-message');
+const authDivider = document.querySelector('.auth-divider');
 const authTitle = document.querySelector('#account-title');
 const authIntro = document.querySelector('#account-intro');
 const authSubmit = document.querySelector('#auth-submit');
@@ -143,6 +147,10 @@ const heroCardFront = document.querySelector('#hero-card-front');
 const metricCardsListed = document.querySelector('#metric-cards-listed');
 const metricActiveTraders = document.querySelector('#metric-active-traders');
 const metricTradesCompleted = document.querySelector('#metric-trades-completed');
+const rankingSearch = document.querySelector('#ranking-search');
+const rankingStatus = document.querySelector('#ranking-status');
+const rankingsList = document.querySelector('#rankings-list');
+const rankingEmpty = document.querySelector('#ranking-empty');
 const cardDialog = document.querySelector('#card-dialog');
 const cardDialogClose = document.querySelector('#card-close');
 const cardDialogArt = document.querySelector('#card-dialog-art');
@@ -186,6 +194,8 @@ let saleConfirmationListingId = null;
 
 let cards = [];
 let catalogLoadPromise = null;
+let rankingsLoadPromise = null;
+let rankedUsers = [];
 let listings = [];
 let myListings = [];
 let profileListings = [];
@@ -669,6 +679,53 @@ function getProfileRank(profile, listings) {
     ) * 100)))
     : 100;
   return { rank, nextRank, progress, metrics };
+}
+
+function renderRankings() {
+  const query = rankingSearch.value.trim().toLowerCase();
+  const visibleUsers = query
+    ? rankedUsers.filter(({ profile }) => [profile.display_name, profile.username].some((value) => String(value || '').toLowerCase().includes(query)))
+    : rankedUsers.slice(0, 10);
+  rankingStatus.textContent = query ? `${visibleUsers.length} matching user${visibleUsers.length === 1 ? '' : 's'}` : 'Top 10 users by rank and progress';
+  rankingEmpty.hidden = visibleUsers.length !== 0;
+  rankingsList.innerHTML = visibleUsers.map(({ profile, rank, nextRank, progress, metrics, position }) => {
+    const name = profile.display_name || profile.username || 'RiftTrade member';
+    const rankClass = rank.name.toLowerCase().replaceAll(' ', '-');
+    const nextLabel = nextRank ? `${progress}% to ${nextRank.name}` : 'Highest rank reached';
+    return `<article class="ranking-row"><strong class="ranking-position">#${position}</strong>${avatarMarkup(name, profile.avatar_url, 'ranking-avatar')}<div class="ranking-user"><button class="profile-link" data-profile-id="${escapeHtml(profile.id)}" type="button">${escapeHtml(name)}</button><span>${metrics.sold} sold · ${metrics.days} days</span></div><div class="ranking-rank"><span class="profile-rank-badge profile-rank-${rankClass}">${escapeHtml(rank.name)}</span><div class="ranking-progress"><span style="width: ${progress}%"></span></div><small>${escapeHtml(nextLabel)}</small></div></article>`;
+  }).join('');
+  rankingsList.querySelectorAll('[data-profile-id]').forEach((button) => button.addEventListener('click', () => openProfileDialog(button.dataset.profileId)));
+}
+
+async function fetchRankings() {
+  if (!window.riftTradeSupabase) {
+    rankingStatus.textContent = 'Sign in to view rankings.';
+    return;
+  }
+  const [{ data: profiles, error: profileError }, { data: listings, error: listingError }] = await Promise.all([
+    window.riftTradeSupabase.from('profiles').select('id, display_name, username, avatar_url, created_at'),
+    window.riftTradeSupabase.from('listings').select('seller_id, status'),
+  ]);
+  if (profileError || listingError) {
+    rankingStatus.textContent = `Could not load rankings: ${(profileError || listingError).message}`;
+    return;
+  }
+  const listingsBySeller = new Map();
+  (listings || []).forEach((listing) => {
+    if (!listingsBySeller.has(listing.seller_id)) listingsBySeller.set(listing.seller_id, []);
+    listingsBySeller.get(listing.seller_id).push(listing);
+  });
+  rankedUsers = (profiles || []).map((profile) => {
+    const { rank, nextRank, progress, metrics } = getProfileRank(profile, listingsBySeller.get(profile.id) || []);
+    return { profile, rank, nextRank, progress, metrics, rankIndex: PROFILE_RANKS.indexOf(rank) };
+  }).sort((left, right) => right.rankIndex - left.rankIndex || right.progress - left.progress || right.metrics.sold - left.metrics.sold || right.metrics.days - left.metrics.days || (left.profile.display_name || '').localeCompare(right.profile.display_name || ''));
+  rankedUsers.forEach((user, index) => { user.position = index + 1; });
+  renderRankings();
+}
+
+function loadRankings() {
+  if (!rankingsLoadPromise) rankingsLoadPromise = fetchRankings();
+  return rankingsLoadPromise;
 }
 
 function renderProfileRank(profile, listings) {
@@ -1764,6 +1821,7 @@ catalogSetFilter.addEventListener('change', renderCatalogFromFirstPage);
 catalogDomainOptions.addEventListener('change', renderCatalogFromFirstPage);
 catalogRarityFilter.addEventListener('change', renderCatalogFromFirstPage);
 catalogTypeFilter.addEventListener('change', renderCatalogFromFirstPage);
+rankingSearch.addEventListener('input', renderRankings);
 catalogFilterClear.addEventListener('click', () => {
   catalogSearch.value = '';
   catalogSetFilter.value = '';
@@ -1805,13 +1863,15 @@ function setAuthMode(mode) {
   passwordField.hidden = isForgot || isRecovery;
   newPasswordField.hidden = !isRecovery;
   discordAuthButton.hidden = isForgot || isRecovery;
+  authDivider.hidden = isForgot || isRecovery;
   authEmail.parentElement.hidden = isRecovery;
   authPassword.required = isSignup || mode === 'signin';
   authNewPassword.required = isRecovery;
   authSubmit.innerHTML = `${isSignup ? 'Create account' : isForgot ? 'Send reset link' : isRecovery ? 'Update password' : 'Sign in'} <span>→</span>`;
   authLinks.hidden = isRecovery;
-  authModeToggle.dataset.authMode = isSignup ? 'signin' : 'signup';
-  authModeToggle.textContent = isSignup ? 'Sign in with existing account' : 'Create an account';
+  authForgotToggle.hidden = isForgot || isRecovery;
+  authModeToggle.dataset.authMode = isSignup || isForgot ? 'signin' : 'signup';
+  authModeToggle.textContent = isSignup || isForgot ? 'Sign in with existing account' : 'Create an account';
   setAuthMessage('');
 }
 
