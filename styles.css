@@ -68,14 +68,17 @@ h1 em { color: var(--red); font-style: normal; }
 .card-dialog-actions > .button span { margin-left: 6px; }
 .hero-card-stack { position: relative; height: 370px; }
 .hero-card { position: absolute; width: 230px; height: auto; aspect-ratio: 744 / 1039; border: 1px solid var(--ink); box-shadow: 10px 12px 0 var(--ink); }
-.hero-card-back { top: 58px; left: -28px; display: grid; place-items: center; background: var(--yellow); transform: rotate(-9deg); font-size: 5rem; font-weight: 700; }
+.hero-card-back { top: 58px; left: -28px; z-index: 2; display: grid; place-items: center; background: var(--yellow); transform: rotate(-9deg); font-size: 5rem; font-weight: 700; animation: hero-shuffle-back 6s ease-in-out infinite; }
 .hero-card-back span { border: 2px solid var(--ink); padding: 30px 25px; border-radius: 50%; }
-.hero-card-front { top: -22px; left: 110px; display: flex; flex-direction: column; justify-content: space-between; padding: 18px; color: white; background: var(--red); transform: rotate(7deg); }
+.hero-card-front { top: -22px; left: 110px; z-index: 3; display: flex; flex-direction: column; justify-content: space-between; padding: 18px; color: white; background: var(--red); transform: rotate(7deg); animation: hero-shuffle-front 6s ease-in-out infinite; }
 .hero-card.has-image { overflow: hidden; border-color: transparent; border-radius: 12px; background: transparent; box-shadow: 0 14px 26px rgba(17,17,17,.18); }.hero-card.has-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .hero-card-front.has-image { width: 260px; border-radius: 0; box-shadow: none; }
 .hero-card.has-image::after { display: none; }
 .hero-card-front strong { font-size: 2.6rem; line-height: .88; letter-spacing: -.08em; }
 .hero-card-front small { font: .62rem "DM Mono", monospace; }
+@keyframes hero-shuffle-back { 0%, 12% { transform: translate(0, 0) rotate(-9deg); z-index: 2; } 30%, 48% { transform: translate(142px, -26px) rotate(8deg); z-index: 4; } 66%, 100% { transform: translate(0, 0) rotate(-9deg); z-index: 2; } }
+@keyframes hero-shuffle-front { 0%, 12% { transform: translate(0, 0) rotate(7deg); z-index: 3; } 30%, 48% { transform: translate(-112px, 84px) rotate(-9deg); z-index: 1; } 66%, 100% { transform: translate(0, 0) rotate(7deg); z-index: 3; } }
+@media (prefers-reduced-motion: reduce) { .hero-card-back, .hero-card-front { animation: none; } }
 .section-heading { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ink); padding-bottom: 13px; }
 h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1px; background: var(--ink); }

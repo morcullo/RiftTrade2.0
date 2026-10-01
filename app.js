@@ -542,6 +542,7 @@ function renderMyListings() {
 }
 
 function renderHeroCards() {
+  if (heroCardBack.querySelector('img') && heroCardFront.querySelector('img')) return;
   const imageCards = cards.filter((card) => card.is_signed && getCardImageUrl(card));
   const normalizedCardName = (card) => normalizeCardSearch(card.name);
   const heroCards = [
