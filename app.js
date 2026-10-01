@@ -2,6 +2,12 @@ const views = [...document.querySelectorAll('[data-page]')];
 const navItems = [...document.querySelectorAll('[data-view]')];
 const adminNav = document.querySelector('.admin-only');
 
+function scrollToSectionTop(element) {
+  const section = element.closest('.view');
+  if (!section) return;
+  window.scrollTo({ top: Math.max(section.offsetTop - 24, 0), behavior: 'smooth' });
+}
+
 function showView(viewName) {
   views.forEach((view) => {
     const isCurrent = view.dataset.page === viewName;
@@ -51,6 +57,10 @@ const marketTypeFilter = document.querySelector('#market-type-filter');
 const marketMinPrice = document.querySelector('#market-min-price');
 const marketMaxPrice = document.querySelector('#market-max-price');
 const marketFilterClear = document.querySelector('#market-filter-clear');
+const marketPagination = document.querySelector('#market-pagination');
+const marketPrevious = document.querySelector('#market-previous');
+const marketNext = document.querySelector('#market-next');
+const marketPageStatus = document.querySelector('#market-page-status');
 const catalogSearch = document.querySelector('#catalog-search');
 const catalogGrid = document.querySelector('#catalog-grid');
 const catalogCount = document.querySelector('#catalog-count');
@@ -67,6 +77,7 @@ const catalogDomainOptions = document.querySelector('#catalog-domain-options');
 const catalogRarityFilter = document.querySelector('#catalog-rarity-filter');
 const catalogTypeFilter = document.querySelector('#catalog-type-filter');
 const catalogFilterClear = document.querySelector('#catalog-filter-clear');
+const filterDropdowns = [...document.querySelectorAll('#catalog-filter-panel .catalog-domain-filter, #market-filter-panel .catalog-domain-filter')];
 const openListingButton = document.querySelector('#open-listing');
 const openListingMyButton = document.querySelector('#open-listing-my');
 const listingDialog = document.querySelector('#listing-dialog');
@@ -302,6 +313,7 @@ let catalogLoadPromise = null;
 let rankingsLoadPromise = null;
 let rankedUsers = [];
 let listings = [];
+let marketplacePage = 0;
 let listingsLoaded = false;
 let myListings = [];
 let profileListings = [];
@@ -314,6 +326,7 @@ let adminUserPage = 0;
 let adminListingPage = 0;
 const adminUserPageSize = 9;
 const adminListingPageSize = 16;
+const marketplacePageSize = 16;
 let authStateReady = false;
 let inboxConversations = [];
 let activeConversationId = null;
@@ -529,25 +542,37 @@ function renderListings() {
       || (listing.listing_type === 'trade_or_sale' && ['sale', 'trade'].includes(selectedListingType));
     return selectedStatuses.includes(listing.status) && searchable.includes(query) && matchesType && matchesPrice;
   });
-  marketGrid.innerHTML = matches.map((listing) => renderMarketplaceListingCard(listing, query, true)).join('');
-  marketStatus.textContent = `${matches.length} marketplace listing${matches.length === 1 ? '' : 's'}`;
+  const pageCount = Math.ceil(matches.length / marketplacePageSize);
+  marketplacePage = Math.min(marketplacePage, Math.max(pageCount - 1, 0));
+  const visibleListings = matches.slice(marketplacePage * marketplacePageSize, (marketplacePage + 1) * marketplacePageSize);
+  marketGrid.innerHTML = visibleListings.map((listing) => renderMarketplaceListingCard(listing, query, true)).join('');
+  marketStatus.textContent = `${matches.length} listing${matches.length === 1 ? '' : 's'}`;
+  marketPagination.hidden = pageCount <= 1;
+  marketPageStatus.textContent = pageCount ? `Page ${marketplacePage + 1} of ${pageCount}` : '';
+  marketPrevious.disabled = marketplacePage === 0;
+  marketNext.disabled = marketplacePage >= pageCount - 1;
   emptyMessage.hidden = matches.length !== 0;
-  bindMarketplaceListingCards(marketGrid, matches, query);
+  bindMarketplaceListingCards(marketGrid, visibleListings, query);
 }
 
 function renderCatalog() {
   const query = normalizeCardSearch(catalogSearch.value);
-  const selectedSet = catalogSetFilter.value;
+  const selectedSets = [...catalogSetFilter.querySelectorAll('input:checked')].map((input) => input.value);
   const selectedDomains = [...catalogDomainOptions.querySelectorAll('input:checked')].map((input) => input.value);
-  const selectedRarity = catalogRarityFilter.value;
-  const selectedType = catalogTypeFilter.value;
-  const activeFilterCount = [selectedSet, selectedRarity, selectedType].filter(Boolean).length + selectedDomains.length;
+  const selectedRarities = [...catalogRarityFilter.querySelectorAll('input:checked')].map((input) => input.value);
+  const selectedTypes = [...catalogTypeFilter.querySelectorAll('input:checked')].map((input) => input.value);
+  const activeFilterCount = [
+    [selectedSets, catalogSetFilter.querySelectorAll('input').length],
+    [selectedDomains, catalogDomainOptions.querySelectorAll('input').length],
+    [selectedRarities, catalogRarityFilter.querySelectorAll('input').length],
+    [selectedTypes, catalogTypeFilter.querySelectorAll('input').length],
+  ].filter(([selected, total]) => selected.length < total).length;
   catalogFilterButton.classList.toggle('is-active', activeFilterCount > 0);
   const matches = cards.filter((card) => {
-    if (selectedSet && card.set_name !== selectedSet) return false;
-    if (selectedRarity && card.rarity !== selectedRarity) return false;
-    if (selectedType && card.type !== selectedType) return false;
-    if (selectedDomains.length && !selectedDomains.every((domain) => cardDomains(card).includes(domain))) return false;
+    if (!selectedSets.includes(card.set_name)) return false;
+    if (!selectedRarities.includes(card.rarity)) return false;
+    if (!selectedTypes.includes(card.type)) return false;
+    if (!selectedDomains.some((domain) => cardDomains(card).includes(domain))) return false;
     return !query || scoreCardSearchMatch(card, query) > 0;
   });
   const pageCount = Math.ceil(matches.length / catalogPageSize);
@@ -583,10 +608,11 @@ function populateCatalogFilters() {
   const domainOptions = values((card) => cardDomains(card));
   const rarityOptions = values((card) => [card.rarity]);
   const typeOptions = values((card) => [card.type]);
-  catalogSetFilter.innerHTML = '<option value="">All sets</option>' + setOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-  catalogDomainOptions.innerHTML = domainOptions.map((value) => `<label><input type="checkbox" value="${escapeHtml(value)}" />${escapeHtml(value)}</label>`).join('');
-  catalogRarityFilter.innerHTML = '<option value="">All rarities</option>' + rarityOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-  catalogTypeFilter.innerHTML = '<option value="">All types</option>' + typeOptions.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+  const checkboxOptions = (values) => values.map((value) => `<label><input type="checkbox" value="${escapeHtml(value)}" checked />${escapeHtml(value)}</label>`).join('');
+  catalogSetFilter.innerHTML = checkboxOptions(setOptions);
+  catalogDomainOptions.innerHTML = checkboxOptions(domainOptions);
+  catalogRarityFilter.innerHTML = checkboxOptions(rarityOptions);
+  catalogTypeFilter.innerHTML = checkboxOptions(typeOptions);
 }
 
 function listingStatusLabel(status) {
@@ -777,6 +803,7 @@ adminUserPrevious.addEventListener('click', () => {
 adminUserNext.addEventListener('click', () => {
   adminUserPage += 1;
   renderAdminData(adminUsersData, adminListingsData);
+  scrollToSectionTop(adminUserPagination);
 });
 const rerenderAdminListings = () => {
   adminListingPage = 0;
@@ -807,6 +834,7 @@ adminListingPrevious.addEventListener('click', () => {
 adminListingNext.addEventListener('click', () => {
   adminListingPage += 1;
   renderAdminData(adminUsersData, adminListingsData);
+  scrollToSectionTop(adminListingPagination);
 });
 
 function renderHeroCards() {
@@ -1801,7 +1829,7 @@ async function loadListings() {
   }
   listings = data || [];
   listingsLoaded = true;
-  marketStatus.textContent = listings.length ? `${listings.length} marketplace listing${listings.length === 1 ? '' : 's'}` : 'No available listings yet. Be the first to list a card.';
+  marketStatus.textContent = listings.length ? `${listings.length} listing${listings.length === 1 ? '' : 's'}` : 'No available listings yet. Be the first to list a card.';
   renderListings();
 }
 
@@ -2221,22 +2249,36 @@ document.addEventListener('click', (event) => {
   if (!event.target.closest('.inbox-recipient-form')) inboxRecipientResults.hidden = true;
 });
 
-searchInput.addEventListener('input', renderListings);
-marketStatusFilters.forEach((filter) => filter.addEventListener('change', renderListings));
+const renderMarketplaceFromFirstPage = () => {
+  marketplacePage = 0;
+  renderListings();
+};
+searchInput.addEventListener('input', renderMarketplaceFromFirstPage);
+marketStatusFilters.forEach((filter) => filter.addEventListener('change', renderMarketplaceFromFirstPage));
 myListingsFilter.addEventListener('change', renderMyListings);
 marketFilterButton.addEventListener('click', () => {
   marketFilterPanel.hidden = !marketFilterPanel.hidden;
   marketFilterButton.setAttribute('aria-expanded', String(!marketFilterPanel.hidden));
 });
-marketTypeFilter.addEventListener('change', renderListings);
-marketMinPrice.addEventListener('input', renderListings);
-marketMaxPrice.addEventListener('input', renderListings);
+marketTypeFilter.addEventListener('change', renderMarketplaceFromFirstPage);
+marketMinPrice.addEventListener('input', renderMarketplaceFromFirstPage);
+marketMaxPrice.addEventListener('input', renderMarketplaceFromFirstPage);
 marketFilterClear.addEventListener('click', () => {
   marketStatusFilters.forEach((filter) => { filter.checked = filter.dataset.marketStatus === 'active'; });
   marketTypeFilter.value = '';
   marketMinPrice.value = '';
   marketMaxPrice.value = '';
+  renderMarketplaceFromFirstPage();
+});
+marketPrevious.addEventListener('click', () => {
+  if (marketplacePage === 0) return;
+  marketplacePage -= 1;
   renderListings();
+});
+marketNext.addEventListener('click', () => {
+  marketplacePage += 1;
+  renderListings();
+  scrollToSectionTop(marketPagination);
 });
 catalogSearch.addEventListener('input', renderCatalogFromFirstPage);
 catalogSetFilter.addEventListener('change', renderCatalogFromFirstPage);
@@ -2246,10 +2288,9 @@ catalogTypeFilter.addEventListener('change', renderCatalogFromFirstPage);
 rankingSearch.addEventListener('input', renderRankings);
 catalogFilterClear.addEventListener('click', () => {
   catalogSearch.value = '';
-  catalogSetFilter.value = '';
-  catalogDomainOptions.querySelectorAll('input:checked').forEach((input) => { input.checked = false; });
-  catalogRarityFilter.value = '';
-  catalogTypeFilter.value = '';
+  [catalogSetFilter, catalogDomainOptions, catalogRarityFilter, catalogTypeFilter].forEach((group) => {
+    group.querySelectorAll('input').forEach((input) => { input.checked = true; });
+  });
   renderCatalogFromFirstPage();
 });
 catalogPrevious.addEventListener('click', () => {
@@ -2260,10 +2301,19 @@ catalogPrevious.addEventListener('click', () => {
 catalogNext.addEventListener('click', () => {
   catalogPage += 1;
   renderCatalog();
+  scrollToSectionTop(catalogPagination);
 });
 catalogFilterButton.addEventListener('click', () => {
   catalogFilterPanel.hidden = !catalogFilterPanel.hidden;
   catalogFilterButton.setAttribute('aria-expanded', String(!catalogFilterPanel.hidden));
+});
+filterDropdowns.forEach((dropdown) => dropdown.addEventListener('toggle', () => {
+  if (!dropdown.open) return;
+  filterDropdowns.filter((item) => item !== dropdown).forEach((item) => { item.open = false; });
+}));
+document.addEventListener('click', (event) => {
+  if (event.target.closest('#catalog-filter-panel .catalog-domain-filter, #market-filter-panel .catalog-domain-filter')) return;
+  filterDropdowns.forEach((dropdown) => { dropdown.open = false; });
 });
 catalogGrid.addEventListener('click', (event) => {
   const cardButton = event.target.closest('[data-catalog-card-id]');

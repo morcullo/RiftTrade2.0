@@ -180,8 +180,8 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .catalog-card-copy small { overflow: hidden; color: var(--muted); font: .59rem "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .catalog-filters { display: grid; grid-template-columns: 1.25fr 1.25fr 1fr 1fr auto; gap: 10px; margin: 0 0 24px; }
 .catalog-filters label { display: grid; gap: 6px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
-.catalog-filters select { min-width: 0; appearance: none; border: 1px solid var(--line); padding: 10px 30px 10px 9px; color: var(--ink); background-color: var(--paper); background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-repeat: no-repeat; background-size: 5px 5px, 5px 5px; font: .72rem "Space Grotesk", sans-serif; }
-.catalog-filters select:focus { border-color: var(--ink); outline: 0; }
+.catalog-checkbox-control { display: grid; align-self: end; gap: 6px; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
+.catalog-checkbox-control .catalog-domain-filter { width: 100%; }
 .catalog-domain-control { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
 .catalog-domain-filter { position: relative; align-self: end; width: 100%; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
 .catalog-domain-filter summary { position: relative; display: flex; min-height: 38px; align-items: center; justify-content: flex-start; border: 1px solid var(--line); padding: 10px 34px 10px 9px; color: var(--ink); background: var(--paper); cursor: pointer; list-style: none; text-align: left; text-transform: none; font: .72rem "Space Grotesk", sans-serif; }

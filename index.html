@@ -53,22 +53,22 @@
         </section>
 
         <section class="view" data-page="marketplace" hidden>
-          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 03</p><h1>Marketplace</h1></div><div class="market-heading-actions"><button class="button button-dark" data-view="trades" type="button">My listings</button><button class="button button-outline" id="open-listing" type="button">New listing <span>＋</span></button></div></div>
+          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 03</p><div class="inbox-title-row"><h1>Marketplace</h1><span class="status-tag dark-tag" id="market-status" aria-live="polite">Loading listings...</span></div></div><div class="market-heading-actions"><button class="button button-dark" data-view="trades" type="button">My listings</button><button class="button button-outline" id="open-listing" type="button">New listing <span>＋</span></button></div></div>
           <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" id="market-filter-button" type="button" aria-expanded="false" aria-controls="market-filter-panel">Filter <span>☷</span></button></div>
           <div class="market-filter-panel" id="market-filter-panel" hidden><div class="market-filter-status"><span>Status</span><details class="catalog-domain-filter"><summary>Choose status</summary><div role="group" aria-label="Filter by status"><label><input type="checkbox" data-market-status="active" checked />Active</label><label><input type="checkbox" data-market-status="paused" />Pending</label><label><input type="checkbox" data-market-status="completed" />Completed</label></div></details></div><label class="market-filter-type">Listing type<select id="market-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="market-filter-min">Min price<input id="market-min-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0" /></label><label class="market-filter-max">Max price<input id="market-max-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="No max" /></label><button class="filter-clear" id="market-filter-clear" type="button">Clear filters</button></div>
-          <p class="market-status" id="market-status" aria-live="polite">Loading listings...</p>
           <div class="market-grid" id="market-grid"></div>
+          <nav class="catalog-pagination" id="market-pagination" aria-label="Marketplace pages" hidden><button id="market-previous" type="button">Previous</button><span id="market-page-status" aria-live="polite"></span><button id="market-next" type="button">Next</button></nav>
           <p class="empty-message" id="market-empty" hidden>No listings match that search.</p>
         </section>
 
         <section class="view" data-page="catalog" hidden>
-          <div class="page-heading"><div><p class="eyebrow">THE ARCHIVE / 01</p><h1>Card catalog</h1></div><span class="status-tag" id="catalog-count">Loading...</span></div>
+          <div class="page-heading"><div><p class="eyebrow">THE ARCHIVE / 01</p><div class="inbox-title-row"><h1>Card catalog</h1><span class="status-tag dark-tag" id="catalog-count">Loading...</span></div></div></div>
           <div class="market-tools catalog-tools"><label class="search-box"><span>⌕</span><input id="catalog-search" type="search" aria-label="Search card catalog" placeholder="Search cards, sets, codes, or tags" /></label><button class="filter-button" id="catalog-filter-button" type="button" aria-expanded="false" aria-controls="catalog-filter-panel">Filter <span>☷</span></button></div>
           <div class="market-filter-panel catalog-filter-panel" id="catalog-filter-panel" hidden><div class="catalog-filters" aria-label="Filter card catalog">
-            <label>Set<select id="catalog-set-filter"><option value="">All sets</option></select></label>
+            <div class="catalog-checkbox-control"><span>Sets</span><details class="catalog-domain-filter"><summary>Choose sets</summary><div id="catalog-set-filter" role="group" aria-label="Filter card catalog by sets"></div></details></div>
             <div class="catalog-domain-control"><span>Domains</span><details class="catalog-domain-filter"><summary>Choose domains</summary><div id="catalog-domain-options" role="group" aria-label="Filter by domains"></div></details></div>
-            <label>Rarity<select id="catalog-rarity-filter"><option value="">All rarities</option></select></label>
-            <label>Type<select id="catalog-type-filter"><option value="">All types</option></select></label>
+            <div class="catalog-checkbox-control"><span>Rarities</span><details class="catalog-domain-filter"><summary>Choose rarities</summary><div id="catalog-rarity-filter" role="group" aria-label="Filter card catalog by rarities"></div></details></div>
+            <div class="catalog-checkbox-control"><span>Types</span><details class="catalog-domain-filter"><summary>Choose types</summary><div id="catalog-type-filter" role="group" aria-label="Filter card catalog by types"></div></details></div>
             <button class="filter-clear" id="catalog-filter-clear" type="button">Clear filters</button>
           </div></div>
           <p class="market-status" id="catalog-status" aria-live="polite">Loading catalog...</p>
