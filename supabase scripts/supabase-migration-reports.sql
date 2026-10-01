@@ -27,20 +27,20 @@ with check (reporter_id = auth.uid());
 drop policy if exists "Users can read their reports" on public.reports;
 create policy "Users can read their reports" on public.reports
 for select to authenticated
-using (reporter_id = auth.uid() or public.is_admin());
+using (reporter_id = auth.uid() or public.is_staff());
 
 drop policy if exists "Administrators can update reports" on public.reports;
 create policy "Administrators can update reports" on public.reports
 for update to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+using (public.is_staff())
+with check (public.is_staff());
 
 drop policy if exists "Administrators can read direct messages" on public.direct_messages;
 create policy "Administrators can read direct messages" on public.direct_messages
 for select to authenticated
-using (public.is_admin());
+using (public.is_staff());
 
 drop policy if exists "Administrators can read conversations" on public.direct_conversations;
 create policy "Administrators can read conversations" on public.direct_conversations
 for select to authenticated
-using (public.is_admin());
+using (public.is_staff());

@@ -150,11 +150,12 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .admin-market-tools .search-box { min-width: 0; }
 .admin-user-search-box { margin: 18px 0; }
 .admin-users { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.admin-row { display: grid; gap: 14px; border: 1px solid var(--line); padding: 16px; background: white; box-shadow: 4px 4px 0 var(--line); }
+.admin-row { position: relative; display: grid; gap: 14px; border: 1px solid var(--line); padding: 16px; background: white; box-shadow: 4px 4px 0 var(--line); }
 .admin-row > div:first-child { display: grid; gap: 3px; }
 .admin-user-profile-link { width: fit-content; text-align: left; }
-.admin-user-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.admin-user-rank { padding: 4px 8px; font-size: .58rem; }
+.admin-user-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding-right: 86px; }
+.admin-user-role { margin: 0; }
+.admin-user-rank { position: absolute; top: 16px; right: 16px; padding: 4px 8px; font-size: .58rem; }
 .admin-user-rank.profile-rank-iron { color: var(--ink); border-color: var(--ink); background: #d5d1c6; }
 .admin-user-rank.profile-rank-bronze { color: #fff; border-color: #9a6038; background: #9a6038; }
 .admin-user-rank.profile-rank-silver { color: var(--ink); border-color: #9fa4a4; background: #c5c9c9; }

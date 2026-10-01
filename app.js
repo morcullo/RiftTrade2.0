@@ -280,6 +280,8 @@ const adminEditUserForm = document.querySelector('#admin-edit-user-form');
 const adminEditUserEmail = document.querySelector('#admin-edit-user-email');
 const adminEditUserName = document.querySelector('#admin-edit-user-name');
 const adminEditUserRank = document.querySelector('#admin-edit-user-rank');
+const adminEditUserRole = document.querySelector('#admin-edit-user-role');
+const adminEditUserRoleField = document.querySelector('.admin-edit-user-role-field');
 const adminEditUserMessage = document.querySelector('#admin-edit-user-message');
 let adminEditUserId = null;
 const listingDialogTitle = document.querySelector('#listing-title');
@@ -289,6 +291,7 @@ const myListingsStatus = document.querySelector('#my-listings-status');
 const myListingsEmpty = document.querySelector('#my-listings-empty');
 const myListingsFilter = document.querySelector('#my-listings-filter');
 const adminStatus = document.querySelector('#admin-status');
+const adminRoleLabel = document.querySelector('#admin-role-label');
 const adminUsers = document.querySelector('#admin-users');
 const adminListings = document.querySelector('#admin-listings');
 const adminView = document.querySelector('[data-page="admin"]');
@@ -335,6 +338,7 @@ const adminTabs = document.createElement('div');
 adminTabs.className = 'admin-tabs';
 adminTabs.setAttribute('role', 'tablist');
 let adminReportsTabBadge = null;
+let adminListingsTab = null;
 ['Users', 'Listings', 'Reports'].forEach((label, index) => {
   const tab = document.createElement('button');
   tab.className = 'admin-tab';
@@ -344,6 +348,7 @@ let adminReportsTabBadge = null;
   tab.setAttribute('aria-controls', `admin-panel-${label.toLowerCase()}`);
   tab.innerHTML = label === 'Reports' ? `${label} <b class="admin-tab-badge" hidden>0</b>` : label;
   if (label === 'Reports') adminReportsTabBadge = tab.querySelector('.admin-tab-badge');
+  if (label === 'Listings') adminListingsTab = tab;
   tab.addEventListener('click', () => {
     adminTabs.querySelectorAll('.admin-tab').forEach((item, itemIndex) => {
       const isActive = itemIndex === index;
@@ -378,6 +383,8 @@ let myListings = [];
 let profileListings = [];
 let signedInUser = null;
 let isAdministrator = false;
+let isModerator = false;
+let isAdminStaff = false;
 let adminDataLoaded = false;
 let adminUsersData = [];
 let adminListingsData = [];
@@ -793,7 +800,8 @@ function renderAdminData(users, allListings) {
     const completedTransactions = userListings.filter((listing) => listing.status === 'completed').length;
     const rank = getProfileRank(user, userListings, completedTransactions).rank.name;
     const rankClass = rank.toLowerCase().replaceAll(' ', '-');
-    return `<article class="admin-row"><div><div class="admin-user-heading"><button class="profile-link admin-user-profile-link" data-profile-id="${escapeHtml(user.id)}" type="button">${escapeHtml(user.display_name || user.username || 'RiftTrade member')}</button><span class="status-tag admin-user-rank profile-rank-${rankClass}">${escapeHtml(rank)}</span></div><small>${escapeHtml(user.email || 'No email')}</small><small>Member since ${escapeHtml(memberSince)}</small><div class="admin-user-stats"><span>${userListings.length} listing${userListings.length === 1 ? '' : 's'}</span><span>${completedTransactions} completed transaction${completedTransactions === 1 ? '' : 's'}</span></div></div><div class="admin-row-actions admin-user-actions"><button class="button button-outline admin-edit-user" data-user-id="${escapeHtml(user.id)}" type="button">Edit</button><button class="button button-danger admin-delete-user" data-user-id="${escapeHtml(user.id)}" type="button">Delete</button><button class="button button-dark admin-view-user-messages" data-user-id="${escapeHtml(user.id)}" data-user-name="${escapeHtml(user.display_name || user.username || 'RiftTrade member')}" type="button">View messages</button><button class="button button-outline admin-reset-password" data-email="${escapeHtml(user.email || '')}" type="button">Reset password</button></div></article>`;
+    const roleLabel = user.role === 'admin' ? 'Admin' : user.role === 'moderator' ? 'Moderator' : 'User';
+    return `<article class="admin-row"><div><div class="admin-user-heading"><button class="profile-link admin-user-profile-link" data-profile-id="${escapeHtml(user.id)}" type="button">${escapeHtml(user.display_name || user.username || 'RiftTrade member')}</button><span class="inbox-admin-tag admin-user-role">${roleLabel}</span><span class="status-tag admin-user-rank profile-rank-${rankClass}">${escapeHtml(rank)}</span></div><small>${escapeHtml(user.email || 'No email')}</small><small>Member since ${escapeHtml(memberSince)}</small><div class="admin-user-stats"><span>${userListings.length} listing${userListings.length === 1 ? '' : 's'}</span><span>${completedTransactions} completed transaction${completedTransactions === 1 ? '' : 's'}</span></div></div><div class="admin-row-actions admin-user-actions">${isAdminStaff ? `<button class="button button-outline admin-edit-user" data-user-id="${escapeHtml(user.id)}" type="button">Edit</button><button class="button button-danger admin-delete-user" data-user-id="${escapeHtml(user.id)}" type="button">Delete</button>` : ''}<button class="button button-dark admin-view-user-messages" data-user-id="${escapeHtml(user.id)}" data-user-name="${escapeHtml(user.display_name || user.username || 'RiftTrade member')}" type="button">View messages</button>${isAdminStaff ? `<button class="button button-outline admin-reset-password" data-email="${escapeHtml(user.email || '')}" type="button">Reset password</button>` : ''}</div></article>`;
   }).join('');
   adminUserPagination.hidden = userPageCount <= 1;
   adminUserPageStatus.textContent = userPageCount ? `Page ${adminUserPage + 1} of ${userPageCount}` : '';
@@ -820,7 +828,7 @@ function renderAdminData(users, allListings) {
   const pageCount = Math.ceil(matchingListings.length / adminListingPageSize);
   adminListingPage = Math.min(adminListingPage, Math.max(pageCount - 1, 0));
   const visibleListings = matchingListings.slice(adminListingPage * adminListingPageSize, (adminListingPage + 1) * adminListingPageSize);
-  adminListings.innerHTML = visibleListings.map((listing) => `<article class="admin-listing-card"><div class="admin-listing-preview">${renderMarketplaceListingCard(listing, listingQuery, true)}</div><div class="admin-listing-controls"><div class="admin-row-actions">${listing.status !== 'cancelled' ? `<button class="button button-danger admin-cancel-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Cancel</button>` : ''}<button class="button button-outline admin-edit-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="button button-danger admin-delete-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></div></article>`).join('');
+  adminListings.innerHTML = visibleListings.map((listing) => `<article class="admin-listing-card"><div class="admin-listing-preview">${renderMarketplaceListingCard(listing, listingQuery, true)}</div>${isAdminStaff ? `<div class="admin-listing-controls"><div class="admin-row-actions">${listing.status !== 'cancelled' ? `<button class="button button-danger admin-cancel-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Cancel</button>` : ''}<button class="button button-outline admin-edit-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="button button-danger admin-delete-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></div>` : ''}</article>`).join('');
   adminListingsEmpty.hidden = matchingListings.length !== 0;
   adminListingPagination.hidden = pageCount <= 1;
   adminListingPageStatus.textContent = pageCount ? `Page ${adminListingPage + 1} of ${pageCount}` : '';
@@ -834,6 +842,8 @@ function renderAdminData(users, allListings) {
     adminEditUserEmail.value = user.email || '';
     adminEditUserName.value = user.display_name || '';
     adminEditUserRank.value = user.rank_override || '';
+    adminEditUserRole.value = user.role || 'user';
+    adminEditUserRoleField.hidden = !isAdminStaff;
     adminEditUserMessage.textContent = '';
     adminEditUserMessage.classList.remove('is-error');
     adminEditUserDialog.showModal();
@@ -910,23 +920,25 @@ adminReportSearch.addEventListener('input', () => renderAdminData(adminUsersData
 adminReportStatusFilter.addEventListener('change', () => renderAdminData(adminUsersData, adminListingsData));
 
 async function loadAdminData(force = false) {
-  if (!isAdministrator || (!force && adminDataLoaded)) return;
+  if ((!isAdminStaff && !isModerator) || (!force && adminDataLoaded)) return;
   adminStatus.textContent = 'Loading administrator data...';
-  const [{ data: users, error: usersError }, { data: allListings, error: listingsError }, { data: reports, error: reportsError }] = await Promise.all([
+  const [{ data: users, error: usersError }, { data: staffUsers, error: staffError }, { data: allListings, error: listingsError }, { data: reports, error: reportsError }] = await Promise.all([
     window.riftTradeSupabase.from('profiles').select('id, email, username, display_name, rank_override, created_at').order('created_at', { ascending: false }),
+    window.riftTradeSupabase.from('admin_users').select('id, role'),
     window.riftTradeSupabase.from('listings').select(listingSelect()).order('created_at', { ascending: false }),
     window.riftTradeSupabase.from('reports').select('id, reporter_id, reported_user_id, listing_id, details, status, created_at').order('created_at', { ascending: false }),
   ]);
-  if (usersError || listingsError || reportsError) {
-    adminStatus.textContent = `Could not load admin data: ${(usersError || listingsError || reportsError).message}`;
+  if (usersError || staffError || listingsError || reportsError) {
+    adminStatus.textContent = `Could not load admin data: ${(usersError || staffError || listingsError || reportsError).message}`;
     return;
   }
   adminDataLoaded = true;
-  adminUsersData = users || [];
+  const rolesByUserId = new Map((staffUsers || []).map((staffUser) => [staffUser.id, staffUser.role]));
+  adminUsersData = (users || []).map((user) => ({ ...user, role: rolesByUserId.get(user.id) || 'user' }));
   adminListingsData = allListings || [];
   adminReportsData = reports || [];
   adminStatus.textContent = `${users.length} users · ${allListings.length} listings`;
-  renderAdminData(users, allListings);
+  renderAdminData(adminUsersData, allListings);
 }
 
 adminUserSearch.addEventListener('input', () => {
@@ -1324,8 +1336,12 @@ async function openProfileDialog(profileId) {
   const profile = profileResult.data;
   const displayName = profile.display_name || profile.username || 'RiftTrade member';
   profileTitle.textContent = displayName;
-  const { data: isAdminProfile } = await window.riftTradeSupabase.rpc('is_profile_admin', { target_profile_id: requestedProfileId });
-  profileAdminTag.hidden = isAdminProfile !== true && isAdminProfile !== 'true';
+  const { data: profileRole, error: profileRoleError } = await window.riftTradeSupabase.rpc('get_profile_role', { target_profile_id: requestedProfileId });
+  const resolvedProfileRole = profileRoleError
+    ? ((await window.riftTradeSupabase.rpc('is_profile_admin', { target_profile_id: requestedProfileId })).data ? 'admin' : 'user')
+    : profileRole;
+  profileAdminTag.textContent = resolvedProfileRole === 'moderator' ? 'Moderator' : 'Admin';
+  profileAdminTag.hidden = resolvedProfileRole !== 'admin' && resolvedProfileRole !== 'moderator';
   renderProfileAvatar(displayName, profile.avatar_url);
   profileAvatarButton.hidden = !signedInUser || signedInUser.id !== profile.id;
   profileAvatarStatic.hidden = Boolean(signedInUser && signedInUser.id === profile.id);
@@ -1627,6 +1643,7 @@ adminEditUserForm.addEventListener('submit', async (event) => {
     target_user_id: adminEditUserId,
     new_display_name: adminEditUserName.value.trim(),
     new_rank_override: adminEditUserRank.value || null,
+    new_role: adminEditUserRole.value,
   });
   if (error) {
     adminEditUserMessage.textContent = `Could not update user: ${error.message}`;
@@ -2253,10 +2270,11 @@ function renderInboxConversations() {
   const visibleConversations = inboxConversations.filter((conversation) => `${conversation.peer_display_name || ''} ${conversation.last_message_body || ''}`.toLowerCase().includes(query));
   inboxConversationList.innerHTML = visibleConversations.map((conversation) => {
     const peerName = conversation.peer_display_name || 'RiftTrade member';
-    const peerIsAdmin = conversation.peer_is_admin === true || conversation.peer_is_admin === 'true';
+    const peerRole = conversation.peer_role || (conversation.peer_is_admin === true || conversation.peer_is_admin === 'true' ? 'admin' : 'user');
+    const peerIsStaff = peerRole === 'admin' || peerRole === 'moderator';
     const unread = Number(conversation.unread_count || 0);
     const preview = conversation.last_message_body || 'Start a conversation';
-    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}">${avatarMarkup(peerName, conversation.peer_avatar_url)}<span class="inbox-conversation-copy"><span class="inbox-conversation-name"><strong>${escapeHtml(peerName)}</strong>${peerIsAdmin ? '<span class="inbox-admin-tag">Admin</span>' : ''}</span><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
+    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}">${avatarMarkup(peerName, conversation.peer_avatar_url)}<span class="inbox-conversation-copy"><span class="inbox-conversation-name"><strong>${escapeHtml(peerName)}</strong>${peerIsStaff ? `<span class="inbox-admin-tag">${peerRole === 'moderator' ? 'Moderator' : 'Admin'}</span>` : ''}</span><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
   }).join('');
   updateInboxUnreadBadge();
 }
@@ -2367,9 +2385,11 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   inboxEmptyState.hidden = true;
   inboxActive.hidden = false;
   inboxPeerProfile.textContent = conversation.peer_display_name || 'RiftTrade member';
-  const peerIsAdmin = conversation.peer_is_admin === true || conversation.peer_is_admin === 'true';
-  inboxPeerAdminTag.hidden = !peerIsAdmin;
-  inboxPeerRole.textContent = peerIsAdmin ? 'RiftTrade Administrator' : 'RiftTrade Member';
+  const peerRole = conversation.peer_role || (conversation.peer_is_admin === true || conversation.peer_is_admin === 'true' ? 'admin' : 'user');
+  const peerIsStaff = peerRole === 'admin' || peerRole === 'moderator';
+  inboxPeerAdminTag.textContent = peerRole === 'moderator' ? 'Moderator' : 'Admin';
+  inboxPeerAdminTag.hidden = !peerIsStaff;
+  inboxPeerRole.textContent = peerRole === 'admin' ? 'RiftTrade Administrator' : peerRole === 'moderator' ? 'RiftTrade Moderator' : 'RiftTrade Member';
   inboxPeerAvatar.innerHTML = avatarMarkup(conversation.peer_display_name, conversation.peer_avatar_url, 'inbox-peer-avatar').replace(/^<span[^>]*>|<\/span>$/g, '');
   inboxPeerProfile.dataset.profileId = conversation.peer_id;
   inboxTyping.hidden = true;
@@ -2725,12 +2745,27 @@ async function refreshAuthState() {
   const user = session?.user;
   signedInUser = user || null;
   isAdministrator = false;
+  isModerator = false;
+  isAdminStaff = false;
   adminDataLoaded = false;
   if (user) {
-    const { data: adminResult } = await window.riftTradeSupabase.rpc('is_admin');
-    isAdministrator = adminResult === true;
+    const { data: roleResult, error: roleError } = await window.riftTradeSupabase.rpc('get_my_role');
+    if (roleError) {
+      const { data: adminResult } = await window.riftTradeSupabase.rpc('is_admin');
+      isAdministrator = adminResult === true;
+    } else {
+      isAdministrator = roleResult === 'admin';
+      isModerator = roleResult === 'moderator';
+    }
+    isAdminStaff = isAdministrator;
   }
-  if (adminNav) adminNav.hidden = !isAdministrator;
+  if (adminNav) adminNav.hidden = !isAdminStaff && !isModerator;
+  if (adminRoleLabel) adminRoleLabel.textContent = isAdministrator ? 'Administrator' : 'Moderator';
+  if (adminListingsTab) {
+    adminListingsTab.hidden = !isAdministrator;
+    adminListingsTab.closest('[data-page="admin"]')?.querySelector('#admin-panel-listings')?.toggleAttribute('hidden', !isAdministrator);
+    if (!isAdministrator && adminListingsTab.classList.contains('is-active')) adminTabs.querySelector('.admin-tab:not([hidden])')?.click();
+  }
   authStateReady = true;
   if (!user) renderProfileButton('RiftTrade member', '');
   if (!user) closeProfileMenu();
@@ -2762,7 +2797,7 @@ async function refreshAuthState() {
   }
   if (views.find((view) => view.dataset.page === 'trades')?.classList.contains('is-visible')) loadMyListings();
   if (views.find((view) => view.dataset.page === 'admin')?.classList.contains('is-visible')) {
-    if (isAdministrator) loadAdminData(true);
+    if (isAdminStaff || isModerator) loadAdminData(true);
     else showView('home');
   }
   inboxLoadPromise = loadInbox();

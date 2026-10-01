@@ -9,6 +9,7 @@ returns table (
   peer_display_name text,
   peer_avatar_url text,
   peer_is_admin boolean,
+  peer_role text,
   last_message_body text,
   last_message_at timestamptz,
   unread_count bigint
@@ -19,6 +20,7 @@ returns table (
     coalesce(peer.display_name, peer.username, 'RiftTrade member'),
     peer.avatar_url,
     exists (select 1 from public.admin_users administrator where administrator.id = peer.id),
+    coalesce((select administrator.role from public.admin_users administrator where administrator.id = peer.id), 'user'),
     latest_message.body,
     coalesce(latest_message.created_at, conversation.last_message_at),
     coalesce(unread_messages.unread_count, 0)::bigint
