@@ -328,7 +328,7 @@ function renderMarketplaceListingCard(listing, query = '', includeStatus = false
       ${isGrid || isCarousel ? '' : renderCardBadges(card)}${singleQuantityBadge}${carouselControls}
       ${statusOverlay}
     </div>
-    <div class="listing-copy"><div class="listing-summary"><strong>${escapeHtml(listing.title)}</strong><b>${escapeHtml(listingPriceLabel(listing))}</b></div><div class="listing-poster"><span>By <button class="profile-link" data-profile-id="${escapeHtml(listing.seller_id)}" type="button">${escapeHtml(seller)}</button></span><span class="listing-type-indicator type-${listingTypeClass(listing.listing_type)}">${escapeHtml(listingTypeLabel(listing.listing_type))}</span></div></div>
+    <div class="listing-copy"><div class="listing-summary"><span class="listing-type-indicator type-${listingTypeClass(listing.listing_type)}">${escapeHtml(listingTypeLabel(listing.listing_type))}</span><strong>${escapeHtml(listing.title)}</strong></div><div class="listing-poster"><span>By <button class="profile-link" data-profile-id="${escapeHtml(listing.seller_id)}" type="button">${escapeHtml(seller)}</button></span><b>${escapeHtml(listingPriceLabel(listing))}</b></div></div>
   </article>`;
 }
 

@@ -161,10 +161,12 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .art-red { background: var(--red); }.art-yellow { background: var(--yellow); }.art-blue { background: var(--blue); color: white; }
 .listing-copy { display: grid; gap: 12px; padding: 14px 15px 15px; }
 .listing-summary, .listing-poster { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; }
+.listing-summary { justify-content: flex-start; }
 .listing-summary strong { min-width: 0; overflow: hidden; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
-.listing-summary b { flex: 0 0 auto; white-space: nowrap; font: 500 .76rem "DM Mono", monospace; }
 .listing-poster span { min-width: 0; color: var(--muted); font: .62rem "DM Mono", monospace; }
-.listing-poster span { color: var(--muted); font: .62rem "DM Mono", monospace; }.listing-poster .listing-type-indicator { padding: 3px 5px; color: var(--ink); border: 1px solid var(--ink); background: var(--yellow); font-size: .52rem; text-transform: uppercase; }.listing-poster .listing-type-indicator.type-sale { color: white; background: var(--red); }.listing-poster .listing-type-indicator.type-trade-or-sale { color: white; background: var(--blue); }
+.listing-poster b { flex: 0 0 auto; color: var(--ink); white-space: nowrap; font: 500 .76rem "DM Mono", monospace; }
+.listing-type-indicator { flex: 0 0 auto; padding: 3px 5px; color: var(--ink); border: 1px solid var(--ink); background: var(--yellow); font: .52rem "DM Mono", monospace; text-transform: uppercase; }
+.listing-type-indicator.type-sale { color: white; background: var(--red); }.listing-type-indicator.type-trade-or-sale { color: white; background: var(--blue); }
 .card-badges { position: absolute; right: 8px; bottom: 8px; left: 8px; z-index: 2; display: flex; flex-wrap: wrap; gap: 5px; }.card-badge { width: fit-content; padding: 4px 6px; color: var(--ink) !important; border: 1px solid var(--ink); background: var(--yellow); font: 500 .56rem "DM Mono", monospace !important; text-transform: uppercase; }.card-badge + .card-badge { background: var(--blue); color: white !important; border-color: white; }
 .empty-message { color: var(--muted); text-align: center; }
 .my-listings-grid { margin-top: 30px; }
@@ -404,14 +406,13 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 .ranking-progress span { display: block; height: 100%; background: var(--red); }
 .ranking-rank small { grid-column: 1 / -1; text-align: right; }
 @media (max-width: 700px) { .ranking-row { grid-template-columns: 30px 38px minmax(0, 1fr); gap: 10px; padding: 11px 10px; }.ranking-rank { grid-column: 2 / -1; }.ranking-rank small { text-align: left; } }
-.profile-listings .listing-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 8px; }
+.profile-listings .listing-summary { align-items: flex-start; }
 .profile-listings .listing-summary strong { min-width: 0; overflow: visible; overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
-.profile-listings .listing-summary b { justify-self: end; }
 .profile-listings .listing-poster { min-width: 0; flex-wrap: wrap; }
 .listing-status-inactive .card-art img { filter: grayscale(1); opacity: .55; }
 .profile-listing-inactive .card-art img { filter: grayscale(1); }
-.profile-listing-status-overlay { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(17,17,17,.38); pointer-events: none; }
-.profile-listing-status-overlay .my-listing-status { align-self: center; justify-self: center; padding: 8px 12px; font-size: .68rem; }
+.profile-listing-status-overlay { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background: rgba(17,17,17,.38); pointer-events: none; }
+.profile-listing-status-overlay .my-listing-status { width: max-content; justify-self: auto; padding: 8px 12px; font-size: .68rem; }
 .profile-listing-status-overlay .my-listing-status.status-pending { color: white; background: #5f6265; }
 .profile-listing-status-overlay .my-listing-status.status-sold { color: white; background: #a02f27; }
 @media (max-width: 700px) { .profile-dialog { padding: 24px 18px; }.profile-info { grid-template-columns: 1fr; gap: 12px; }.profile-listings { grid-template-columns: 1fr; gap: 12px; } }
@@ -421,6 +422,6 @@ h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.04em; }
 	.my-listing-preview { grid-area: preview; }
 	.my-listing-main { grid-area: main; }
 	.my-listing-status { grid-area: status; }
-	.my-listings-grid .my-listing-status { width: 58px; padding-right: 4px; padding-left: 4px; }
+	.my-listings-grid .my-listing-status { width: 58px; justify-self: center; padding-right: 4px; padding-left: 4px; }
 	.my-listing-actions { grid-area: actions; }
 }
