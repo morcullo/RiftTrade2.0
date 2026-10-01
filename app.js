@@ -1,5 +1,6 @@
 const views = [...document.querySelectorAll('[data-page]')];
 const navItems = [...document.querySelectorAll('[data-view]')];
+const adminNav = document.querySelector('.admin-only');
 
 function showView(viewName) {
   views.forEach((view) => {
@@ -19,10 +20,14 @@ function showView(viewName) {
   else if (viewName === 'catalog') loadCatalog();
   else if (viewName === 'rankings') loadRankings();
   else if (viewName === 'trades') loadMyListings();
+  else if (viewName === 'admin') loadAdminData();
   else if (viewName === 'inbox') inboxLoadPromise = loadInbox();
 }
 
-navItems.forEach((item) => item.addEventListener('click', () => showView(item.dataset.view)));
+navItems.forEach((item) => item.addEventListener('click', () => {
+  if (item.dataset.view === 'admin') closeProfileMenu();
+  showView(item.dataset.view);
+}));
 document.querySelectorAll('[data-go]').forEach((item) => item.addEventListener('click', () => showView(item.dataset.go)));
 document.querySelectorAll('[data-metric-index]').forEach((metric) => {
   const resetMetricIndex = () => {
@@ -74,6 +79,8 @@ const listingSubmit = document.querySelector('#listing-submit');
 const listingName = document.querySelector('#listing-name');
 const listingType = document.querySelector('#listing-type');
 const listingTypeOptions = document.querySelectorAll('[data-listing-type]');
+const listingStatus = document.querySelector('#listing-status');
+const listingStatusField = document.querySelector('#listing-status-field');
 const listingDescription = document.querySelector('#listing-description');
 const accountDialog = document.querySelector('#account-dialog');
 const profileButton = document.querySelector('#profile-button');
@@ -176,6 +183,27 @@ const cardDialogAbility = document.querySelector('#card-dialog-ability');
 const cardDialogTags = document.querySelector('#card-dialog-tags');
 const cardDialogMarketplace = document.querySelector('#card-dialog-marketplace');
 const cardDialogTcgplayer = document.querySelector('#card-dialog-tcgplayer');
+const cardAdminActions = document.querySelector('#card-admin-actions');
+const cardAdminToggle = document.querySelector('#card-admin-toggle');
+const cardAdminMenu = document.querySelector('#card-admin-menu');
+const cardAdminEdit = document.querySelector('#card-admin-edit');
+const cardAdminDelete = document.querySelector('#card-admin-delete');
+const cardEditDialog = document.querySelector('#card-edit-dialog');
+const cardEditClose = document.querySelector('#card-edit-close');
+const cardEditForm = document.querySelector('#card-edit-form');
+const cardEditName = document.querySelector('#card-edit-name');
+const cardEditPublicCode = document.querySelector('#card-edit-public-code');
+const cardEditImageUrl = document.querySelector('#card-edit-image-url');
+const cardEditSetName = document.querySelector('#card-edit-set-name');
+const cardEditRarity = document.querySelector('#card-edit-rarity');
+const cardEditType = document.querySelector('#card-edit-type');
+const cardEditCost = document.querySelector('#card-edit-cost');
+const cardEditMight = document.querySelector('#card-edit-might');
+const cardEditPower = document.querySelector('#card-edit-power');
+const cardEditTags = document.querySelector('#card-edit-tags');
+const cardEditDomains = document.querySelector('#card-edit-domains');
+const cardEditAbility = document.querySelector('#card-edit-ability');
+const cardEditMessage = document.querySelector('#card-edit-message');
 const listingDetailsDialog = document.querySelector('#listing-details-dialog');
 const listingDetailsClose = document.querySelector('#listing-details-close');
 const listingDetailsTitle = document.querySelector('#listing-details-title');
@@ -191,6 +219,11 @@ const listingEditButton = document.querySelector('#listing-edit');
 const listingPendingButton = document.querySelector('#listing-pending');
 const listingSoldButton = document.querySelector('#listing-sold');
 const listingDeleteButton = document.querySelector('#listing-delete');
+const listingAdminActions = document.querySelector('#listing-admin-actions');
+const listingAdminToggle = document.querySelector('#listing-admin-toggle');
+const listingAdminMenu = document.querySelector('#listing-admin-menu');
+const listingAdminEdit = document.querySelector('#listing-admin-edit');
+const listingAdminDelete = document.querySelector('#listing-admin-delete');
 const saleConfirmationDialog = document.querySelector('#sale-confirmation-dialog');
 const saleConfirmationClose = document.querySelector('#sale-confirmation-close');
 const saleConfirmationForm = document.querySelector('#sale-confirmation-form');
@@ -204,6 +237,23 @@ const myListingsCount = document.querySelector('#my-listings-count');
 const myListingsStatus = document.querySelector('#my-listings-status');
 const myListingsEmpty = document.querySelector('#my-listings-empty');
 const myListingsFilter = document.querySelector('#my-listings-filter');
+const adminStatus = document.querySelector('#admin-status');
+const adminUsers = document.querySelector('#admin-users');
+const adminListings = document.querySelector('#admin-listings');
+const adminUserSearch = document.querySelector('#admin-user-search');
+const adminListingSearch = document.querySelector('#admin-listing-search');
+const adminListingFilterButton = document.querySelector('#admin-listing-filter-button');
+const adminListingFilterPanel = document.querySelector('#admin-listing-filter-panel');
+const adminListingStatusFilters = [...document.querySelectorAll('[data-admin-status]')];
+const adminListingTypeFilter = document.querySelector('#admin-listing-type-filter');
+const adminListingMinPrice = document.querySelector('#admin-listing-min-price');
+const adminListingMaxPrice = document.querySelector('#admin-listing-max-price');
+const adminListingFilterClear = document.querySelector('#admin-listing-filter-clear');
+const adminListingsEmpty = document.querySelector('#admin-listings-empty');
+const adminListingPagination = document.querySelector('#admin-listing-pagination');
+const adminListingPrevious = document.querySelector('#admin-listing-previous');
+const adminListingNext = document.querySelector('#admin-listing-next');
+const adminListingPageStatus = document.querySelector('#admin-listing-page-status');
 let editingListingId = null;
 let saleConfirmationListingId = null;
 
@@ -216,6 +266,12 @@ let listingsLoaded = false;
 let myListings = [];
 let profileListings = [];
 let signedInUser = null;
+let isAdministrator = false;
+let adminDataLoaded = false;
+let adminUsersData = [];
+let adminListingsData = [];
+let adminListingPage = 0;
+const adminListingPageSize = 8;
 let authStateReady = false;
 let inboxConversations = [];
 let activeConversationId = null;
@@ -569,6 +625,129 @@ function renderMyListings() {
   }));
 }
 
+const ADMIN_RANKS = ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master', 'Grandmaster', 'Challenger'];
+
+function renderAdminData(users, allListings) {
+  const query = adminUserSearch.value.trim().toLowerCase();
+  const visibleUsers = users.filter((user) => [user.display_name, user.username, user.email].filter(Boolean).join(' ').toLowerCase().includes(query));
+  adminUsers.innerHTML = visibleUsers.map((user) => `<article class="admin-row"><div><strong>${escapeHtml(user.display_name || user.username || 'RiftTrade member')}</strong><small>${escapeHtml(user.email || 'No email')}</small></div><input class="admin-display-name" data-user-id="${escapeHtml(user.id)}" value="${escapeHtml(user.display_name || '')}" aria-label="Display name for ${escapeHtml(user.email || user.id)}" /><select class="admin-rank" data-user-id="${escapeHtml(user.id)}" aria-label="Rank for ${escapeHtml(user.email || user.id)}"><option value="">Automatic rank</option>${ADMIN_RANKS.map((rank) => `<option value="${rank}"${user.rank_override === rank ? ' selected' : ''}>${rank}</option>`).join('')}</select><div class="admin-row-actions"><button class="button admin-save-user" data-user-id="${escapeHtml(user.id)}" type="button">Save</button><button class="button button-outline admin-reset-password" data-email="${escapeHtml(user.email || '')}" type="button">Reset password</button><button class="button button-danger admin-delete-user" data-user-id="${escapeHtml(user.id)}" type="button">Delete</button></div></article>`).join('');
+  const listingQuery = adminListingSearch.value.trim().toLowerCase();
+  const selectedStatuses = adminListingStatusFilters.filter((filter) => filter.checked).map((filter) => filter.dataset.adminStatus);
+  const selectedListingType = adminListingTypeFilter.value;
+  const minimumPrice = Number(adminListingMinPrice.value);
+  const maximumPrice = Number(adminListingMaxPrice.value);
+  const hasMinimumPrice = Number.isFinite(minimumPrice) && adminListingMinPrice.value !== '';
+  const hasMaximumPrice = Number.isFinite(maximumPrice) && adminListingMaxPrice.value !== '';
+  adminListingFilterButton.classList.toggle('is-active', selectedStatuses.some((status) => status !== 'active') || selectedStatuses.length === 0 || Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
+  const matchingListings = allListings.filter((listing) => {
+    const listingCards = listing.listing_cards || [];
+    const searchable = [listing.title, listing.description, listing.seller?.display_name, listing.seller?.username, listing.seller?.email, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code, card?.public_code, ...(Array.isArray(card?.tags) ? card.tags : [card?.tags]), ...(Array.isArray(card?.domains) ? card.domains : [card?.domains])])].filter(Boolean).join(' ').toLowerCase();
+    const prices = listingCards.map(({ price }) => Number(price)).filter(Number.isFinite);
+    const lowestPrice = prices.length ? Math.min(...prices) : Number(listing.price);
+    const highestPrice = prices.length ? Math.max(...prices) : Number(listing.price);
+    const matchesPrice = (!hasMinimumPrice && !hasMaximumPrice) || (Number.isFinite(lowestPrice) && Number.isFinite(highestPrice) && (!hasMinimumPrice || highestPrice >= minimumPrice) && (!hasMaximumPrice || lowestPrice <= maximumPrice));
+    const matchesType = !selectedListingType || listing.listing_type === selectedListingType || (listing.listing_type === 'trade_or_sale' && ['sale', 'trade'].includes(selectedListingType));
+    return selectedStatuses.includes(listing.status) && searchable.includes(listingQuery) && matchesType && matchesPrice;
+  });
+  const pageCount = Math.ceil(matchingListings.length / adminListingPageSize);
+  adminListingPage = Math.min(adminListingPage, Math.max(pageCount - 1, 0));
+  const visibleListings = matchingListings.slice(adminListingPage * adminListingPageSize, (adminListingPage + 1) * adminListingPageSize);
+  adminListings.innerHTML = visibleListings.map((listing) => `<article class="admin-listing-card"><div class="admin-listing-preview">${renderMarketplaceListingCard(listing, listingQuery, true)}</div><div class="admin-listing-controls"><label>Status<select class="admin-listing-status" data-listing-id="${escapeHtml(listing.id)}" aria-label="Status for ${escapeHtml(listing.title)}"><option value="active"${listing.status === 'active' ? ' selected' : ''}>Available</option><option value="paused"${listing.status === 'paused' ? ' selected' : ''}>Pending</option><option value="completed"${listing.status === 'completed' ? ' selected' : ''}>Completed</option><option value="cancelled"${listing.status === 'cancelled' ? ' selected' : ''}>Cancelled</option></select></label><div class="admin-row-actions"><button class="button button-outline admin-edit-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="button button-danger admin-delete-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></div></article>`).join('');
+  adminListingsEmpty.hidden = matchingListings.length !== 0;
+  adminListingPagination.hidden = pageCount <= 1;
+  adminListingPageStatus.textContent = pageCount ? `Page ${adminListingPage + 1} of ${pageCount}` : '';
+  adminListingPrevious.disabled = adminListingPage === 0;
+  adminListingNext.disabled = adminListingPage >= pageCount - 1;
+  adminUsers.querySelectorAll('.admin-save-user').forEach((button) => button.addEventListener('click', async () => {
+    const userId = button.dataset.userId;
+    const displayName = adminUsers.querySelector(`.admin-display-name[data-user-id="${CSS.escape(userId)}"]`).value;
+    const rankOverride = adminUsers.querySelector(`.admin-rank[data-user-id="${CSS.escape(userId)}"]`).value || null;
+    const { error } = await window.riftTradeSupabase.rpc('admin_update_profile', { target_user_id: userId, new_display_name: displayName, new_rank_override: rankOverride });
+    adminStatus.textContent = error ? `Could not update user: ${error.message}` : 'User updated.';
+    if (!error) await loadAdminData(true);
+  }));
+  adminUsers.querySelectorAll('.admin-reset-password').forEach((button) => button.addEventListener('click', async () => {
+    if (!button.dataset.email) return;
+    const { error } = await window.riftTradeSupabase.auth.resetPasswordForEmail(button.dataset.email, { redirectTo: window.location.href });
+    adminStatus.textContent = error ? `Could not send reset email: ${error.message}` : 'Password reset email sent.';
+  }));
+  adminUsers.querySelectorAll('.admin-delete-user').forEach((button) => button.addEventListener('click', async () => {
+    if (button.dataset.userId === signedInUser?.id || !window.confirm('Delete this user and all of their data?')) return;
+    const { error } = await window.riftTradeSupabase.rpc('admin_delete_user', { target_user_id: button.dataset.userId });
+    adminStatus.textContent = error ? `Could not delete user: ${error.message}` : 'User deleted.';
+    if (!error) await loadAdminData(true);
+  }));
+  bindMarketplaceListingCards(adminListings, allListings);
+  adminListings.querySelectorAll('.admin-listing-status').forEach((select) => select.addEventListener('change', async () => {
+    const listingId = select.dataset.listingId;
+    const { error } = await window.riftTradeSupabase.from('listings').update({ status: select.value }).eq('id', listingId);
+    adminStatus.textContent = error ? `Could not update listing: ${error.message}` : 'Listing status updated.';
+    if (!error) await Promise.all([loadAdminData(true), loadListings()]);
+  }));
+  adminListings.querySelectorAll('.admin-edit-listing').forEach((button) => button.addEventListener('click', async () => {
+    const listing = allListings.find((item) => item.id === button.dataset.listingId);
+    if (!listing) return;
+    await loadCatalog();
+    openListingForm(listing);
+  }));
+  adminListings.querySelectorAll('.admin-delete-listing').forEach((button) => button.addEventListener('click', async () => {
+    if (!window.confirm('Delete this listing?')) return;
+    const { error } = await window.riftTradeSupabase.from('listings').delete().eq('id', button.dataset.listingId);
+    adminStatus.textContent = error ? `Could not delete listing: ${error.message}` : 'Listing deleted.';
+    if (!error) await loadAdminData(true);
+  }));
+}
+
+async function loadAdminData(force = false) {
+  if (!isAdministrator || (!force && adminDataLoaded)) return;
+  adminStatus.textContent = 'Loading administrator data...';
+  const [{ data: users, error: usersError }, { data: allListings, error: listingsError }] = await Promise.all([
+    window.riftTradeSupabase.from('profiles').select('id, email, username, display_name, rank_override, created_at').order('created_at', { ascending: false }),
+    window.riftTradeSupabase.from('listings').select(listingSelect()).order('created_at', { ascending: false }),
+  ]);
+  if (usersError || listingsError) {
+    adminStatus.textContent = `Could not load admin data: ${(usersError || listingsError).message}`;
+    return;
+  }
+  adminDataLoaded = true;
+  adminUsersData = users || [];
+  adminListingsData = allListings || [];
+  adminStatus.textContent = `${users.length} users · ${allListings.length} listings`;
+  renderAdminData(users, allListings);
+}
+
+adminUserSearch.addEventListener('input', () => renderAdminData(adminUsersData, adminListingsData));
+const rerenderAdminListings = () => {
+  adminListingPage = 0;
+  renderAdminData(adminUsersData, adminListingsData);
+};
+adminListingSearch.addEventListener('input', rerenderAdminListings);
+adminListingStatusFilters.forEach((filter) => filter.addEventListener('change', rerenderAdminListings));
+adminListingTypeFilter.addEventListener('change', rerenderAdminListings);
+adminListingMinPrice.addEventListener('input', rerenderAdminListings);
+adminListingMaxPrice.addEventListener('input', rerenderAdminListings);
+adminListingFilterButton.addEventListener('click', () => {
+  adminListingFilterPanel.hidden = !adminListingFilterPanel.hidden;
+  adminListingFilterButton.setAttribute('aria-expanded', String(!adminListingFilterPanel.hidden));
+});
+adminListingFilterClear.addEventListener('click', () => {
+  adminListingSearch.value = '';
+  adminListingStatusFilters.forEach((filter) => { filter.checked = filter.dataset.adminStatus === 'active'; });
+  adminListingTypeFilter.value = '';
+  adminListingMinPrice.value = '';
+  adminListingMaxPrice.value = '';
+  rerenderAdminListings();
+});
+adminListingPrevious.addEventListener('click', () => {
+  if (adminListingPage === 0) return;
+  adminListingPage -= 1;
+  renderAdminData(adminUsersData, adminListingsData);
+});
+adminListingNext.addEventListener('click', () => {
+  adminListingPage += 1;
+  renderAdminData(adminUsersData, adminListingsData);
+});
+
 function renderHeroCards() {
   if (heroCardBack.querySelector('img') && heroCardFront.querySelector('img')) return;
   const imageCards = cards.filter((card) => card.is_signed && getCardImageUrl(card));
@@ -602,6 +781,10 @@ async function openCardDialog(cardId) {
   if (!listingsLoaded) await loadListings();
   const card = cards.find((item) => item.id === cardId);
   if (!card) return;
+  cardDialog.dataset.cardId = card.id;
+  cardAdminActions.hidden = !isAdministrator;
+  cardAdminMenu.hidden = true;
+  cardAdminToggle.setAttribute('aria-expanded', 'false');
   cardDialogMarketplace.dataset.cardName = card.name;
   const imageUrl = getCardImageUrl(card);
   cardDialogTitle.textContent = card.name;
@@ -624,10 +807,12 @@ async function openCardDialog(cardId) {
 }
 
 function openListingDetails(listingId) {
-  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId) || profileListings.find((item) => item.id === listingId) || inboxSharedListings.find((item) => item.id === listingId);
+  const listing = listings.find((item) => item.id === listingId) || myListings.find((item) => item.id === listingId) || profileListings.find((item) => item.id === listingId) || inboxSharedListings.find((item) => item.id === listingId) || adminListingsData.find((item) => item.id === listingId);
   if (!listing) return;
   listingDetailsDialog.dataset.listingId = listing.id;
   listingDetailsDialog.dataset.listingStatus = listing.status;
+  listingAdminMenu.hidden = true;
+  listingAdminToggle.setAttribute('aria-expanded', 'false');
   const listingCards = listing.listing_cards || [];
   const seller = listing.seller?.display_name || listing.seller?.username || 'RiftTrade member';
   const listingType = listingTypeLabel(listing.listing_type);
@@ -642,6 +827,7 @@ function openListingDetails(listingId) {
   listingDetailsMeta.textContent = [listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · ');
   listingDetailsDescription.textContent = listing.description || 'No description provided.';
   listingDetailsActions.hidden = true;
+  listingAdminActions.hidden = !isAdministrator;
   listingDetailsContact.hidden = true;
   listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, foil, price }) => {
     const imageUrl = getCardImageUrl(card || {});
@@ -655,6 +841,7 @@ function openListingDetails(listingId) {
     const canChangeStatus = ['active', 'paused'].includes(listing.status);
     const isSold = listing.status === 'completed';
     listingDetailsActions.hidden = !isOwner;
+    listingAdminActions.hidden = !isAdministrator;
     listingDetailsContact.hidden = isOwner || isSold;
     listingPendingButton.hidden = !canChangeStatus;
     listingPendingButton.textContent = listing.status === 'paused' ? 'Remove pending' : 'Mark pending';
@@ -692,6 +879,8 @@ function getProfileRank(profile, listings, completedCount = null) {
     if (metrics.completed >= threshold.completed && metrics.days >= threshold.days) rankIndex = index;
     else break;
   }
+  const overrideIndex = PROFILE_RANKS.findIndex((candidate) => candidate.name === profile.rank_override);
+  if (overrideIndex >= 0) rankIndex = overrideIndex;
   const rank = PROFILE_RANKS[rankIndex];
   const nextRank = PROFILE_RANKS[rankIndex + 1] || null;
   const progress = nextRank
@@ -725,7 +914,7 @@ async function fetchRankings() {
     return;
   }
   const [{ data: profiles, error: profileError }, { data: listings, error: listingError }, { data: completionCounts, error: completionError }] = await Promise.all([
-    window.riftTradeSupabase.from('profiles').select('id, display_name, username, avatar_url, created_at'),
+    window.riftTradeSupabase.from('profiles').select('id, display_name, username, avatar_url, rank_override, created_at'),
     window.riftTradeSupabase.from('listings').select('seller_id, status, completed_outside_rifttrade'),
     window.riftTradeSupabase.rpc('get_profile_completion_counts'),
   ]);
@@ -790,7 +979,7 @@ async function openProfileDialog(profileId) {
   profileDialog.showModal();
 
   const profileRequest = (async () => {
-    let fields = ['id', 'display_name', 'username', 'email', 'discord_id', 'avatar_url', 'created_at'];
+    let fields = ['id', 'display_name', 'username', 'email', 'discord_id', 'avatar_url', 'rank_override', 'created_at'];
     let emailColumnMissing = false;
     let discordColumnMissing = false;
     let result;
@@ -803,6 +992,8 @@ async function openProfileDialog(profileId) {
       } else if (result.error.message.includes('profiles.discord_id') && !discordColumnMissing) {
         discordColumnMissing = true;
         fields = fields.filter((field) => field !== 'discord_id');
+      } else if (result.error.message.includes('profiles.rank_override')) {
+        fields = fields.filter((field) => field !== 'rank_override');
       } else {
         break;
       }
@@ -858,7 +1049,75 @@ cardDialogMarketplace.addEventListener('click', () => {
   renderListings();
   searchInput.focus();
 });
+cardAdminToggle.addEventListener('click', () => {
+  cardAdminMenu.hidden = !cardAdminMenu.hidden;
+  cardAdminToggle.setAttribute('aria-expanded', String(!cardAdminMenu.hidden));
+});
+cardAdminEdit.addEventListener('click', () => {
+  const card = cards.find((item) => item.id === cardDialog.dataset.cardId);
+  if (!card || !isAdministrator) return;
+  cardEditName.value = card.name || '';
+  cardEditPublicCode.value = card.public_code || '';
+  cardEditImageUrl.value = card.image_url || '';
+  cardEditSetName.value = card.set_name || '';
+  cardEditRarity.value = card.rarity || '';
+  cardEditType.value = card.type || '';
+  cardEditCost.value = card.cost ?? '';
+  cardEditMight.value = card.might ?? '';
+  cardEditPower.value = card.power ?? '';
+  cardEditTags.value = Array.isArray(card.tags) ? card.tags.join(', ') : card.tags || '';
+  cardEditDomains.value = Array.isArray(card.domains) ? card.domains.join(', ') : card.domains || '';
+  cardEditAbility.value = card.ability_text || '';
+  cardEditMessage.textContent = '';
+  cardDialog.close();
+  cardEditDialog.showModal();
+});
+cardAdminDelete.addEventListener('click', async () => {
+  const cardId = cardDialog.dataset.cardId;
+  if (!isAdministrator || !cardId || !window.confirm('Delete this card? This cannot be undone.')) return;
+  const { error } = await window.riftTradeSupabase.from('cards').delete().eq('id', cardId);
+  if (error) return window.alert(`Could not delete card: ${error.message}`);
+  cards = cards.filter((card) => card.id !== cardId);
+  cardDialog.close();
+  cardAdminActions.hidden = true;
+  renderCatalogFromFirstPage();
+});
+cardEditClose.addEventListener('click', () => cardEditDialog.close());
+cardEditDialog.addEventListener('click', (event) => { if (event.target === cardEditDialog) cardEditDialog.close(); });
+cardEditForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const cardId = cardDialog.dataset.cardId;
+  if (!isAdministrator || !cardId) return;
+  cardEditMessage.textContent = 'Saving card...';
+  const payload = {
+    name: cardEditName.value.trim(),
+    public_code: cardEditPublicCode.value.trim() || null,
+    image_url: cardEditImageUrl.value.trim() || null,
+    set_name: cardEditSetName.value.trim() || null,
+    rarity: cardEditRarity.value.trim() || null,
+    type: cardEditType.value.trim() || null,
+    cost: cardEditCost.value === '' ? null : Number(cardEditCost.value),
+    might: cardEditMight.value === '' ? null : Number(cardEditMight.value),
+    power: cardEditPower.value === '' ? null : Number(cardEditPower.value),
+    tags: cardEditTags.value.split(',').map((value) => value.trim()).filter(Boolean),
+    domains: cardEditDomains.value.split(',').map((value) => value.trim()).filter(Boolean),
+    ability_text: cardEditAbility.value.trim() || null,
+  };
+  const { data: updatedCard, error } = await window.riftTradeSupabase.from('cards').update(payload).eq('id', cardId).select('*').single();
+  if (error) {
+    cardEditMessage.textContent = `Could not save card: ${error.message}`;
+    return;
+  }
+  cards = cards.map((card) => card.id === cardId ? { ...card, ...updatedCard } : card);
+  cardEditDialog.close();
+  cardEditMessage.textContent = '';
+  await openCardDialog(cardId);
+});
 listingDetailsClose.addEventListener('click', () => listingDetailsDialog.close());
+listingAdminToggle.addEventListener('click', () => {
+  listingAdminMenu.hidden = !listingAdminMenu.hidden;
+  listingAdminToggle.setAttribute('aria-expanded', String(!listingAdminMenu.hidden));
+});
 listingDetailsDialog.addEventListener('click', (event) => { if (event.target === listingDetailsDialog) listingDetailsDialog.close(); });
 listingMessageButton.addEventListener('click', () => {
   const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
@@ -993,9 +1252,11 @@ function openListingForm(listing = null) {
   editingListingId = listing?.id || null;
   listingDialogTitle.textContent = listing ? 'Edit listing' : 'Create a listing';
   listingSubmit.innerHTML = listing ? 'Save changes <span>→</span>' : 'Create listing <span>→</span>';
+  listingStatusField.hidden = !listing;
   if (listing) {
     listingName.value = listing.title || '';
     listingType.value = listing.listing_type || 'trade';
+    listingStatus.value = listing.status || 'active';
     updateListingTypeOptions();
     listingDescription.value = listing.description || '';
     selectedListingCardQuantities = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity }) => [card.id, Math.max(Number(quantity) || 1, 1)]));
@@ -1009,6 +1270,7 @@ function openListingForm(listing = null) {
   } else {
     listingForm.reset();
     listingType.value = 'trade';
+    listingStatus.value = 'active';
     updateListingTypeOptions();
     populateListingCards();
   }
@@ -1026,7 +1288,7 @@ async function updateListingStatus(status) {
   const { error } = await window.riftTradeSupabase.from('listings').update({ status }).eq('id', listingId);
   if (error) return setListingMessage(error.message, true);
   listingDetailsDialog.close();
-  await Promise.all([loadListings(), loadMyListings()]);
+  await Promise.all([loadListings(), loadMyListings(), isAdministrator ? loadAdminData(true) : Promise.resolve()]);
 }
 
 async function completeListingOutsideRiftTrade() {
@@ -1075,6 +1337,26 @@ listingEditButton.addEventListener('click', async () => {
   listingDetailsDialog.close();
   await loadCatalog();
   openListingForm(listing);
+});
+listingAdminEdit.addEventListener('click', async () => {
+  const listingId = listingDetailsDialog.dataset.listingId;
+  const listing = adminListingsData.find((item) => item.id === listingId)
+    || listings.find((item) => item.id === listingId)
+    || myListings.find((item) => item.id === listingId)
+    || profileListings.find((item) => item.id === listingId)
+    || inboxSharedListings.find((item) => item.id === listingId);
+  if (!isAdministrator || !listing) return;
+  listingDetailsDialog.close();
+  await loadCatalog();
+  openListingForm(listing);
+});
+listingAdminDelete.addEventListener('click', async () => {
+  const listingId = listingDetailsDialog.dataset.listingId;
+  if (!isAdministrator || !listingId || !window.confirm('Delete this listing?')) return;
+  const { error } = await window.riftTradeSupabase.from('listings').delete().eq('id', listingId);
+  if (error) return setListingMessage(error.message, true);
+  listingDetailsDialog.close();
+  await loadAdminData(true);
 });
 listingPendingButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'paused' ? 'active' : 'paused'));
 listingSoldButton.addEventListener('click', () => listingDetailsDialog.dataset.listingStatus === 'completed' ? updateListingStatus('active') : openSaleConfirmationDialog());
@@ -1150,7 +1432,7 @@ listingForm.addEventListener('submit', async (event) => {
   });
   const totalPrice = selectedListingCardIds.reduce((total, cardId) => total + (Number(selectedListingCardPrices[cardId]) || 0), 0);
   const hasCardPrice = selectedListingCardIds.some((cardId) => selectedListingCardPrices[cardId] !== '');
-  const listingPayload = { title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, price: hasCardPrice ? totalPrice : null };
+  const listingPayload = { title: listingName.value.trim(), description: listingDescription.value.trim() || null, listing_type: listingType.value, status: listingStatus.value, price: hasCardPrice ? totalPrice : null };
   const listingRequest = editingListingId
     ? window.riftTradeSupabase.from('listings').update(listingPayload).eq('id', editingListingId).select('id').single()
     : window.riftTradeSupabase.from('listings').insert({ ...listingPayload, seller_id: user.id }).select('id').single();
@@ -1169,6 +1451,7 @@ listingForm.addEventListener('submit', async (event) => {
     return setListingMessage(cardError.message, true);
   }
   listingForm.reset();
+  listingStatus.value = 'active';
   populateListingCards();
   listingType.value = 'trade';
   updateListingTypeOptions();
@@ -1981,6 +2264,13 @@ async function refreshAuthState() {
   const { data: { session } } = await window.riftTradeSupabase.auth.getSession();
   const user = session?.user;
   signedInUser = user || null;
+  isAdministrator = false;
+  adminDataLoaded = false;
+  if (user) {
+    const { data: adminResult } = await window.riftTradeSupabase.rpc('is_admin');
+    isAdministrator = adminResult === true;
+  }
+  if (adminNav) adminNav.hidden = !isAdministrator;
   authStateReady = true;
   if (!user) renderProfileButton('RiftTrade member', '');
   if (!user) closeProfileMenu();
@@ -2011,6 +2301,10 @@ async function refreshAuthState() {
     signedInEmail.textContent = user.email || 'your account';
   }
   if (views.find((view) => view.dataset.page === 'trades')?.classList.contains('is-visible')) loadMyListings();
+  if (views.find((view) => view.dataset.page === 'admin')?.classList.contains('is-visible')) {
+    if (isAdministrator) loadAdminData(true);
+    else showView('home');
+  }
   inboxLoadPromise = loadInbox();
 }
 

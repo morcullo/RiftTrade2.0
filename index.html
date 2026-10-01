@@ -25,7 +25,7 @@
           <button class="nav-link" data-view="trades">My listings</button>
           <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b hidden>0</b></button>
         </nav>
-        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><span class="profile-button-avatar" id="profile-button-avatar"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">View profile</button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
+        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><span class="profile-button-avatar" id="profile-button-avatar"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">View profile</button><button class="admin-only" data-view="admin" id="profile-menu-admin" type="button" role="menuitem" hidden>Admin controls</button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
       </header>
 
       <main>
@@ -94,6 +94,12 @@
           <p class="empty-message" id="my-listings-empty" hidden>You have not listed any cards yet.</p>
         </section>
 
+        <section class="view" data-page="admin" hidden>
+          <div class="page-heading"><div><p class="eyebrow">CONTROL ROOM / 06</p><h1>Admin</h1></div><span class="status-tag dark-tag">Administrator</span></div>
+          <p class="market-status" id="admin-status" aria-live="polite"></p>
+          <div class="admin-layout"><section><div class="section-heading"><h2>Users</h2></div><label class="search-box admin-user-search-box"><span>⌕</span><input id="admin-user-search" type="search" placeholder="Search users" aria-label="Search users" /></label><div class="admin-users" id="admin-users"></div></section><section><div class="section-heading"><h2>Listings</h2></div><div class="admin-market-tools"><label class="search-box"><span>⌕</span><input id="admin-listing-search" type="search" placeholder="Search listings, cards, or traders" aria-label="Search admin listings" /></label><button class="filter-button" id="admin-listing-filter-button" type="button" aria-expanded="false" aria-controls="admin-listing-filter-panel">Filter <span>☷</span></button></div><div class="market-filter-panel admin-listing-filter-panel" id="admin-listing-filter-panel" hidden><div class="market-filter-status"><span>Status</span><details class="catalog-domain-filter"><summary>Status</summary><div role="group" aria-label="Filter admin listings by status"><label><input type="checkbox" data-admin-status="active" checked />Active</label><label><input type="checkbox" data-admin-status="paused" />Pending</label><label><input type="checkbox" data-admin-status="completed" />Completed</label><label><input type="checkbox" data-admin-status="cancelled" />Cancelled</label></div></details></div><label class="market-filter-type">Listing type<select id="admin-listing-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="market-filter-min">Min price<input id="admin-listing-min-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0" /></label><label class="market-filter-max">Max price<input id="admin-listing-max-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="No max" /></label><button class="filter-clear" id="admin-listing-filter-clear" type="button">Clear filters</button></div><div class="admin-listings" id="admin-listings"></div><p class="empty-message" id="admin-listings-empty" hidden>No listings match those filters.</p><nav class="catalog-pagination admin-listing-pagination" id="admin-listing-pagination" aria-label="Admin listing pages" hidden><button id="admin-listing-previous" type="button">Previous</button><span id="admin-listing-page-status" aria-live="polite"></span><button id="admin-listing-next" type="button">Next</button></nav></section></div>
+        </section>
+
         <section class="view" data-page="inbox" hidden>
           <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 05</p><h1>Inbox</h1></div><div class="inbox-heading-actions"><button class="button button-outline" id="inbox-new-message" type="button">New message</button><span class="status-tag dark-tag" id="inbox-unread-count">0 unread</span></div></div>
           <div class="inbox-layout" id="inbox-layout">
@@ -150,6 +156,7 @@
         <form id="listing-form">
           <label class="auth-field">Listing title<input id="listing-name" type="text" placeholder="Give your listing a clear title" required /></label>
           <div class="auth-field"><span>Type</span><div class="listing-type-pills" role="group" aria-label="Listing type"><button type="button" class="listing-type-pill is-active" data-listing-type="trade">Trade</button><button type="button" class="listing-type-pill" data-listing-type="sale">For sale</button><button type="button" class="listing-type-pill" data-listing-type="trade_or_sale">Trade or sale</button><button type="button" class="listing-type-pill" data-listing-type="buy">Buying</button></div><input id="listing-type" type="hidden" value="trade" /></div>
+          <label class="auth-field" id="listing-status-field">Status<select id="listing-status"><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
           <div class="auth-field listing-card-picker"><label for="listing-card-search">Cards</label><input id="listing-card-search" type="search" placeholder="Search by card name or code" autocomplete="off" /><div class="listing-card-results" id="listing-card-results" role="listbox" hidden></div><div class="listing-card-selected" id="listing-card-selected" aria-live="polite"></div></div>
           <label class="auth-field">Description<textarea id="listing-description" rows="3" placeholder="Add details about the cards, price, or trade"></textarea></label>
           <button class="button button-dark auth-submit" id="listing-submit" type="submit">Publish listing <span>→</span></button>
@@ -168,9 +175,30 @@
             <dl class="card-dialog-stats" id="card-dialog-stats"></dl>
             <p class="card-dialog-ability" id="card-dialog-ability"></p>
             <p class="card-dialog-tags" id="card-dialog-tags"></p>
+            <div class="admin-dialog-actions" id="card-admin-actions" hidden><button class="button button-outline" id="card-admin-toggle" type="button" aria-expanded="false">Admin</button><div class="admin-dialog-menu" id="card-admin-menu" hidden><button class="button button-outline" id="card-admin-edit" type="button">Edit</button><button class="button button-danger" id="card-admin-delete" type="button">Delete</button></div></div>
             <div class="card-dialog-actions"><button class="button button-dark card-dialog-marketplace" id="card-dialog-marketplace" type="button">Search marketplace <span>→</span></button><a class="button button-outline card-dialog-tcgplayer" id="card-dialog-tcgplayer" href="https://www.tcgplayer.com/search/riftbound/product?productLineName=riftbound&amp;view=grid" target="_blank" rel="noopener noreferrer">Find on TCGplayer <span>↗</span></a></div>
           </div>
         </div>
+      </dialog>
+
+      <dialog class="auth-dialog" id="card-edit-dialog" aria-labelledby="card-edit-title">
+        <button class="dialog-close" id="card-edit-close" type="button" aria-label="Close card editor">×</button>
+        <p class="eyebrow">ADMIN / CARD EDITOR</p>
+        <h2 id="card-edit-title">Edit card details</h2>
+        <form id="card-edit-form">
+          <label class="auth-field">Name<input id="card-edit-name" required /></label>
+          <label class="auth-field">Public code<input id="card-edit-public-code" /></label>
+          <label class="auth-field">Image URL<input id="card-edit-image-url" type="url" placeholder="https://..." /></label>
+          <label class="auth-field">Set<input id="card-edit-set-name" /></label>
+          <label class="auth-field">Rarity<input id="card-edit-rarity" /></label>
+          <label class="auth-field">Type<input id="card-edit-type" /></label>
+          <div class="card-edit-number-fields"><label class="auth-field">Cost<input id="card-edit-cost" type="number" /></label><label class="auth-field">Might<input id="card-edit-might" type="number" /></label><label class="auth-field">Power<input id="card-edit-power" type="number" /></label></div>
+          <label class="auth-field">Tags<input id="card-edit-tags" placeholder="Comma-separated tags" /></label>
+          <label class="auth-field">Domains<input id="card-edit-domains" placeholder="Comma-separated domains" /></label>
+          <label class="auth-field">Ability text<textarea id="card-edit-ability" rows="4"></textarea></label>
+          <button class="button button-dark auth-submit" type="submit">Save card <span>→</span></button>
+        </form>
+        <p class="auth-message" id="card-edit-message" role="status" aria-live="polite"></p>
       </dialog>
 
       <dialog class="listing-details-dialog" id="listing-details-dialog" aria-labelledby="listing-details-title">
@@ -182,6 +210,7 @@
         <p class="listing-details-description" id="listing-details-description"></p>
         <div class="listing-details-cards" id="listing-details-cards"></div>
         <div class="listing-details-actions" id="listing-details-actions" hidden><button class="button button-outline" id="listing-edit" type="button">Edit listing</button><button class="button button-outline" id="listing-pending" type="button">Mark pending</button><button class="button button-outline" id="listing-sold" type="button">Mark completed</button><button class="button button-danger" id="listing-delete" type="button">Delete listing</button></div>
+        <div class="admin-dialog-actions" id="listing-admin-actions" hidden><button class="button button-outline" id="listing-admin-toggle" type="button" aria-expanded="false">Admin</button><div class="admin-dialog-menu" id="listing-admin-menu" hidden><button class="button button-outline" id="listing-admin-edit" type="button">Edit</button><button class="button button-danger" id="listing-admin-delete" type="button">Delete</button></div></div>
         <div class="listing-details-contact" id="listing-details-contact" hidden><button class="button button-dark" id="listing-contact-message" type="button">Send a message <span>→</span></button></div>
       </dialog>
 
