@@ -1,6 +1,7 @@
 const views = [...document.querySelectorAll('[data-page]')];
 const navItems = [...document.querySelectorAll('[data-view]')];
 const adminNav = document.querySelector('.admin-only');
+const profileMenuAdminBadge = document.querySelector('.profile-menu-admin-badge');
 
 function scrollToSectionTop(element) {
   const section = element.closest('.view');
@@ -123,6 +124,7 @@ const discordNameSubmit = document.querySelector('#discord-name-submit');
 const profileDialog = document.querySelector('#profile-dialog');
 const profileClose = document.querySelector('#profile-close');
 const profileTitle = document.querySelector('#profile-title');
+const profileAdminTag = document.querySelector('#profile-admin-tag');
 const profileAvatarButton = document.querySelector('#profile-avatar-button');
 const profileAvatar = document.querySelector('#profile-avatar');
 const profileAvatarStatic = document.querySelector('#profile-avatar-static');
@@ -137,6 +139,7 @@ const profileRankProgressBar = document.querySelector('#profile-rank-progress-ba
 const profileRankProgressLabel = document.querySelector('#profile-rank-progress-label');
 const profileEditButton = document.querySelector('#profile-edit');
 const profileMessageButton = document.querySelector('#profile-message');
+const profileReportButton = document.querySelector('#profile-report');
 const profileEditDialog = document.querySelector('#profile-edit-dialog');
 const profileEditClose = document.querySelector('#profile-edit-close');
 const profileEditForm = document.querySelector('#profile-edit-form');
@@ -159,6 +162,8 @@ const inboxEmptyState = document.querySelector('#inbox-empty-state');
 const inboxActive = document.querySelector('#inbox-active');
 const inboxPeerAvatar = document.querySelector('#inbox-peer-avatar');
 const inboxPeerProfile = document.querySelector('#inbox-peer-profile');
+const inboxPeerAdminTag = document.querySelector('#inbox-peer-admin-tag');
+const inboxPeerRole = document.querySelector('#inbox-peer-role');
 const inboxBack = document.querySelector('#inbox-back');
 const inboxThread = document.querySelector('#inbox-thread');
 const inboxTyping = document.querySelector('#inbox-typing');
@@ -235,7 +240,14 @@ const listingAdminActions = document.querySelector('#listing-admin-actions');
 const listingAdminToggle = document.querySelector('#listing-admin-toggle');
 const listingAdminMenu = document.querySelector('#listing-admin-menu');
 const listingAdminEdit = document.querySelector('#listing-admin-edit');
+const listingAdminCancel = document.querySelector('#listing-admin-cancel');
 const listingAdminDelete = document.querySelector('#listing-admin-delete');
+const adminCancellationDialog = document.querySelector('#admin-cancellation-dialog');
+const adminCancellationClose = document.querySelector('#admin-cancellation-close');
+const adminCancellationForm = document.querySelector('#admin-cancellation-form');
+const adminCancellationReason = document.querySelector('#admin-cancellation-reason');
+const adminCancellationMessage = document.querySelector('#admin-cancellation-message');
+const adminCancellationSubmit = document.querySelector('#admin-cancellation-submit');
 const saleConfirmationDialog = document.querySelector('#sale-confirmation-dialog');
 const saleConfirmationClose = document.querySelector('#sale-confirmation-close');
 const saleConfirmationForm = document.querySelector('#sale-confirmation-form');
@@ -243,6 +255,33 @@ const saleConfirmationBuyer = document.querySelector('#sale-confirmation-buyer')
 const saleConfirmationMessage = document.querySelector('#sale-confirmation-message');
 const saleConfirmationSubmit = document.querySelector('#sale-confirmation-submit');
 const saleConfirmationExternal = document.querySelector('#sale-confirmation-external');
+const reportDialog = document.querySelector('#report-dialog');
+const reportClose = document.querySelector('#report-close');
+const reportTitle = document.querySelector('#report-title');
+const reportIntro = document.querySelector('#report-intro');
+const reportForm = document.querySelector('#report-form');
+const reportDetails = document.querySelector('#report-details');
+const reportSubmit = document.querySelector('#report-submit');
+const reportMessage = document.querySelector('#report-message');
+const listingReportButton = document.querySelector('#listing-report');
+const adminUserMessagesDialog = document.querySelector('#admin-user-messages-dialog');
+const adminUserMessagesClose = document.querySelector('#admin-user-messages-close');
+const adminUserMessagesTitle = document.querySelector('#admin-user-messages-title');
+const adminUserMessagesStatus = document.querySelector('#admin-user-messages-status');
+const adminUserMessagesConversations = document.querySelector('#admin-user-messages-conversations');
+const adminUserMessagesEmpty = document.querySelector('#admin-user-messages-empty');
+const adminUserMessagesActive = document.querySelector('#admin-user-messages-active');
+const adminUserMessagesPeer = document.querySelector('#admin-user-messages-peer');
+const adminUserMessagesPeerAvatar = document.querySelector('#admin-user-messages-peer-avatar');
+const adminUserMessagesThread = document.querySelector('#admin-user-messages-thread');
+const adminEditUserDialog = document.querySelector('#admin-edit-user-dialog');
+const adminEditUserClose = document.querySelector('#admin-edit-user-close');
+const adminEditUserForm = document.querySelector('#admin-edit-user-form');
+const adminEditUserEmail = document.querySelector('#admin-edit-user-email');
+const adminEditUserName = document.querySelector('#admin-edit-user-name');
+const adminEditUserRank = document.querySelector('#admin-edit-user-rank');
+const adminEditUserMessage = document.querySelector('#admin-edit-user-message');
+let adminEditUserId = null;
 const listingDialogTitle = document.querySelector('#listing-title');
 const myListingsGrid = document.querySelector('#my-listings-grid');
 const myListingsCount = document.querySelector('#my-listings-count');
@@ -271,20 +310,40 @@ const adminListingPageStatus = document.querySelector('#admin-listing-page-statu
 adminListingStatusFilters.forEach((filter) => { filter.checked = true; });
 let editingListingId = null;
 let saleConfirmationListingId = null;
+let adminCancellationListingId = null;
+
+function openAdminCancellationDialog(listing) {
+  if (!listing || listing.status === 'cancelled') return;
+  adminCancellationListingId = listing.id;
+  adminCancellationReason.value = '';
+  adminCancellationMessage.textContent = '';
+  adminCancellationMessage.classList.remove('is-error');
+  adminCancellationDialog.showModal();
+  adminCancellationReason.focus();
+}
 
 adminView.querySelector('h1').textContent = 'Admin controls';
+const adminReportsPanel = document.createElement('section');
+adminReportsPanel.innerHTML = '<div class="admin-report-tools"><label class="search-box"><span>⌕</span><input id="admin-report-search" type="search" placeholder="Search reports" aria-label="Search reports" /></label><label class="admin-report-status-filter">Status<select id="admin-report-status-filter" aria-label="Filter reports by status"><option value="">All statuses</option><option value="open">Open</option><option value="reviewed">Reviewed</option><option value="dismissed">Dismissed</option></select></label></div><div class="admin-report-list" id="admin-reports"></div><p class="empty-message" id="admin-reports-empty">No reports match the current filters.</p>';
+adminLayout.append(adminReportsPanel);
+const adminReports = adminReportsPanel.querySelector('#admin-reports');
+const adminReportsEmpty = adminReportsPanel.querySelector('#admin-reports-empty');
+const adminReportSearch = adminReportsPanel.querySelector('#admin-report-search');
+const adminReportStatusFilter = adminReportsPanel.querySelector('#admin-report-status-filter');
 const adminSections = [...adminLayout.children];
 const adminTabs = document.createElement('div');
 adminTabs.className = 'admin-tabs';
 adminTabs.setAttribute('role', 'tablist');
-['Users', 'Listings'].forEach((label, index) => {
+let adminReportsTabBadge = null;
+['Users', 'Listings', 'Reports'].forEach((label, index) => {
   const tab = document.createElement('button');
   tab.className = 'admin-tab';
   tab.type = 'button';
   tab.id = `admin-tab-${label.toLowerCase()}`;
   tab.setAttribute('role', 'tab');
   tab.setAttribute('aria-controls', `admin-panel-${label.toLowerCase()}`);
-  tab.textContent = label;
+  tab.innerHTML = label === 'Reports' ? `${label} <b class="admin-tab-badge" hidden>0</b>` : label;
+  if (label === 'Reports') adminReportsTabBadge = tab.querySelector('.admin-tab-badge');
   tab.addEventListener('click', () => {
     adminTabs.querySelectorAll('.admin-tab').forEach((item, itemIndex) => {
       const isActive = itemIndex === index;
@@ -322,6 +381,18 @@ let isAdministrator = false;
 let adminDataLoaded = false;
 let adminUsersData = [];
 let adminListingsData = [];
+let adminReportsData = [];
+let adminUserMessageConversations = [];
+let adminUserMessageId = null;
+
+function updateAdminReportsBadge() {
+  const openReports = adminReportsData.filter((report) => (report.status || 'open') === 'open').length;
+  if (!adminReportsTabBadge) return;
+  adminReportsTabBadge.textContent = openReports > 99 ? '99+' : String(openReports);
+  adminReportsTabBadge.hidden = openReports === 0;
+  profileMenuAdminBadge.textContent = openReports > 99 ? '99+' : String(openReports);
+  profileMenuAdminBadge.hidden = openReports === 0;
+}
 let adminUserPage = 0;
 let adminListingPage = 0;
 const adminUserPageSize = 9;
@@ -349,6 +420,21 @@ let authMode = 'signin';
 const discordOnboardingStorageKey = 'riftTradeDiscordOnboarding';
 const displayNameMinLength = 2;
 const displayNameMaxLength = 40;
+
+function listingCardSelectionKey(cardId, foil = 'non_foil') {
+  return `${cardId}::${foil === 'foil' ? 'foil' : 'non_foil'}`;
+}
+
+function listingCardSelectionParts(selectionKey) {
+  const separatorIndex = selectionKey.lastIndexOf('::');
+  return separatorIndex === -1
+    ? { cardId: selectionKey, foil: 'non_foil' }
+    : { cardId: selectionKey.slice(0, separatorIndex), foil: selectionKey.slice(separatorIndex + 2) };
+}
+
+function isFoilableCard(card) {
+  return ['common', 'uncommon'].includes(String(card?.rarity || '').toLowerCase());
+}
 
 function getCardImageUrl(card, width) {
   if (!/^https?:\/\//i.test(card?.image_url || '')) return '';
@@ -670,7 +756,7 @@ function renderMyListings() {
     const cardCount = listingCardCount(listingCards);
     const status = listingStatusLabel(listing.status);
     const statusClass = listing.status === 'active' ? 'status-active' : listing.status === 'completed' ? 'status-sold' : 'status-pending';
-    return `<article class="my-listing-row"><span class="my-listing-status ${statusClass}">${escapeHtml(status)}</span><div class="my-listing-preview" aria-hidden="true">${cardPreviews}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><div class="my-listing-actions"><button class="my-listing-action my-listing-view" data-listing-id="${escapeHtml(listing.id)}" type="button">View</button><button class="my-listing-action my-listing-edit" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="my-listing-action my-listing-delete" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></article>`;
+    return `<article class="my-listing-row"><span class="my-listing-status ${statusClass}">${escapeHtml(status)}</span><div class="my-listing-preview" aria-hidden="true">${cardPreviews}</div><div class="my-listing-main"><strong>${escapeHtml(listing.title)}</strong><span>${escapeHtml(cardNames || 'No cards attached')}</span><small>${escapeHtml([listingType, price, `${cardCount} card${cardCount === 1 ? '' : 's'}`].join(' · '))}</small></div><div class="my-listing-actions"><button class="my-listing-action my-listing-view" data-listing-id="${escapeHtml(listing.id)}" type="button">View</button>${listing.status !== 'cancelled' ? `<button class="my-listing-action my-listing-edit" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button>` : ''}<button class="my-listing-action my-listing-delete" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></article>`;
   }).join('');
   myListingsCount.textContent = `${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
   myListingsEmpty.hidden = visibleListings.length !== 0;
@@ -701,7 +787,14 @@ function renderAdminData(users, allListings) {
   const userPageCount = Math.ceil(matchingUsers.length / adminUserPageSize);
   adminUserPage = Math.min(adminUserPage, Math.max(userPageCount - 1, 0));
   const visibleUsers = matchingUsers.slice(adminUserPage * adminUserPageSize, (adminUserPage + 1) * adminUserPageSize);
-  adminUsers.innerHTML = visibleUsers.map((user) => `<article class="admin-row"><div><strong>${escapeHtml(user.display_name || user.username || 'RiftTrade member')}</strong><small>${escapeHtml(user.email || 'No email')}</small></div><input class="admin-display-name" data-user-id="${escapeHtml(user.id)}" value="${escapeHtml(user.display_name || '')}" aria-label="Display name for ${escapeHtml(user.email || user.id)}" /><select class="admin-rank" data-user-id="${escapeHtml(user.id)}" aria-label="Rank for ${escapeHtml(user.email || user.id)}"><option value="">Automatic rank</option>${ADMIN_RANKS.map((rank) => `<option value="${rank}"${user.rank_override === rank ? ' selected' : ''}>${rank}</option>`).join('')}</select><div class="admin-row-actions"><button class="button admin-save-user" data-user-id="${escapeHtml(user.id)}" type="button">Save</button><button class="button button-outline admin-reset-password" data-email="${escapeHtml(user.email || '')}" type="button">Reset password</button><button class="button button-danger admin-delete-user" data-user-id="${escapeHtml(user.id)}" type="button">Delete</button></div></article>`).join('');
+  adminUsers.innerHTML = visibleUsers.map((user) => {
+    const memberSince = user.created_at ? new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(user.created_at)) : 'Unknown';
+    const userListings = allListings.filter((listing) => listing.seller_id === user.id);
+    const completedTransactions = userListings.filter((listing) => listing.status === 'completed').length;
+    const rank = getProfileRank(user, userListings, completedTransactions).rank.name;
+    const rankClass = rank.toLowerCase().replaceAll(' ', '-');
+    return `<article class="admin-row"><div><div class="admin-user-heading"><button class="profile-link admin-user-profile-link" data-profile-id="${escapeHtml(user.id)}" type="button">${escapeHtml(user.display_name || user.username || 'RiftTrade member')}</button><span class="status-tag admin-user-rank profile-rank-${rankClass}">${escapeHtml(rank)}</span></div><small>${escapeHtml(user.email || 'No email')}</small><small>Member since ${escapeHtml(memberSince)}</small><div class="admin-user-stats"><span>${userListings.length} listing${userListings.length === 1 ? '' : 's'}</span><span>${completedTransactions} completed transaction${completedTransactions === 1 ? '' : 's'}</span></div></div><div class="admin-row-actions admin-user-actions"><button class="button button-outline admin-edit-user" data-user-id="${escapeHtml(user.id)}" type="button">Edit</button><button class="button button-danger admin-delete-user" data-user-id="${escapeHtml(user.id)}" type="button">Delete</button><button class="button button-dark admin-view-user-messages" data-user-id="${escapeHtml(user.id)}" data-user-name="${escapeHtml(user.display_name || user.username || 'RiftTrade member')}" type="button">View messages</button><button class="button button-outline admin-reset-password" data-email="${escapeHtml(user.email || '')}" type="button">Reset password</button></div></article>`;
+  }).join('');
   adminUserPagination.hidden = userPageCount <= 1;
   adminUserPageStatus.textContent = userPageCount ? `Page ${adminUserPage + 1} of ${userPageCount}` : '';
   adminUserPrevious.disabled = adminUserPage === 0;
@@ -713,7 +806,7 @@ function renderAdminData(users, allListings) {
   const maximumPrice = Number(adminListingMaxPrice.value);
   const hasMinimumPrice = Number.isFinite(minimumPrice) && adminListingMinPrice.value !== '';
   const hasMaximumPrice = Number.isFinite(maximumPrice) && adminListingMaxPrice.value !== '';
-  adminListingFilterButton.classList.toggle('is-active', selectedStatuses.some((status) => status !== 'active') || selectedStatuses.length === 0 || Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
+  adminListingFilterButton.classList.toggle('is-active', selectedStatuses.length !== adminListingStatusFilters.length || Boolean(selectedListingType || hasMinimumPrice || hasMaximumPrice));
   const matchingListings = allListings.filter((listing) => {
     const listingCards = listing.listing_cards || [];
     const searchable = [listing.title, listing.description, listing.seller?.display_name, listing.seller?.username, listing.seller?.email, ...listingCards.flatMap(({ card }) => [card?.name, card?.set_name, card?.code, card?.public_code, ...(Array.isArray(card?.tags) ? card.tags : [card?.tags]), ...(Array.isArray(card?.domains) ? card.domains : [card?.domains])])].filter(Boolean).join(' ').toLowerCase();
@@ -727,25 +820,30 @@ function renderAdminData(users, allListings) {
   const pageCount = Math.ceil(matchingListings.length / adminListingPageSize);
   adminListingPage = Math.min(adminListingPage, Math.max(pageCount - 1, 0));
   const visibleListings = matchingListings.slice(adminListingPage * adminListingPageSize, (adminListingPage + 1) * adminListingPageSize);
-  adminListings.innerHTML = visibleListings.map((listing) => `<article class="admin-listing-card"><div class="admin-listing-preview">${renderMarketplaceListingCard(listing, listingQuery, true)}</div><div class="admin-listing-controls"><label>Status<select class="admin-listing-status" data-listing-id="${escapeHtml(listing.id)}" aria-label="Status for ${escapeHtml(listing.title)}"><option value="active"${listing.status === 'active' ? ' selected' : ''}>Available</option><option value="paused"${listing.status === 'paused' ? ' selected' : ''}>Pending</option><option value="completed"${listing.status === 'completed' ? ' selected' : ''}>Completed</option><option value="cancelled"${listing.status === 'cancelled' ? ' selected' : ''}>Cancelled</option></select></label><div class="admin-row-actions"><button class="button button-outline admin-edit-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="button button-danger admin-delete-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></div></article>`).join('');
+  adminListings.innerHTML = visibleListings.map((listing) => `<article class="admin-listing-card"><div class="admin-listing-preview">${renderMarketplaceListingCard(listing, listingQuery, true)}</div><div class="admin-listing-controls"><div class="admin-row-actions">${listing.status !== 'cancelled' ? `<button class="button button-danger admin-cancel-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Cancel</button>` : ''}<button class="button button-outline admin-edit-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Edit</button><button class="button button-danger admin-delete-listing" data-listing-id="${escapeHtml(listing.id)}" type="button">Delete</button></div></div></article>`).join('');
   adminListingsEmpty.hidden = matchingListings.length !== 0;
   adminListingPagination.hidden = pageCount <= 1;
   adminListingPageStatus.textContent = pageCount ? `Page ${adminListingPage + 1} of ${pageCount}` : '';
   adminListingPrevious.disabled = adminListingPage === 0;
   adminListingNext.disabled = adminListingPage >= pageCount - 1;
-  adminUsers.querySelectorAll('.admin-save-user').forEach((button) => button.addEventListener('click', async () => {
-    const userId = button.dataset.userId;
-    const displayName = adminUsers.querySelector(`.admin-display-name[data-user-id="${CSS.escape(userId)}"]`).value;
-    const rankOverride = adminUsers.querySelector(`.admin-rank[data-user-id="${CSS.escape(userId)}"]`).value || null;
-    const { error } = await window.riftTradeSupabase.rpc('admin_update_profile', { target_user_id: userId, new_display_name: displayName, new_rank_override: rankOverride });
-    adminStatus.textContent = error ? `Could not update user: ${error.message}` : 'User updated.';
-    if (!error) await loadAdminData(true);
+  adminUsers.querySelectorAll('.admin-user-profile-link').forEach((button) => button.addEventListener('click', () => openProfileDialog(button.dataset.profileId)));
+  adminUsers.querySelectorAll('.admin-edit-user').forEach((button) => button.addEventListener('click', () => {
+    const user = users.find((item) => String(item.id) === String(button.dataset.userId));
+    if (!user) return;
+    adminEditUserId = user.id;
+    adminEditUserEmail.value = user.email || '';
+    adminEditUserName.value = user.display_name || '';
+    adminEditUserRank.value = user.rank_override || '';
+    adminEditUserMessage.textContent = '';
+    adminEditUserMessage.classList.remove('is-error');
+    adminEditUserDialog.showModal();
   }));
   adminUsers.querySelectorAll('.admin-reset-password').forEach((button) => button.addEventListener('click', async () => {
     if (!button.dataset.email) return;
     const { error } = await window.riftTradeSupabase.auth.resetPasswordForEmail(button.dataset.email, { redirectTo: window.location.href });
     adminStatus.textContent = error ? `Could not send reset email: ${error.message}` : 'Password reset email sent.';
   }));
+  adminUsers.querySelectorAll('.admin-view-user-messages').forEach((button) => button.addEventListener('click', () => openAdminUserMessages(button.dataset.userId, button.dataset.userName)));
   adminUsers.querySelectorAll('.admin-delete-user').forEach((button) => button.addEventListener('click', async () => {
     if (button.dataset.userId === signedInUser?.id || !window.confirm('Delete this user and all of their data?')) return;
     const { error } = await window.riftTradeSupabase.rpc('admin_delete_user', { target_user_id: button.dataset.userId });
@@ -753,11 +851,9 @@ function renderAdminData(users, allListings) {
     if (!error) await loadAdminData(true);
   }));
   bindMarketplaceListingCards(adminListings, allListings);
-  adminListings.querySelectorAll('.admin-listing-status').forEach((select) => select.addEventListener('change', async () => {
-    const listingId = select.dataset.listingId;
-    const { error } = await window.riftTradeSupabase.from('listings').update({ status: select.value }).eq('id', listingId);
-    adminStatus.textContent = error ? `Could not update listing: ${error.message}` : 'Listing status updated.';
-    if (!error) await Promise.all([loadAdminData(true), loadListings()]);
+  adminListings.querySelectorAll('.admin-cancel-listing').forEach((button) => button.addEventListener('click', () => {
+    const listing = allListings.find((item) => item.id === button.dataset.listingId);
+    openAdminCancellationDialog(listing);
   }));
   adminListings.querySelectorAll('.admin-edit-listing').forEach((button) => button.addEventListener('click', async () => {
     const listing = allListings.find((item) => item.id === button.dataset.listingId);
@@ -771,22 +867,64 @@ function renderAdminData(users, allListings) {
     adminStatus.textContent = error ? `Could not delete listing: ${error.message}` : 'Listing deleted.';
     if (!error) await loadAdminData(true);
   }));
+  const reportQuery = adminReportSearch.value.trim().toLowerCase();
+  const reportStatus = adminReportStatusFilter.value;
+  const visibleReports = adminReportsData.filter((report) => {
+    const reporter = adminUsersData.find((user) => user.id === report.reporter_id);
+    const reportedUser = adminUsersData.find((user) => user.id === report.reported_user_id);
+    const listing = allListings.find((item) => item.id === report.listing_id);
+    const searchText = [
+      report.details,
+      reporter?.display_name,
+      reporter?.username,
+      reportedUser?.display_name,
+      reportedUser?.username,
+      listing?.title,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return (!reportStatus || (report.status || 'open') === reportStatus) && (!reportQuery || searchText.includes(reportQuery));
+  });
+  adminReports.innerHTML = visibleReports.map((report) => {
+    const reporter = adminUsersData.find((user) => user.id === report.reporter_id);
+    const reportedUser = adminUsersData.find((user) => user.id === report.reported_user_id);
+    const listing = allListings.find((item) => item.id === report.listing_id);
+    const targetType = reportedUser ? 'profile' : listing ? 'listing' : '';
+    const targetId = reportedUser?.id || listing?.id || '';
+    const target = reportedUser ? `User: ${reportedUser.display_name || reportedUser.username || 'RiftTrade member'}` : listing ? `Listing: ${listing.title}` : 'Unknown target';
+    const targetReference = targetType ? `<button class="admin-report-target" data-report-target-type="${targetType}" data-report-target-id="${escapeHtml(targetId)}" type="button">${escapeHtml(target)} <span aria-hidden="true">↗</span></button>` : `<strong>${escapeHtml(target)}</strong>`;
+    return `<article class="admin-report"><div class="admin-report-heading">${targetReference}<select aria-label="Report status" data-report-status="${escapeHtml(report.id)}"><option value="open"${report.status === 'open' ? ' selected' : ''}>Open</option><option value="reviewed"${report.status === 'reviewed' ? ' selected' : ''}>Reviewed</option><option value="dismissed"${report.status === 'dismissed' ? ' selected' : ''}>Dismissed</option></select></div><small>Reported by ${escapeHtml(reporter?.display_name || reporter?.username || 'RiftTrade member')} · ${escapeHtml(new Date(report.created_at).toLocaleString())}</small><div class="admin-report-details">${escapeHtml(report.details)}</div></article>`;
+  }).join('');
+  adminReportsEmpty.hidden = visibleReports.length !== 0;
+  updateAdminReportsBadge();
+  adminReports.querySelectorAll('[data-report-target-type]').forEach((button) => button.addEventListener('click', () => {
+    if (button.dataset.reportTargetType === 'listing') openListingDetails(button.dataset.reportTargetId);
+    if (button.dataset.reportTargetType === 'profile') openProfileDialog(button.dataset.reportTargetId);
+  }));
+  adminReports.querySelectorAll('[data-report-status]').forEach((select) => select.addEventListener('change', async () => {
+    const { error } = await window.riftTradeSupabase.from('reports').update({ status: select.value }).eq('id', select.dataset.reportStatus);
+    adminStatus.textContent = error ? `Could not update report: ${error.message}` : 'Report updated.';
+    if (!error) await loadAdminData(true);
+  }));
 }
+
+adminReportSearch.addEventListener('input', () => renderAdminData(adminUsersData, adminListingsData));
+adminReportStatusFilter.addEventListener('change', () => renderAdminData(adminUsersData, adminListingsData));
 
 async function loadAdminData(force = false) {
   if (!isAdministrator || (!force && adminDataLoaded)) return;
   adminStatus.textContent = 'Loading administrator data...';
-  const [{ data: users, error: usersError }, { data: allListings, error: listingsError }] = await Promise.all([
+  const [{ data: users, error: usersError }, { data: allListings, error: listingsError }, { data: reports, error: reportsError }] = await Promise.all([
     window.riftTradeSupabase.from('profiles').select('id, email, username, display_name, rank_override, created_at').order('created_at', { ascending: false }),
     window.riftTradeSupabase.from('listings').select(listingSelect()).order('created_at', { ascending: false }),
+    window.riftTradeSupabase.from('reports').select('id, reporter_id, reported_user_id, listing_id, details, status, created_at').order('created_at', { ascending: false }),
   ]);
-  if (usersError || listingsError) {
-    adminStatus.textContent = `Could not load admin data: ${(usersError || listingsError).message}`;
+  if (usersError || listingsError || reportsError) {
+    adminStatus.textContent = `Could not load admin data: ${(usersError || listingsError || reportsError).message}`;
     return;
   }
   adminDataLoaded = true;
   adminUsersData = users || [];
   adminListingsData = allListings || [];
+  adminReportsData = reports || [];
   adminStatus.textContent = `${users.length} users · ${allListings.length} listings`;
   renderAdminData(users, allListings);
 }
@@ -918,6 +1056,7 @@ function openListingDetails(listingId) {
   listingDetailsActions.hidden = true;
   listingAdminActions.hidden = !isAdministrator;
   listingDetailsContact.hidden = true;
+  listingReportButton.hidden = true;
   listingDetailsCards.innerHTML = listingCards.map(({ card, quantity, condition, language, foil, price }) => {
     const imageUrl = getCardImageUrl(card || {});
     const conditionLabel = condition ? condition.replaceAll('_', ' ').replace(/^./, (character) => character.toUpperCase()) : '';
@@ -930,14 +1069,93 @@ function openListingDetails(listingId) {
     const canChangeStatus = ['active', 'paused'].includes(listing.status);
     const isSold = listing.status === 'completed';
     listingDetailsActions.hidden = !isOwner;
+    listingEditButton.hidden = listing.status === 'cancelled';
     listingAdminActions.hidden = !isAdministrator;
     listingDetailsContact.hidden = isOwner || isSold;
+    listingReportButton.hidden = !user || isOwner || isSold;
     listingPendingButton.hidden = !canChangeStatus;
     listingPendingButton.textContent = listing.status === 'paused' ? 'Remove pending' : 'Mark pending';
     listingSoldButton.hidden = !canChangeStatus && !isSold;
     listingSoldButton.textContent = isSold ? 'Remove completed' : 'Mark completed';
   });
   listingDetailsDialog.showModal();
+}
+
+function openReportDialog(targetType, targetId, label) {
+  if (!signedInUser) {
+    showView('auth');
+    return;
+  }
+  reportDialog.dataset.targetType = targetType;
+  reportDialog.dataset.targetId = targetId;
+  reportTitle.textContent = `Report ${targetType}`;
+  reportIntro.textContent = `Tell us what needs attention with ${label}.`;
+  reportDetails.value = '';
+  reportMessage.textContent = '';
+  reportMessage.classList.remove('is-error');
+  reportSubmit.disabled = false;
+  reportDialog.showModal();
+}
+
+function renderAdminUserMessageThread(userId, conversationId) {
+  const conversation = adminUserMessageConversations.find((item) => String(item.id) === String(conversationId));
+  if (!conversation) return;
+  const peer = adminUsersData.find((user) => user.id === conversation.peerId);
+  adminUserMessageId = conversation.id;
+  adminUserMessagesEmpty.hidden = true;
+  adminUserMessagesActive.hidden = false;
+  adminUserMessagesPeer.textContent = peer?.display_name || peer?.username || 'RiftTrade member';
+  adminUserMessagesPeerAvatar.innerHTML = avatarMarkup(adminUserMessagesPeer.textContent);
+  adminUserMessagesConversations.querySelectorAll('.inbox-conversation').forEach((tab) => tab.classList.toggle('is-active', String(tab.dataset.adminConversationId) === String(conversation.id)));
+  adminUserMessagesThread.innerHTML = conversation.messages.map((message) => {
+    const saleConfirmation = Array.isArray(message.sale_confirmation) ? message.sale_confirmation[0] : message.sale_confirmation;
+    const sharedListing = message.shared_listing ? renderInboxSharedListing(message.shared_listing).replace('data-shared-listing-id=', 'data-admin-shared-listing-id=') : '';
+    const saleLabel = saleConfirmation ? `<div class="admin-sale-confirmation"><small>Sale confirmation</small><strong>${escapeHtml(String(saleConfirmation.status || 'pending').replaceAll('_', ' '))}</strong>${saleConfirmation.listing_id ? `<span>Listing ${escapeHtml(saleConfirmation.listing_id)}</span>` : ''}</div>` : '';
+    return `<article class="inbox-message${message.sender_id === userId ? ' is-mine' : ''}"><div class="inbox-message-bubble"><p>${escapeHtml(message.body || '').replaceAll('\n', '<br>')}</p>${sharedListing}${saleLabel}<footer><time>${escapeHtml(inboxTimeLabel(message.created_at))}</time></footer></div></article>`;
+  }).join('');
+  adminUserMessagesThread.querySelectorAll('[data-admin-shared-listing-id]').forEach((button) => button.addEventListener('click', () => openListingDetails(button.dataset.adminSharedListingId)));
+  adminUserMessagesThread.scrollTop = adminUserMessagesThread.scrollHeight;
+}
+
+function renderAdminUserMessageTabs(userId) {
+  adminUserMessagesConversations.innerHTML = adminUserMessageConversations.map((conversation) => {
+    const peer = adminUsersData.find((user) => user.id === conversation.peerId);
+    const peerName = peer?.display_name || peer?.username || 'RiftTrade member';
+    const lastMessage = conversation.messages.at(-1);
+    return `<button class="inbox-conversation" data-admin-conversation-id="${escapeHtml(conversation.id)}" type="button">${avatarMarkup(peerName)}<span class="inbox-conversation-copy"><strong>${escapeHtml(peerName)}</strong><small>${escapeHtml(lastMessage?.body || 'No messages')}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(lastMessage?.created_at))}</time></span></button>`;
+  }).join('');
+  adminUserMessagesConversations.querySelectorAll('[data-admin-conversation-id]').forEach((tab) => tab.addEventListener('click', () => renderAdminUserMessageThread(userId, tab.dataset.adminConversationId)));
+}
+
+async function openAdminUserMessages(userId, userName) {
+  adminUserMessagesTitle.textContent = `${userName}'s messages`;
+  adminUserMessagesStatus.textContent = 'Loading messages...';
+  adminUserMessagesConversations.innerHTML = '';
+  adminUserMessagesEmpty.hidden = false;
+  adminUserMessagesActive.hidden = true;
+  adminUserMessagesThread.innerHTML = '';
+  adminUserMessagesDialog.showModal();
+  const { data: conversations, error: conversationError } = await window.riftTradeSupabase.from('direct_conversations').select('id, participant_one, participant_two, last_message_at').or(`participant_one.eq.${userId},participant_two.eq.${userId}`).order('last_message_at', { ascending: false });
+  if (conversationError) {
+    adminUserMessagesStatus.textContent = `Could not load messages: ${conversationError.message}`;
+    return;
+  }
+  const conversationIds = (conversations || []).map((conversation) => conversation.id);
+  const { data, error } = conversationIds.length
+    ? await window.riftTradeSupabase.from('direct_messages').select('id, conversation_id, sender_id, body, created_at, read_at, sale_confirmation:listing_sale_confirmations!direct_messages_sale_confirmation_id_fkey(id, listing_id, seller_id, buyer_id, status, created_at, confirmed_at), shared_listing:listings!direct_messages_shared_listing_id_fkey(id, title, description, listing_type, price, currency, status, seller_id, created_at, seller:profiles(display_name, username), listing_cards(quantity, condition, language, card:cards(id, name, image_url)))').in('conversation_id', conversationIds).order('created_at', { ascending: true })
+    : { data: [], error: null };
+  if (error) {
+    adminUserMessagesStatus.textContent = `Could not load messages: ${error.message}`;
+    return;
+  }
+  adminUserMessageConversations = (conversations || []).map((conversation) => ({
+    ...conversation,
+    peerId: conversation.participant_one === userId ? conversation.participant_two : conversation.participant_one,
+    messages: (data || []).filter((message) => message.conversation_id === conversation.id),
+  })).filter((conversation) => conversation.messages.length);
+  adminUserMessagesStatus.textContent = adminUserMessageConversations.length ? `${adminUserMessageConversations.length} conversation${adminUserMessageConversations.length === 1 ? '' : 's'}` : 'No messages found.';
+  renderAdminUserMessageTabs(userId);
+  if (adminUserMessageConversations.length) renderAdminUserMessageThread(userId, adminUserMessageConversations[0].id);
 }
 
 const PROFILE_RANKS = [
@@ -1050,9 +1268,11 @@ async function openProfileDialog(profileId) {
   const requestedProfileId = String(profileId);
   profileDialog.dataset.profileId = requestedProfileId;
   profileTitle.textContent = 'Loading profile...';
+  profileAdminTag.hidden = true;
   profileDisplayName.textContent = '';
   profileEditButton.hidden = true;
   profileMessageButton.hidden = true;
+  profileReportButton.hidden = true;
   profileMessageButton.dataset.profileId = '';
   profileListingCount.textContent = '';
   profileRankBadge.className = 'profile-rank-badge';
@@ -1104,12 +1324,15 @@ async function openProfileDialog(profileId) {
   const profile = profileResult.data;
   const displayName = profile.display_name || profile.username || 'RiftTrade member';
   profileTitle.textContent = displayName;
+  const { data: isAdminProfile } = await window.riftTradeSupabase.rpc('is_profile_admin', { target_profile_id: requestedProfileId });
+  profileAdminTag.hidden = isAdminProfile !== true && isAdminProfile !== 'true';
   renderProfileAvatar(displayName, profile.avatar_url);
   profileAvatarButton.hidden = !signedInUser || signedInUser.id !== profile.id;
   profileAvatarStatic.hidden = Boolean(signedInUser && signedInUser.id === profile.id);
   profileDisplayName.textContent = displayName;
   profileEditButton.hidden = !signedInUser || signedInUser.id !== profile.id;
   profileMessageButton.hidden = !signedInUser || signedInUser.id === profile.id;
+  profileReportButton.hidden = !signedInUser || signedInUser.id === profile.id;
   profileMessageButton.dataset.profileId = profile.id;
   profileMemberSince.textContent = profile.created_at ? new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(profile.created_at)) : 'Unknown';
   if (listingResult.error) {
@@ -1216,6 +1439,33 @@ listingMessageButton.addEventListener('click', () => {
   if (!listing) return;
   listingDetailsDialog.close();
   startDirectConversation(listing.seller_id, listing.id);
+});
+listingReportButton.addEventListener('click', () => {
+  const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
+    || myListings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
+    || profileListings.find((item) => item.id === listingDetailsDialog.dataset.listingId)
+    || adminListingsData.find((item) => item.id === listingDetailsDialog.dataset.listingId);
+  if (listing) openReportDialog('listing', listing.id, listing.title);
+});
+reportClose.addEventListener('click', () => reportDialog.close());
+reportDialog.addEventListener('click', (event) => { if (event.target === reportDialog) reportDialog.close(); });
+reportForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!signedInUser) return;
+  reportSubmit.disabled = true;
+  reportMessage.textContent = 'Submitting report...';
+  const payload = { reporter_id: signedInUser.id, details: reportDetails.value.trim() };
+  if (reportDialog.dataset.targetType === 'listing') payload.listing_id = reportDialog.dataset.targetId;
+  if (reportDialog.dataset.targetType === 'profile') payload.reported_user_id = reportDialog.dataset.targetId;
+  const { error } = await window.riftTradeSupabase.from('reports').insert(payload);
+  reportSubmit.disabled = false;
+  if (error) {
+    reportMessage.textContent = `Could not submit report: ${error.message}`;
+    reportMessage.classList.add('is-error');
+    return;
+  }
+  reportMessage.textContent = 'Thanks. Your report was submitted.';
+  reportDetails.value = '';
 });
 profileClose.addEventListener('click', () => profileDialog.close());
 profileDialog.addEventListener('click', (event) => { if (event.target === profileDialog) profileDialog.close(); });
@@ -1335,6 +1585,59 @@ profileMessageButton.addEventListener('click', () => {
   profileDialog.close();
   startDirectConversation(recipientId);
 });
+profileReportButton.addEventListener('click', () => {
+  const profileId = profileDialog.dataset.profileId;
+  if (profileId) openReportDialog('profile', profileId, profileTitle.textContent);
+});
+adminUserMessagesClose.addEventListener('click', () => adminUserMessagesDialog.close());
+adminUserMessagesDialog.addEventListener('click', (event) => { if (event.target === adminUserMessagesDialog) adminUserMessagesDialog.close(); });
+adminEditUserClose.addEventListener('click', () => adminEditUserDialog.close());
+adminEditUserDialog.addEventListener('click', (event) => { if (event.target === adminEditUserDialog) adminEditUserDialog.close(); });
+adminCancellationClose.addEventListener('click', () => adminCancellationDialog.close());
+adminCancellationDialog.addEventListener('click', (event) => { if (event.target === adminCancellationDialog) adminCancellationDialog.close(); });
+adminCancellationForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!adminCancellationListingId || !window.riftTradeSupabase) return;
+  const reason = adminCancellationReason.value.trim();
+  if (!reason) return;
+  adminCancellationSubmit.disabled = true;
+  adminCancellationMessage.textContent = 'Cancelling listing...';
+  adminCancellationMessage.classList.remove('is-error');
+  const { error } = await window.riftTradeSupabase.rpc('admin_cancel_listing', {
+    target_listing_id: adminCancellationListingId,
+    cancellation_reason: reason,
+  });
+  adminCancellationSubmit.disabled = false;
+  if (error) {
+    adminCancellationMessage.textContent = `Could not cancel listing: ${error.message}`;
+    adminCancellationMessage.classList.add('is-error');
+    return;
+  }
+  adminCancellationDialog.close();
+  adminCancellationListingId = null;
+  adminStatus.textContent = 'Listing cancelled and seller notified.';
+  await Promise.all([loadAdminData(true), loadListings(), loadMyListings()]);
+});
+adminEditUserForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!adminEditUserId) return;
+  adminEditUserMessage.textContent = 'Saving changes...';
+  adminEditUserMessage.classList.remove('is-error');
+  const { error } = await window.riftTradeSupabase.rpc('admin_update_profile', {
+    target_user_id: adminEditUserId,
+    new_display_name: adminEditUserName.value.trim(),
+    new_rank_override: adminEditUserRank.value || null,
+  });
+  if (error) {
+    adminEditUserMessage.textContent = `Could not update user: ${error.message}`;
+    adminEditUserMessage.classList.add('is-error');
+    return;
+  }
+  adminEditUserMessage.textContent = 'User updated.';
+  adminStatus.textContent = 'User updated.';
+  await loadAdminData(true);
+  adminEditUserDialog.close();
+});
 signedInName.addEventListener('click', () => openProfileDialog(signedInName.dataset.profileId));
 
 function openListingForm(listing = null) {
@@ -1345,15 +1648,23 @@ function openListingForm(listing = null) {
   if (listing) {
     listingName.value = listing.title || '';
     listingType.value = listing.listing_type || 'trade';
-    listingStatus.value = listing.status || 'active';
+    listingStatus.value = ['active', 'paused', 'completed'].includes(listing.status) ? listing.status : 'active';
     updateListingTypeOptions();
     listingDescription.value = listing.description || '';
-    selectedListingCardQuantities = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity }) => [card.id, Math.max(Number(quantity) || 1, 1)]));
-    selectedListingCardConditions = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, condition }) => [card.id, condition || 'near_mint']));
-    selectedListingCardPrices = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, price }) => [card.id, price ?? '']));
-    selectedListingCardLanguages = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, language }) => [card.id, language || 'English']));
-    selectedListingCardFoils = Object.fromEntries((listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, foil }) => [card.id, foil || 'non_foil']));
-    selectedListingCardIds = Object.keys(selectedListingCardQuantities);
+    const listingCardState = (listing.listing_cards || []).filter(({ card }) => card?.id).map(({ card, quantity, condition, price, language, foil }) => ({
+      selectionKey: listingCardSelectionKey(card.id, foil || 'non_foil'),
+      quantity: Math.max(Number(quantity) || 1, 1),
+      condition: condition || 'near_mint',
+      price: price ?? '',
+      language: language || 'English',
+      foil: foil || 'non_foil',
+    }));
+    selectedListingCardIds = listingCardState.map(({ selectionKey }) => selectionKey);
+    selectedListingCardQuantities = Object.fromEntries(listingCardState.map(({ selectionKey, quantity }) => [selectionKey, quantity]));
+    selectedListingCardConditions = Object.fromEntries(listingCardState.map(({ selectionKey, condition }) => [selectionKey, condition]));
+    selectedListingCardPrices = Object.fromEntries(listingCardState.map(({ selectionKey, price }) => [selectionKey, price]));
+    selectedListingCardLanguages = Object.fromEntries(listingCardState.map(({ selectionKey, language }) => [selectionKey, language]));
+    selectedListingCardFoils = Object.fromEntries(listingCardState.map(({ selectionKey, foil }) => [selectionKey, foil]));
     listingCardSearch.value = '';
     renderSelectedListingCards();
   } else {
@@ -1422,7 +1733,7 @@ async function openSaleConfirmationDialog() {
 
 listingEditButton.addEventListener('click', async () => {
   const listing = listings.find((item) => item.id === listingDetailsDialog.dataset.listingId);
-  if (!listing) return;
+  if (!listing || listing.status === 'cancelled') return;
   listingDetailsDialog.close();
   await loadCatalog();
   openListingForm(listing);
@@ -1438,6 +1749,17 @@ listingAdminEdit.addEventListener('click', async () => {
   listingDetailsDialog.close();
   await loadCatalog();
   openListingForm(listing);
+});
+listingAdminCancel.addEventListener('click', () => {
+  const listingId = listingDetailsDialog.dataset.listingId;
+  const listing = adminListingsData.find((item) => item.id === listingId)
+    || listings.find((item) => item.id === listingId)
+    || myListings.find((item) => item.id === listingId)
+    || profileListings.find((item) => item.id === listingId)
+    || inboxSharedListings.find((item) => item.id === listingId);
+  if (!isAdministrator || !listing) return;
+  listingDetailsDialog.close();
+  openAdminCancellationDialog(listing);
 });
 listingAdminDelete.addEventListener('click', async () => {
   const listingId = listingDetailsDialog.dataset.listingId;
@@ -1535,7 +1857,10 @@ listingForm.addEventListener('submit', async (event) => {
   if (editingListingId) await window.riftTradeSupabase.from('listing_cards').delete().eq('listing_id', editingListingId);
   const { error: cardError } = await window.riftTradeSupabase
     .from('listing_cards')
-    .insert(selectedListingCardIds.map((cardId) => ({ listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[cardId] || 1, condition: selectedListingCardConditions[cardId] || 'near_mint', price: selectedListingCardPrices[cardId] === '' ? null : Number(selectedListingCardPrices[cardId]) || null, language: (selectedListingCardLanguages[cardId] || 'English').trim(), foil: selectedListingCardFoils[cardId] || 'non_foil', notes: listingDescription.value.trim() || null })));
+    .insert(selectedListingCardIds.map((selectionKey) => {
+      const { cardId, foil } = listingCardSelectionParts(selectionKey);
+      return { listing_id: listing.id, card_id: cardId, quantity: selectedListingCardQuantities[selectionKey] || 1, condition: selectedListingCardConditions[selectionKey] || 'near_mint', price: selectedListingCardPrices[selectionKey] === '' ? null : Number(selectedListingCardPrices[selectionKey]) || null, language: (selectedListingCardLanguages[selectionKey] || 'English').trim(), foil: selectedListingCardFoils[selectionKey] || foil, notes: listingDescription.value.trim() || null };
+    }));
   if (cardError) {
     if (!editingListingId) await window.riftTradeSupabase.from('listings').delete().eq('id', listing.id);
     listingSubmit.disabled = false;
@@ -1549,13 +1874,16 @@ listingForm.addEventListener('submit', async (event) => {
   listingSubmit.disabled = false;
   listingDialog.close();
   editingListingId = null;
-  await Promise.all([loadListings(), loadMyListings()]);
+  await Promise.all([loadListings(), loadMyListings(), isAdministrator ? loadAdminData(true) : Promise.resolve()]);
 });
 
 function renderListingCardResults() {
   const query = normalizeCardSearch(listingCardSearch.value);
   const matches = cards
-    .filter((card) => !selectedListingCardIds.includes(card.id))
+    .filter((card) => {
+      const selectedCardCount = selectedListingCardIds.filter((selectionKey) => listingCardSelectionParts(selectionKey).cardId === card.id).length;
+      return selectedCardCount === 0 || (isFoilableCard(card) && selectedCardCount < 2);
+    })
     .map((card) => ({ card, score: scoreCardSearchMatch(card, query) }))
     .filter(({ score }) => score > 0)
     .sort((left, right) => right.score - left.score)
@@ -1651,13 +1979,17 @@ listingCardResults.addEventListener('click', (event) => {
   if (!option) return;
   const card = cards.find((item) => item.id === option.dataset.listingCardId);
   if (!card) return;
-  if (!selectedListingCardIds.includes(card.id)) {
-    selectedListingCardIds.push(card.id);
-    selectedListingCardQuantities[card.id] = 1;
-    selectedListingCardConditions[card.id] = 'near_mint';
-    selectedListingCardPrices[card.id] = '';
-    selectedListingCardLanguages[card.id] = 'English';
-    selectedListingCardFoils[card.id] = 'non_foil';
+  const selectedCardKeys = selectedListingCardIds.filter((selectionKey) => listingCardSelectionParts(selectionKey).cardId === card.id);
+  const selectedCardFoils = selectedCardKeys.map((selectionKey) => listingCardSelectionParts(selectionKey).foil);
+  const selectionFoil = selectedCardKeys.length === 1 && isFoilableCard(card) && selectedCardFoils.includes('non_foil') ? 'foil' : 'non_foil';
+  const selectionKey = listingCardSelectionKey(card.id, selectionFoil);
+  if (!selectedListingCardIds.includes(selectionKey) && selectedCardKeys.length < (isFoilableCard(card) ? 2 : 1)) {
+    selectedListingCardIds.push(selectionKey);
+    selectedListingCardQuantities[selectionKey] = 1;
+    selectedListingCardConditions[selectionKey] = 'near_mint';
+    selectedListingCardPrices[selectionKey] = '';
+    selectedListingCardLanguages[selectionKey] = 'English';
+    selectedListingCardFoils[selectionKey] = selectionFoil;
   }
   listingCardSearch.value = '';
   renderSelectedListingCards();
@@ -1666,16 +1998,18 @@ listingCardResults.addEventListener('click', (event) => {
 });
 
 function renderSelectedListingCards() {
-  listingCardSelected.innerHTML = selectedListingCardIds.map((cardId) => {
+  listingCardSelected.innerHTML = selectedListingCardIds.map((selectionKey) => {
+    const { cardId } = listingCardSelectionParts(selectionKey);
     const card = cards.find((item) => item.id === cardId);
     if (!card) return '';
     const imageUrl = getCardImageUrl(card);
       const badge = card.is_signed ? 'Signature' : card.is_overnumbered ? 'Overnumbered' : '';
-      const condition = selectedListingCardConditions[card.id] || 'near_mint';
-      const price = selectedListingCardPrices[card.id] ?? '';
-      const language = selectedListingCardLanguages[card.id] || 'English';
-      const foilSelector = ['common', 'uncommon'].includes(String(card.rarity || '').toLowerCase()) ? `<span class="listing-card-foil" role="group" aria-label="Finish for ${escapeHtml(card.name)}"><button type="button" data-listing-card-foil="${escapeHtml(card.id)}" data-foil-value="non_foil" aria-pressed="${selectedListingCardFoils[card.id] !== 'foil'}">Non-foil</button><button type="button" data-listing-card-foil="${escapeHtml(card.id)}" data-foil-value="foil" aria-pressed="${selectedListingCardFoils[card.id] === 'foil'}">Foil</button></span>` : '';
-        return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span class="listing-card-selected-name">${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}${foilSelector}</span><button class="listing-card-remove" type="button" data-remove-listing-card="${escapeHtml(card.id)}" aria-label="Remove ${escapeHtml(card.name)}">×</button><span class="listing-card-selected-fields"><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[card.id] || 1}" data-listing-card-quantity="${escapeHtml(card.id)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(card.id)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-language">Language<input type="text" value="${escapeHtml(language)}" data-listing-card-language="${escapeHtml(card.id)}" aria-label="Language for ${escapeHtml(card.name)}" /></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(card.id)}" aria-label="Price for ${escapeHtml(card.name)}" /></label></span></span>`;
+      const condition = selectedListingCardConditions[selectionKey] || 'near_mint';
+      const price = selectedListingCardPrices[selectionKey] ?? '';
+      const language = selectedListingCardLanguages[selectionKey] || 'English';
+      const foil = selectedListingCardFoils[selectionKey] || 'non_foil';
+      const foilSelector = isFoilableCard(card) ? `<span class="listing-card-foil" role="group" aria-label="Finish for ${escapeHtml(card.name)}"><button type="button" data-listing-card-foil="${escapeHtml(selectionKey)}" data-foil-value="non_foil" aria-pressed="${foil !== 'foil'}">Non-foil</button><button type="button" data-listing-card-foil="${escapeHtml(selectionKey)}" data-foil-value="foil" aria-pressed="${foil === 'foil'}">Foil</button></span>` : '';
+        return `<span class="listing-card-selected-item">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" />` : ''}<span class="listing-card-selected-name">${escapeHtml(card.name)}${badge ? `<small class="listing-card-option-badge ${badge === 'Signature' ? 'is-signature' : ''}">${badge}</small>` : ''}${foilSelector}</span><button class="listing-card-remove" type="button" data-remove-listing-card="${escapeHtml(selectionKey)}" aria-label="Remove ${escapeHtml(card.name)}">×</button><span class="listing-card-selected-fields"><label class="listing-card-quantity">Qty<input type="number" min="1" max="999" step="1" value="${selectedListingCardQuantities[selectionKey] || 1}" data-listing-card-quantity="${escapeHtml(selectionKey)}" aria-label="Quantity for ${escapeHtml(card.name)}" /></label><label class="listing-card-condition">Condition<select data-listing-card-condition="${escapeHtml(selectionKey)}" aria-label="Condition for ${escapeHtml(card.name)}"><option value="near_mint"${condition === 'near_mint' ? ' selected' : ''}>Near mint</option><option value="lightly_played"${condition === 'lightly_played' ? ' selected' : ''}>Lightly played</option><option value="moderately_played"${condition === 'moderately_played' ? ' selected' : ''}>Moderately played</option><option value="heavily_played"${condition === 'heavily_played' ? ' selected' : ''}>Heavily played</option><option value="damaged"${condition === 'damaged' ? ' selected' : ''}>Damaged</option></select></label><label class="listing-card-language">Language<select data-listing-card-language="${escapeHtml(selectionKey)}" aria-label="Language for ${escapeHtml(card.name)}"><option value="English"${language === 'English' ? ' selected' : ''}>English</option><option value="Chinese"${language === 'Chinese' ? ' selected' : ''}>Chinese</option><option value="French"${language === 'French' ? ' selected' : ''}>French</option><option value="Korean"${language === 'Korean' ? ' selected' : ''}>Korean</option></select></label><label class="listing-card-price">Price<input type="number" min="0" step="0.01" value="${escapeHtml(price)}" data-listing-card-price="${escapeHtml(selectionKey)}" aria-label="Price for ${escapeHtml(card.name)}" /></label></span></span>`;
   }).join('');
   listingCardSearch.setCustomValidity(selectedListingCardIds.length ? '' : 'Choose at least one card from the search results.');
 }
@@ -1683,7 +2017,16 @@ function renderSelectedListingCards() {
 listingCardSelected.addEventListener('click', (event) => {
   const foilButton = event.target.closest('[data-listing-card-foil]');
   if (foilButton) {
-    selectedListingCardFoils[foilButton.dataset.listingCardFoil] = foilButton.dataset.foilValue;
+    const currentKey = foilButton.dataset.listingCardFoil;
+    const { cardId } = listingCardSelectionParts(currentKey);
+    const nextKey = listingCardSelectionKey(cardId, foilButton.dataset.foilValue);
+    if (currentKey !== nextKey && !selectedListingCardIds.includes(nextKey)) {
+      selectedListingCardIds = selectedListingCardIds.map((selectionKey) => selectionKey === currentKey ? nextKey : selectionKey);
+      [selectedListingCardQuantities, selectedListingCardConditions, selectedListingCardPrices, selectedListingCardLanguages, selectedListingCardFoils].forEach((values) => {
+        values[nextKey] = values[currentKey];
+        delete values[currentKey];
+      });
+    }
     renderSelectedListingCards();
     return;
   }
@@ -1719,7 +2062,7 @@ listingCardSelected.addEventListener('change', (event) => {
 });
 
 document.addEventListener('pointerdown', (event) => {
-  if (!event.target.closest('.listing-card-picker')) listingCardResults.hidden = true;
+  if (!event.target.closest('#listing-card-search, #listing-card-results')) listingCardResults.hidden = true;
 });
 
 async function fetchCatalog() {
@@ -1910,9 +2253,10 @@ function renderInboxConversations() {
   const visibleConversations = inboxConversations.filter((conversation) => `${conversation.peer_display_name || ''} ${conversation.last_message_body || ''}`.toLowerCase().includes(query));
   inboxConversationList.innerHTML = visibleConversations.map((conversation) => {
     const peerName = conversation.peer_display_name || 'RiftTrade member';
+    const peerIsAdmin = conversation.peer_is_admin === true || conversation.peer_is_admin === 'true';
     const unread = Number(conversation.unread_count || 0);
     const preview = conversation.last_message_body || 'Start a conversation';
-    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}">${avatarMarkup(peerName, conversation.peer_avatar_url)}<span class="inbox-conversation-copy"><strong>${escapeHtml(peerName)}</strong><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
+    return `<button class="inbox-conversation${String(conversation.conversation_id) === String(activeConversationId) ? ' is-active' : ''}${unread ? ' has-unread' : ''}" data-inbox-conversation-id="${escapeHtml(conversation.conversation_id)}" type="button" aria-current="${String(conversation.conversation_id) === String(activeConversationId) ? 'true' : 'false'}">${avatarMarkup(peerName, conversation.peer_avatar_url)}<span class="inbox-conversation-copy"><span class="inbox-conversation-name"><strong>${escapeHtml(peerName)}</strong>${peerIsAdmin ? '<span class="inbox-admin-tag">Admin</span>' : ''}</span><small>${escapeHtml(preview.length > 76 ? `${preview.slice(0, 73)}...` : preview)}</small></span><span class="inbox-conversation-meta"><time>${escapeHtml(inboxTimeLabel(conversation.last_message_at))}</time>${unread ? `<b>${unread > 99 ? '99+' : unread}</b>` : ''}</span></button>`;
   }).join('');
   updateInboxUnreadBadge();
 }
@@ -2023,6 +2367,9 @@ async function openInboxConversation(conversationId, markAsRead = true) {
   inboxEmptyState.hidden = true;
   inboxActive.hidden = false;
   inboxPeerProfile.textContent = conversation.peer_display_name || 'RiftTrade member';
+  const peerIsAdmin = conversation.peer_is_admin === true || conversation.peer_is_admin === 'true';
+  inboxPeerAdminTag.hidden = !peerIsAdmin;
+  inboxPeerRole.textContent = peerIsAdmin ? 'RiftTrade Administrator' : 'RiftTrade Member';
   inboxPeerAvatar.innerHTML = avatarMarkup(conversation.peer_display_name, conversation.peer_avatar_url, 'inbox-peer-avatar').replace(/^<span[^>]*>|<\/span>$/g, '');
   inboxPeerProfile.dataset.profileId = conversation.peer_id;
   inboxTyping.hidden = true;

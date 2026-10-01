@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#f7f7f5" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="mask-icon" href="favicon.svg" color="#111111" />
+    <link rel="apple-touch-icon" href="favicon.svg" />
+    <link rel="manifest" href="site.webmanifest" />
     <title>RiftTrade | Riftbound cards, traded simply</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,7 +27,7 @@
           <button class="nav-link" data-view="marketplace">Marketplace</button>
           <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b hidden>0</b></button>
         </nav>
-        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><span class="profile-button-avatar" id="profile-button-avatar"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">My Profile</button><button data-view="rankings" id="profile-menu-rankings" type="button" role="menuitem">Rankings</button><button data-view="trades" id="profile-menu-trades" type="button" role="menuitem">My listings</button><button class="admin-only" data-view="admin" id="profile-menu-admin" type="button" role="menuitem" hidden>Admin controls</button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
+        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><span class="profile-button-avatar" id="profile-button-avatar"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">My Profile</button><button data-view="rankings" id="profile-menu-rankings" type="button" role="menuitem">Rankings</button><button data-view="trades" id="profile-menu-trades" type="button" role="menuitem">My listings</button><button class="admin-only" data-view="admin" id="profile-menu-admin" type="button" role="menuitem" hidden>Admin controls <b class="profile-menu-admin-badge" hidden>0</b></button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
       </header>
 
       <main>
@@ -87,7 +91,7 @@
 
         <section class="view" data-page="trades" hidden>
           <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 04</p><div class="my-listings-title-row"><h1>My listings</h1><span class="status-tag dark-tag" id="my-listings-count">Loading...</span></div></div><button class="button button-outline" id="open-listing-my" type="button">New listing <span>＋</span></button></div>
-          <div class="my-listings-list-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option></select></label></div>
+          <div class="my-listings-list-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label></div>
           <p class="market-status" id="my-listings-status" aria-live="polite">Loading your listings...</p>
           <div class="my-listings-grid" id="my-listings-grid"></div>
           <p class="empty-message" id="my-listings-empty" hidden>You have not listed any cards yet.</p>
@@ -116,7 +120,7 @@
             <section class="inbox-main" aria-label="Message conversation">
               <div class="inbox-empty-state" id="inbox-empty-state">Select a conversation or find a member to message.</div>
               <div class="inbox-active" id="inbox-active" hidden>
-                <header class="inbox-thread-header"><button class="inbox-back" id="inbox-back" type="button" aria-label="Back to conversations">←</button><span class="inbox-peer-avatar" id="inbox-peer-avatar"></span><div><button class="profile-link" id="inbox-peer-profile" type="button"></button><small>RiftTrade member</small></div></header>
+                <header class="inbox-thread-header"><button class="inbox-back" id="inbox-back" type="button" aria-label="Back to conversations">←</button><span class="inbox-peer-avatar" id="inbox-peer-avatar"></span><div><span class="inbox-peer-name-line"><button class="profile-link" id="inbox-peer-profile" type="button"></button><span class="inbox-admin-tag" id="inbox-peer-admin-tag" hidden>Admin</span></span><small id="inbox-peer-role">RiftTrade Member</small></div></header>
                 <div class="inbox-thread" id="inbox-thread" role="log" aria-live="polite" aria-relevant="additions text"></div>
                 <div class="inbox-typing" id="inbox-typing" aria-live="polite" hidden><span class="inbox-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="inbox-typing-label">Typing...</span></div>
                 <p class="inbox-message-status" id="inbox-message-status" role="status" aria-live="polite"></p>
@@ -153,9 +157,9 @@
         <h2 id="listing-title">Create a listing</h2>
         <p class="account-intro">Share what you have or what you are looking for with the RiftTrade community.</p>
         <form id="listing-form">
+          <label class="auth-field" id="listing-status-field">Status<select id="listing-status"><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option></select></label>
           <label class="auth-field">Listing title<input id="listing-name" type="text" placeholder="Give your listing a clear title" required /></label>
           <div class="auth-field"><span>Type</span><div class="listing-type-pills" role="group" aria-label="Listing type"><button type="button" class="listing-type-pill is-active" data-listing-type="trade">Trade</button><button type="button" class="listing-type-pill" data-listing-type="sale">For sale</button><button type="button" class="listing-type-pill" data-listing-type="trade_or_sale">Trade or sale</button><button type="button" class="listing-type-pill" data-listing-type="buy">Buying</button></div><input id="listing-type" type="hidden" value="trade" /></div>
-          <label class="auth-field" id="listing-status-field">Status<select id="listing-status"><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
           <div class="auth-field listing-card-picker"><label for="listing-card-search">Cards</label><input id="listing-card-search" type="search" placeholder="Search by card name or code" autocomplete="off" /><div class="listing-card-results" id="listing-card-results" role="listbox" hidden></div><div class="listing-card-selected" id="listing-card-selected" aria-live="polite"></div></div>
           <label class="auth-field">Description<textarea id="listing-description" rows="3" placeholder="Add details about the cards, price, or trade"></textarea></label>
           <button class="button button-dark auth-submit" id="listing-submit" type="submit">Publish listing <span>→</span></button>
@@ -209,8 +213,58 @@
         <p class="listing-details-description" id="listing-details-description"></p>
         <div class="listing-details-cards" id="listing-details-cards"></div>
         <div class="listing-details-actions" id="listing-details-actions" hidden><button class="button button-outline" id="listing-edit" type="button">Edit listing</button><button class="button button-outline" id="listing-pending" type="button">Mark pending</button><button class="button button-outline" id="listing-sold" type="button">Mark completed</button><button class="button button-danger" id="listing-delete" type="button">Delete listing</button></div>
-        <div class="admin-dialog-actions" id="listing-admin-actions" hidden><button class="button button-outline" id="listing-admin-toggle" type="button" aria-expanded="false">Admin</button><div class="admin-dialog-menu" id="listing-admin-menu" hidden><button class="button button-outline" id="listing-admin-edit" type="button">Edit</button><button class="button button-danger" id="listing-admin-delete" type="button">Delete</button></div></div>
-        <div class="listing-details-contact" id="listing-details-contact" hidden><button class="button button-dark" id="listing-contact-message" type="button">Send a message <span>→</span></button></div>
+        <div class="admin-dialog-actions" id="listing-admin-actions" hidden><button class="button button-outline" id="listing-admin-toggle" type="button" aria-expanded="false">Admin</button><div class="admin-dialog-menu" id="listing-admin-menu" hidden><button class="button button-outline" id="listing-admin-edit" type="button">Edit</button><button class="button button-danger" id="listing-admin-cancel" type="button">Cancel</button><button class="button button-danger" id="listing-admin-delete" type="button">Delete</button></div></div>
+        <div class="listing-details-contact" id="listing-details-contact" hidden><button class="button button-dark" id="listing-contact-message" type="button">Send a message <span>→</span></button><button class="button button-outline" id="listing-report" type="button">Report listing</button></div>
+      </dialog>
+
+      <dialog class="auth-dialog cancellation-dialog" id="admin-cancellation-dialog" aria-labelledby="admin-cancellation-title">
+        <button class="dialog-close" id="admin-cancellation-close" type="button" aria-label="Close cancellation form">×</button>
+        <p class="eyebrow">CONTROL ROOM / LISTING</p>
+        <h2 id="admin-cancellation-title">Cancel listing</h2>
+        <p class="account-intro" id="admin-cancellation-intro">The seller will receive a message with this listing and the reason.</p>
+        <form id="admin-cancellation-form"><label class="auth-field">Cancellation reason<textarea id="admin-cancellation-reason" rows="5" minlength="1" maxlength="1000" required placeholder="Explain why this listing is being cancelled..."></textarea></label><button class="button button-dark auth-submit" id="admin-cancellation-submit" type="submit">Cancel listing <span>→</span></button></form>
+        <p class="auth-message" id="admin-cancellation-message" role="status" aria-live="polite"></p>
+      </dialog>
+
+      <dialog class="auth-dialog report-dialog" id="report-dialog" aria-labelledby="report-title">
+        <button class="dialog-close" id="report-close" type="button" aria-label="Close report form">×</button>
+        <p class="eyebrow">RIFTTRADE / REPORT</p>
+        <h2 id="report-title">Report</h2>
+        <p class="account-intro" id="report-intro">Tell us what needs attention.</p>
+        <form id="report-form"><label class="auth-field">Details<textarea id="report-details" rows="6" minlength="10" maxlength="4000" required placeholder="Describe the issue..."></textarea></label><button class="button button-dark auth-submit" id="report-submit" type="submit">Submit report <span>→</span></button></form>
+        <p class="auth-message" id="report-message" role="status" aria-live="polite"></p>
+      </dialog>
+
+      <dialog class="inbox-admin-dialog" id="admin-user-messages-dialog" aria-labelledby="admin-user-messages-title">
+        <button class="dialog-close" id="admin-user-messages-close" type="button" aria-label="Close user messages">×</button>
+        <p class="eyebrow">ADMIN / MESSAGE HISTORY</p>
+        <h2 id="admin-user-messages-title">User messages</h2>
+        <div class="inbox-layout admin-user-messages-layout">
+          <aside class="inbox-sidebar" aria-label="User conversations">
+            <p class="inbox-status" id="admin-user-messages-status" aria-live="polite"></p>
+            <div class="inbox-conversation-list" id="admin-user-messages-conversations"></div>
+          </aside>
+          <section class="inbox-main" aria-label="User message conversation">
+            <div class="inbox-empty-state" id="admin-user-messages-empty">Select a conversation to view messages.</div>
+            <div class="inbox-active" id="admin-user-messages-active" hidden>
+              <header class="inbox-thread-header"><span class="inbox-peer-avatar" id="admin-user-messages-peer-avatar"></span><div><strong id="admin-user-messages-peer"></strong><small>RiftTrade member</small></div></header>
+              <div class="inbox-thread admin-user-messages-thread" id="admin-user-messages-thread" role="log"></div>
+            </div>
+          </section>
+        </div>
+      </dialog>
+
+      <dialog class="auth-dialog admin-edit-user-dialog" id="admin-edit-user-dialog" aria-labelledby="admin-edit-user-title">
+        <button class="dialog-close" id="admin-edit-user-close" type="button" aria-label="Close edit user dialog">×</button>
+        <p class="eyebrow">ADMIN / USER EDITOR</p>
+        <h2 id="admin-edit-user-title">Edit user</h2>
+        <form id="admin-edit-user-form">
+          <label class="auth-field">Email<input id="admin-edit-user-email" type="email" readonly /></label>
+          <label class="auth-field">Display name<input id="admin-edit-user-name" type="text" maxlength="40" required /></label>
+          <label class="auth-field">Rank<select id="admin-edit-user-rank"><option value="">Automatic rank</option><option value="Iron">Iron</option><option value="Bronze">Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option><option value="Emerald">Emerald</option><option value="Diamond">Diamond</option><option value="Master">Master</option><option value="Grandmaster">Grandmaster</option><option value="Challenger">Challenger</option></select></label>
+          <button class="button button-dark auth-submit" type="submit">Save changes <span>→</span></button>
+        </form>
+        <p class="auth-message" id="admin-edit-user-message" role="status" aria-live="polite"></p>
       </dialog>
 
       <dialog class="sale-confirmation-dialog" id="sale-confirmation-dialog" aria-labelledby="sale-confirmation-title">
@@ -229,7 +283,7 @@
       <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
         <button class="dialog-close" id="profile-close" type="button" aria-label="Close profile">×</button>
         <p class="eyebrow">RIFTTRADE / MEMBER PROFILE</p>
-        <div class="profile-title-row"><div class="profile-title"><button class="profile-avatar-button" id="profile-avatar-button" type="button" aria-label="Change profile photo" hidden><span class="profile-avatar" id="profile-avatar"></span><span class="profile-avatar-edit" aria-hidden="true">✎</span></button><span class="profile-avatar profile-avatar-static" id="profile-avatar-static" aria-hidden="true" hidden></span><input id="profile-avatar-input" type="file" accept="image/*" capture="user" hidden /><h2 id="profile-title">Member profile</h2></div><button class="button button-dark profile-message-button" id="profile-message" type="button" hidden>Message <span>→</span></button></div>
+        <div class="profile-title-row"><div class="profile-title"><button class="profile-avatar-button" id="profile-avatar-button" type="button" aria-label="Change profile photo" hidden><span class="profile-avatar" id="profile-avatar"></span><span class="profile-avatar-edit" aria-hidden="true">✎</span></button><span class="profile-avatar profile-avatar-static" id="profile-avatar-static" aria-hidden="true" hidden></span><input id="profile-avatar-input" type="file" accept="image/*" capture="user" hidden /><span class="profile-name-line"><h2 id="profile-title">Member profile</h2><span class="inbox-admin-tag profile-admin-tag" id="profile-admin-tag" hidden>Admin</span></span></div><div class="profile-title-actions"><button class="button button-outline profile-report-button" id="profile-report" type="button" hidden>Report</button><button class="button button-dark profile-message-button" id="profile-message" type="button" hidden>Message <span>→</span></button></div></div>
         <dl class="profile-info"><div class="profile-display-field"><dt>Display name</dt><div class="profile-display-row"><dd id="profile-display-name"></dd><button class="button button-outline profile-edit-button" id="profile-edit" type="button" hidden>Edit</button></div></div><div><dt>Member since</dt><dd id="profile-member-since"></dd></div></dl>
         <section class="profile-rank" aria-labelledby="profile-rank-name"><div class="profile-rank-heading"><div><p class="eyebrow">RANK</p><h3 id="profile-rank-name">Loading rank</h3></div><span class="profile-rank-badge" id="profile-rank-badge">...</span></div><p class="profile-rank-summary" id="profile-rank-summary"></p><div class="profile-rank-progress-row"><span>Progression</span><span id="profile-rank-progress-label"></span></div><div class="profile-rank-progress" id="profile-rank-progress" role="progressbar" aria-label="Rank progression" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="profile-rank-progress-bar"></span></div></section>
         <div class="profile-listings-heading"><h3>Listings</h3><span id="profile-listing-count"></span></div>
