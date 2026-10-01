@@ -25,7 +25,7 @@ function showView(viewName) {
 }
 
 navItems.forEach((item) => item.addEventListener('click', () => {
-  if (item.dataset.view === 'admin') closeProfileMenu();
+  if (item.dataset.view === 'admin' || item.closest('.profile-menu')) closeProfileMenu();
   showView(item.dataset.view);
 }));
 document.querySelectorAll('[data-go]').forEach((item) => item.addEventListener('click', () => showView(item.dataset.go)));
@@ -68,6 +68,7 @@ const catalogRarityFilter = document.querySelector('#catalog-rarity-filter');
 const catalogTypeFilter = document.querySelector('#catalog-type-filter');
 const catalogFilterClear = document.querySelector('#catalog-filter-clear');
 const openListingButton = document.querySelector('#open-listing');
+const openListingMyButton = document.querySelector('#open-listing-my');
 const listingDialog = document.querySelector('#listing-dialog');
 const listingClose = document.querySelector('#listing-close');
 const listingForm = document.querySelector('#listing-form');
@@ -240,6 +241,8 @@ const myListingsFilter = document.querySelector('#my-listings-filter');
 const adminStatus = document.querySelector('#admin-status');
 const adminUsers = document.querySelector('#admin-users');
 const adminListings = document.querySelector('#admin-listings');
+const adminView = document.querySelector('[data-page="admin"]');
+const adminLayout = adminView.querySelector('.admin-layout');
 const adminUserSearch = document.querySelector('#admin-user-search');
 const adminListingSearch = document.querySelector('#admin-listing-search');
 const adminListingFilterButton = document.querySelector('#admin-listing-filter-button');
@@ -254,8 +257,45 @@ const adminListingPagination = document.querySelector('#admin-listing-pagination
 const adminListingPrevious = document.querySelector('#admin-listing-previous');
 const adminListingNext = document.querySelector('#admin-listing-next');
 const adminListingPageStatus = document.querySelector('#admin-listing-page-status');
+adminListingStatusFilters.forEach((filter) => { filter.checked = true; });
 let editingListingId = null;
 let saleConfirmationListingId = null;
+
+adminView.querySelector('h1').textContent = 'Admin controls';
+const adminSections = [...adminLayout.children];
+const adminTabs = document.createElement('div');
+adminTabs.className = 'admin-tabs';
+adminTabs.setAttribute('role', 'tablist');
+['Users', 'Listings'].forEach((label, index) => {
+  const tab = document.createElement('button');
+  tab.className = 'admin-tab';
+  tab.type = 'button';
+  tab.id = `admin-tab-${label.toLowerCase()}`;
+  tab.setAttribute('role', 'tab');
+  tab.setAttribute('aria-controls', `admin-panel-${label.toLowerCase()}`);
+  tab.textContent = label;
+  tab.addEventListener('click', () => {
+    adminTabs.querySelectorAll('.admin-tab').forEach((item, itemIndex) => {
+      const isActive = itemIndex === index;
+      item.classList.toggle('is-active', isActive);
+      item.setAttribute('aria-selected', String(isActive));
+      adminSections[itemIndex].hidden = !isActive;
+    });
+  });
+  adminTabs.append(tab);
+  adminSections[index].id = `admin-panel-${label.toLowerCase()}`;
+});
+adminLayout.before(adminTabs);
+adminTabs.querySelector('.admin-tab').click();
+const adminUserPagination = document.createElement('nav');
+adminUserPagination.className = 'catalog-pagination admin-user-pagination';
+adminUserPagination.id = 'admin-user-pagination';
+adminUserPagination.setAttribute('aria-label', 'Admin user pages');
+adminUserPagination.innerHTML = '<button type="button" id="admin-user-previous">Previous</button><span id="admin-user-page-status"></span><button type="button" id="admin-user-next">Next</button>';
+adminUsers.after(adminUserPagination);
+const adminUserPrevious = adminUserPagination.querySelector('#admin-user-previous');
+const adminUserNext = adminUserPagination.querySelector('#admin-user-next');
+const adminUserPageStatus = adminUserPagination.querySelector('#admin-user-page-status');
 
 let cards = [];
 let catalogLoadPromise = null;
@@ -270,8 +310,10 @@ let isAdministrator = false;
 let adminDataLoaded = false;
 let adminUsersData = [];
 let adminListingsData = [];
+let adminUserPage = 0;
 let adminListingPage = 0;
-const adminListingPageSize = 8;
+const adminUserPageSize = 9;
+const adminListingPageSize = 16;
 let authStateReady = false;
 let inboxConversations = [];
 let activeConversationId = null;
@@ -629,8 +671,15 @@ const ADMIN_RANKS = ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 
 
 function renderAdminData(users, allListings) {
   const query = adminUserSearch.value.trim().toLowerCase();
-  const visibleUsers = users.filter((user) => [user.display_name, user.username, user.email].filter(Boolean).join(' ').toLowerCase().includes(query));
+  const matchingUsers = users.filter((user) => [user.display_name, user.username, user.email].filter(Boolean).join(' ').toLowerCase().includes(query));
+  const userPageCount = Math.ceil(matchingUsers.length / adminUserPageSize);
+  adminUserPage = Math.min(adminUserPage, Math.max(userPageCount - 1, 0));
+  const visibleUsers = matchingUsers.slice(adminUserPage * adminUserPageSize, (adminUserPage + 1) * adminUserPageSize);
   adminUsers.innerHTML = visibleUsers.map((user) => `<article class="admin-row"><div><strong>${escapeHtml(user.display_name || user.username || 'RiftTrade member')}</strong><small>${escapeHtml(user.email || 'No email')}</small></div><input class="admin-display-name" data-user-id="${escapeHtml(user.id)}" value="${escapeHtml(user.display_name || '')}" aria-label="Display name for ${escapeHtml(user.email || user.id)}" /><select class="admin-rank" data-user-id="${escapeHtml(user.id)}" aria-label="Rank for ${escapeHtml(user.email || user.id)}"><option value="">Automatic rank</option>${ADMIN_RANKS.map((rank) => `<option value="${rank}"${user.rank_override === rank ? ' selected' : ''}>${rank}</option>`).join('')}</select><div class="admin-row-actions"><button class="button admin-save-user" data-user-id="${escapeHtml(user.id)}" type="button">Save</button><button class="button button-outline admin-reset-password" data-email="${escapeHtml(user.email || '')}" type="button">Reset password</button><button class="button button-danger admin-delete-user" data-user-id="${escapeHtml(user.id)}" type="button">Delete</button></div></article>`).join('');
+  adminUserPagination.hidden = userPageCount <= 1;
+  adminUserPageStatus.textContent = userPageCount ? `Page ${adminUserPage + 1} of ${userPageCount}` : '';
+  adminUserPrevious.disabled = adminUserPage === 0;
+  adminUserNext.disabled = adminUserPage >= userPageCount - 1;
   const listingQuery = adminListingSearch.value.trim().toLowerCase();
   const selectedStatuses = adminListingStatusFilters.filter((filter) => filter.checked).map((filter) => filter.dataset.adminStatus);
   const selectedListingType = adminListingTypeFilter.value;
@@ -716,7 +765,19 @@ async function loadAdminData(force = false) {
   renderAdminData(users, allListings);
 }
 
-adminUserSearch.addEventListener('input', () => renderAdminData(adminUsersData, adminListingsData));
+adminUserSearch.addEventListener('input', () => {
+  adminUserPage = 0;
+  renderAdminData(adminUsersData, adminListingsData);
+});
+adminUserPrevious.addEventListener('click', () => {
+  if (adminUserPage === 0) return;
+  adminUserPage -= 1;
+  renderAdminData(adminUsersData, adminListingsData);
+});
+adminUserNext.addEventListener('click', () => {
+  adminUserPage += 1;
+  renderAdminData(adminUsersData, adminListingsData);
+});
 const rerenderAdminListings = () => {
   adminListingPage = 0;
   renderAdminData(adminUsersData, adminListingsData);
@@ -732,7 +793,7 @@ adminListingFilterButton.addEventListener('click', () => {
 });
 adminListingFilterClear.addEventListener('click', () => {
   adminListingSearch.value = '';
-  adminListingStatusFilters.forEach((filter) => { filter.checked = filter.dataset.adminStatus === 'active'; });
+  adminListingStatusFilters.forEach((filter) => { filter.checked = true; });
   adminListingTypeFilter.value = '';
   adminListingMinPrice.value = '';
   adminListingMaxPrice.value = '';
@@ -1395,7 +1456,7 @@ function setListingMessage(message, isError = false) {
   listingMessage.classList.toggle('is-error', isError);
 }
 
-openListingButton.addEventListener('click', async () => {
+async function openNewListing() {
   if (!window.riftTradeSupabase) return setListingMessage('Configure Supabase before creating a listing.', true);
   const { data: { session } } = await window.riftTradeSupabase.auth.getSession();
   if (!session) {
@@ -1405,7 +1466,9 @@ openListingButton.addEventListener('click', async () => {
   }
   await loadCatalog();
   openListingForm();
-});
+}
+openListingButton.addEventListener('click', openNewListing);
+openListingMyButton.addEventListener('click', openNewListing);
 listingClose.addEventListener('click', () => listingDialog.close());
 listingDialog.addEventListener('click', (event) => { if (event.target === listingDialog) listingDialog.close(); });
 listingTypeOptions.forEach((option) => option.addEventListener('click', () => {

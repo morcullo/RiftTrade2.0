@@ -20,12 +20,10 @@
         <nav class="desktop-nav" aria-label="Primary navigation">
           <button class="nav-link is-active" data-view="home">Home</button>
           <button class="nav-link" data-view="catalog">Card catalog</button>
-          <button class="nav-link" data-view="rankings">Rankings</button>
           <button class="nav-link" data-view="marketplace">Marketplace</button>
-          <button class="nav-link" data-view="trades">My listings</button>
           <button class="nav-link nav-link-inbox" data-view="inbox">Inbox <b hidden>0</b></button>
         </nav>
-        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><span class="profile-button-avatar" id="profile-button-avatar"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">View profile</button><button class="admin-only" data-view="admin" id="profile-menu-admin" type="button" role="menuitem" hidden>Admin controls</button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
+        <div class="profile-menu-wrap"><button class="profile-button" id="profile-button" type="button" aria-label="Open account" aria-haspopup="menu" aria-expanded="false"><span class="profile-button-avatar" id="profile-button-avatar"><svg class="profile-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"></circle><path d="M5.5 20c.7-3.4 3-5.2 6.5-5.2s5.8 1.8 6.5 5.2"></path></svg></span></button><div class="profile-menu" id="profile-menu" role="menu" aria-label="Account menu" hidden><button id="profile-menu-view" type="button" role="menuitem">My Profile</button><button data-view="rankings" id="profile-menu-rankings" type="button" role="menuitem">Rankings</button><button data-view="trades" id="profile-menu-trades" type="button" role="menuitem">My listings</button><button class="admin-only" data-view="admin" id="profile-menu-admin" type="button" role="menuitem" hidden>Admin controls</button><button id="profile-menu-sign-out" type="button" role="menuitem">Sign out</button></div></div>
       </header>
 
       <main>
@@ -55,7 +53,7 @@
         </section>
 
         <section class="view" data-page="marketplace" hidden>
-          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 03</p><h1>Marketplace</h1></div><button class="button button-outline" id="open-listing" type="button">New listing <span>＋</span></button></div>
+          <div class="page-heading"><div><p class="eyebrow">THE MARKET / 03</p><h1>Marketplace</h1></div><div class="market-heading-actions"><button class="button button-dark" data-view="trades" type="button">My listings</button><button class="button button-outline" id="open-listing" type="button">New listing <span>＋</span></button></div></div>
           <div class="market-tools"><label class="search-box"><span>⌕</span><input id="card-search" type="search" placeholder="Search cards, sets, or traders" /></label><button class="filter-button" id="market-filter-button" type="button" aria-expanded="false" aria-controls="market-filter-panel">Filter <span>☷</span></button></div>
           <div class="market-filter-panel" id="market-filter-panel" hidden><div class="market-filter-status"><span>Status</span><details class="catalog-domain-filter"><summary>Choose status</summary><div role="group" aria-label="Filter by status"><label><input type="checkbox" data-market-status="active" checked />Active</label><label><input type="checkbox" data-market-status="paused" />Pending</label><label><input type="checkbox" data-market-status="completed" />Completed</label></div></details></div><label class="market-filter-type">Listing type<select id="market-type-filter"><option value="">All listings</option><option value="buy">Buying</option><option value="sale">For sale</option><option value="trade">For trade</option><option value="trade_or_sale">Trade or sale</option></select></label><label class="market-filter-min">Min price<input id="market-min-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0" /></label><label class="market-filter-max">Max price<input id="market-max-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="No max" /></label><button class="filter-clear" id="market-filter-clear" type="button">Clear filters</button></div>
           <p class="market-status" id="market-status" aria-live="polite">Loading listings...</p>
@@ -88,7 +86,8 @@
         </section>
 
         <section class="view" data-page="trades" hidden>
-          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 04</p><h1>My listings</h1></div><div class="my-listings-heading-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option></select></label><span class="status-tag" id="my-listings-count">Loading...</span></div></div>
+          <div class="page-heading"><div><p class="eyebrow">YOUR LISTINGS / 04</p><div class="my-listings-title-row"><h1>My listings</h1><span class="status-tag dark-tag" id="my-listings-count">Loading...</span></div></div><button class="button button-outline" id="open-listing-my" type="button">New listing <span>＋</span></button></div>
+          <div class="my-listings-list-tools"><label class="my-listings-filter">Status<select id="my-listings-filter" aria-label="Filter my listings by status"><option value="">All statuses</option><option value="active">Available</option><option value="paused">Pending</option><option value="completed">Completed</option></select></label></div>
           <p class="market-status" id="my-listings-status" aria-live="polite">Loading your listings...</p>
           <div class="my-listings-grid" id="my-listings-grid"></div>
           <p class="empty-message" id="my-listings-empty" hidden>You have not listed any cards yet.</p>
@@ -101,7 +100,7 @@
         </section>
 
         <section class="view" data-page="inbox" hidden>
-          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 05</p><h1>Inbox</h1></div><div class="inbox-heading-actions"><button class="button button-outline" id="inbox-new-message" type="button">New message</button><span class="status-tag dark-tag" id="inbox-unread-count">0 unread</span></div></div>
+          <div class="page-heading"><div><p class="eyebrow">DIRECT MESSAGES / 05</p><div class="inbox-title-row"><h1>Inbox</h1><span class="status-tag dark-tag" id="inbox-unread-count">0 unread</span></div></div><div class="inbox-heading-actions"><button class="button button-outline" id="inbox-new-message" type="button">New message</button></div></div>
           <div class="inbox-layout" id="inbox-layout">
             <aside class="inbox-sidebar" aria-label="Conversations">
               <form class="inbox-recipient-form" id="inbox-recipient-form">
@@ -251,7 +250,7 @@
       </dialog>
 
       <nav class="mobile-nav" aria-label="Mobile navigation">
-        <button class="nav-link is-active" data-view="home"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path></svg></span>Home</button><button class="nav-link" data-view="catalog"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="12" height="16" rx="1"></rect><path d="M8 7h6M8 10h6M8 13h4"></path><path d="M17 7h2v13H7"></path></svg></span>Catalog</button><button class="nav-link" data-view="rankings"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M5 19v-6h4v6M10 19V8h4v11M15 19v-4h4v4"></path></svg></span>Ranks</button><button class="nav-link" data-view="marketplace"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16l-1-5H5l-1 5Z"></path><path d="M5 10v9h14v-9"></path><path d="M3 10h18"></path><path d="M9 19v-5h6v5"></path></svg></span>Market</button><button class="nav-link" data-view="trades"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="1"></rect><path d="m8 9 1.5 1.5L12 8"></path><path d="M14 9h3M8 14l1.5 1.5L12 13"></path><path d="M14 14h3"></path></svg></span>Listings</button><button class="nav-link nav-link-inbox" data-view="inbox"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 7 8 6 8-6"></path></svg></span>Inbox <b hidden>0</b></button>
+        <button class="nav-link is-active" data-view="home"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path></svg></span>Home</button><button class="nav-link" data-view="catalog"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="12" height="16" rx="1"></rect><path d="M8 7h6M8 10h6M8 13h4"></path><path d="M17 7h2v13H7"></path></svg></span>Catalog</button><button class="nav-link" data-view="marketplace"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16l-1-5H5l-1 5Z"></path><path d="M5 10v9h14v-9"></path><path d="M3 10h18"></path><path d="M9 19v-5h6v5"></path></svg></span>Market</button><button class="nav-link nav-link-inbox" data-view="inbox"><span><svg class="nav-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="m4 7 8 6 8-6"></path></svg></span>Inbox <b hidden>0</b></button>
       </nav>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
