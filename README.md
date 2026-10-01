@@ -46,7 +46,7 @@ Keep the Discord Client Secret in Supabase only; never add it to the browser con
 - Supabase Auth owns users; `profiles` stores public profile fields.
 - Public profile dialogs show a member's display name, avatar, membership duration, listings, and activity rank; email addresses and Discord IDs are not shown publicly.
 - Apply [`supabase-migration-profile-email.sql`](supabase-migration-profile-email.sql) and [`supabase-migration-discord-profile-link.sql`](supabase-migration-discord-profile-link.sql) only when those private integrations are needed elsewhere.
-- Profile ranks progress from Iron through Challenger using completed sales and membership duration. Total listings remain visible as profile activity information, but do not affect rank qualification. Challenger requires at least 250 completed sales and 730 days as a member.
+- Profile ranks progress from Iron through Challenger using completed transactions and membership duration. Completed transactions include confirmed sales as either seller or buyer; completions outside RiftTrade do not count. Total listings remain visible as profile activity information, but do not affect rank qualification. Challenger requires at least 250 completed transactions and 730 days as a member.
 - Run [`supabase-migration-sale-confirmations.sql`](supabase-migration-sale-confirmations.sql) after [`supabase-migration-direct-messaging.sql`](supabase-migration-direct-messaging.sql). Sellers can request confirmation from members they have messaged; the authenticated buyer must confirm in Inbox before the listing can become sold.
 - `cards` contains the Riftbound catalog from `riftbound_catalog_data/cards.csv`.
 - `listings` belongs to one seller and supports trade, sale, buying, or combinations of trade and sale.

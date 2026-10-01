@@ -183,6 +183,7 @@ const saleConfirmationForm = document.querySelector('#sale-confirmation-form');
 const saleConfirmationBuyer = document.querySelector('#sale-confirmation-buyer');
 const saleConfirmationMessage = document.querySelector('#sale-confirmation-message');
 const saleConfirmationSubmit = document.querySelector('#sale-confirmation-submit');
+const saleConfirmationExternal = document.querySelector('#sale-confirmation-external');
 const listingDialogTitle = document.querySelector('#listing-title');
 const myListingsGrid = document.querySelector('#my-listings-grid');
 const myListingsCount = document.querySelector('#my-listings-count');
@@ -474,7 +475,7 @@ function populateCatalogFilters() {
 }
 
 function listingStatusLabel(status) {
-  return { active: 'Available', paused: 'Pending', completed: 'Sold', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
+  return { active: 'Available', paused: 'Pending', completed: 'Completed', draft: 'Draft', cancelled: 'Cancelled' }[status] || status || 'Unknown';
 }
 
 function listingTypeLabel(listingType) {
@@ -638,43 +639,44 @@ function openListingDetails(listingId) {
     listingPendingButton.hidden = !canChangeStatus;
     listingPendingButton.textContent = listing.status === 'paused' ? 'Remove pending' : 'Mark pending';
     listingSoldButton.hidden = !canChangeStatus && !isSold;
-    listingSoldButton.textContent = isSold ? 'Remove sold' : 'Mark sold';
+    listingSoldButton.textContent = isSold ? 'Remove completed' : 'Mark completed';
   });
   listingDetailsDialog.showModal();
 }
 
 const PROFILE_RANKS = [
-  { name: 'Iron', sold: 0, days: 0 },
-  { name: 'Bronze', sold: 0, days: 7 },
-  { name: 'Silver', sold: 1, days: 30 },
-  { name: 'Gold', sold: 5, days: 90 },
-  { name: 'Platinum', sold: 15, days: 180 },
-  { name: 'Emerald', sold: 30, days: 270 },
-  { name: 'Diamond', sold: 60, days: 365 },
-  { name: 'Master', sold: 110, days: 540 },
-  { name: 'Grandmaster', sold: 175, days: 730 },
-  { name: 'Challenger', sold: 250, days: 730 },
+  { name: 'Iron', completed: 0, days: 0 },
+  { name: 'Bronze', completed: 0, days: 7 },
+  { name: 'Silver', completed: 1, days: 30 },
+  { name: 'Gold', completed: 5, days: 90 },
+  { name: 'Platinum', completed: 15, days: 180 },
+  { name: 'Emerald', completed: 30, days: 270 },
+  { name: 'Diamond', completed: 60, days: 365 },
+  { name: 'Master', completed: 110, days: 540 },
+  { name: 'Grandmaster', completed: 175, days: 730 },
+  { name: 'Challenger', completed: 250, days: 730 },
 ];
 
-function getProfileRank(profile, listings) {
+function getProfileRank(profile, listings, completedCount = null) {
   const listingCount = listings.length;
-  const soldCount = listings.filter((listing) => listing.status === 'completed').length;
+  const completedListingCount = listings.filter((listing) => listing.status === 'completed' && !listing.completed_outside_rifttrade).length;
+  const totalCompleted = completedCount === null ? completedListingCount : completedCount;
   const memberSince = profile.created_at ? new Date(profile.created_at) : null;
   const membershipDays = memberSince && !Number.isNaN(memberSince.getTime())
-    ? Math.max(0, Math.floor((Date.now() - memberSince.getTime()) / 86400000))
+    ? Math.max(0, Math.ceil((Date.now() - memberSince.getTime()) / 86400000))
     : 0;
-  const metrics = { listings: listingCount, sold: soldCount, days: membershipDays };
+  const metrics = { listings: listingCount, completed: totalCompleted, days: membershipDays };
   let rankIndex = 0;
   for (let index = 1; index < PROFILE_RANKS.length; index += 1) {
     const threshold = PROFILE_RANKS[index];
-    if (metrics.sold >= threshold.sold && metrics.days >= threshold.days) rankIndex = index;
+    if (metrics.completed >= threshold.completed && metrics.days >= threshold.days) rankIndex = index;
     else break;
   }
   const rank = PROFILE_RANKS[rankIndex];
   const nextRank = PROFILE_RANKS[rankIndex + 1] || null;
   const progress = nextRank
     ? Math.min(99, Math.max(0, Math.floor(Math.min(
-      nextRank.sold ? metrics.sold / nextRank.sold : 1,
+      nextRank.completed ? metrics.completed / nextRank.completed : 1,
       nextRank.days ? metrics.days / nextRank.days : 1,
     ) * 100)))
     : 100;
@@ -692,7 +694,7 @@ function renderRankings() {
     const name = profile.display_name || profile.username || 'RiftTrade member';
     const rankClass = rank.name.toLowerCase().replaceAll(' ', '-');
     const nextLabel = nextRank ? `${progress}% to ${nextRank.name}` : 'Highest rank reached';
-    return `<article class="ranking-row"><strong class="ranking-position">#${position}</strong>${avatarMarkup(name, profile.avatar_url, 'ranking-avatar')}<div class="ranking-user"><button class="profile-link" data-profile-id="${escapeHtml(profile.id)}" type="button">${escapeHtml(name)}</button><span>${metrics.sold} sold · ${metrics.days} days</span></div><div class="ranking-rank"><span class="profile-rank-badge profile-rank-${rankClass}">${escapeHtml(rank.name)}</span><div class="ranking-progress"><span style="width: ${progress}%"></span></div><small>${escapeHtml(nextLabel)}</small></div></article>`;
+    return `<article class="ranking-row"><strong class="ranking-position">#${position}</strong>${avatarMarkup(name, profile.avatar_url, 'ranking-avatar')}<div class="ranking-user"><button class="profile-link" data-profile-id="${escapeHtml(profile.id)}" type="button">${escapeHtml(name)}</button><span>${metrics.completed} completed · ${metrics.days} days</span></div><div class="ranking-rank"><span class="profile-rank-badge profile-rank-${rankClass}">${escapeHtml(rank.name)}</span><div class="ranking-progress"><span style="width: ${progress}%"></span></div><small>${escapeHtml(nextLabel)}</small></div></article>`;
   }).join('');
   rankingsList.querySelectorAll('[data-profile-id]').forEach((button) => button.addEventListener('click', () => openProfileDialog(button.dataset.profileId)));
 }
@@ -702,9 +704,10 @@ async function fetchRankings() {
     rankingStatus.textContent = 'Sign in to view rankings.';
     return;
   }
-  const [{ data: profiles, error: profileError }, { data: listings, error: listingError }] = await Promise.all([
+  const [{ data: profiles, error: profileError }, { data: listings, error: listingError }, { data: completionCounts, error: completionError }] = await Promise.all([
     window.riftTradeSupabase.from('profiles').select('id, display_name, username, avatar_url, created_at'),
-    window.riftTradeSupabase.from('listings').select('seller_id, status'),
+    window.riftTradeSupabase.from('listings').select('seller_id, status, completed_outside_rifttrade'),
+    window.riftTradeSupabase.rpc('get_profile_completion_counts'),
   ]);
   if (profileError || listingError) {
     rankingStatus.textContent = `Could not load rankings: ${(profileError || listingError).message}`;
@@ -715,10 +718,13 @@ async function fetchRankings() {
     if (!listingsBySeller.has(listing.seller_id)) listingsBySeller.set(listing.seller_id, []);
     listingsBySeller.get(listing.seller_id).push(listing);
   });
+  const completedByProfile = completionError
+    ? new Map()
+    : new Map((completionCounts || []).map((item) => [item.profile_id, Number(item.completed_count) || 0]));
   rankedUsers = (profiles || []).map((profile) => {
-    const { rank, nextRank, progress, metrics } = getProfileRank(profile, listingsBySeller.get(profile.id) || []);
+    const { rank, nextRank, progress, metrics } = getProfileRank(profile, listingsBySeller.get(profile.id) || [], completedByProfile.get(profile.id) || 0);
     return { profile, rank, nextRank, progress, metrics, rankIndex: PROFILE_RANKS.indexOf(rank) };
-  }).sort((left, right) => right.rankIndex - left.rankIndex || right.progress - left.progress || right.metrics.sold - left.metrics.sold || right.metrics.days - left.metrics.days || (left.profile.display_name || '').localeCompare(right.profile.display_name || ''));
+  }).sort((left, right) => right.rankIndex - left.rankIndex || right.progress - left.progress || right.metrics.completed - left.metrics.completed || right.metrics.days - left.metrics.days || (left.profile.display_name || '').localeCompare(right.profile.display_name || ''));
   rankedUsers.forEach((user, index) => { user.position = index + 1; });
   renderRankings();
 }
@@ -728,14 +734,14 @@ function loadRankings() {
   return rankingsLoadPromise;
 }
 
-function renderProfileRank(profile, listings) {
-  const { rank, nextRank, progress, metrics } = getProfileRank(profile, listings);
+function renderProfileRank(profile, listings, completedCount) {
+  const { rank, nextRank, progress, metrics } = getProfileRank(profile, listings, completedCount);
   const rankClass = rank.name.toLowerCase().replaceAll(' ', '-');
   profileRankBadge.className = `profile-rank-badge profile-rank-${rankClass}`;
   profileRankBadge.textContent = rank.name;
   profileRankBadge.setAttribute('aria-label', `${rank.name} rank`);
   profileRankName.textContent = rank.name;
-  profileRankSummary.textContent = `${metrics.listings} listings · ${metrics.sold} sold · ${metrics.days} days as a member`;
+  profileRankSummary.textContent = `${metrics.listings} listings · ${metrics.completed} completed · ${metrics.days} days as a member`;
   profileRankProgress.setAttribute('aria-valuenow', String(progress));
   profileRankProgressBar.style.width = `${progress}%`;
   profileRankProgressLabel.textContent = nextRank ? `${progress}% to ${nextRank.name}` : 'Highest rank reached';
@@ -783,9 +789,10 @@ async function openProfileDialog(profileId) {
     }
     return { ...result, emailColumnMissing, discordColumnMissing };
   })();
-  const [profileResult, listingResult] = await Promise.all([
+  const [profileResult, listingResult, completionResult] = await Promise.all([
     profileRequest,
     window.riftTradeSupabase.from('listings').select(listingSelect()).eq('seller_id', requestedProfileId).order('created_at', { ascending: false }),
+    window.riftTradeSupabase.rpc('get_profile_completion_counts'),
   ]);
   if (profileDialog.dataset.profileId !== requestedProfileId) return;
   if (profileResult.error || !profileResult.data) {
@@ -812,7 +819,10 @@ async function openProfileDialog(profileId) {
   }
 
   profileListings = listingResult.data || [];
-  renderProfileRank(profile, profileListings);
+  const completedCount = completionResult.error
+    ? null
+    : Number((completionResult.data || []).find((item) => item.profile_id === requestedProfileId)?.completed_count || 0);
+  renderProfileRank(profile, profileListings, Number(completedCount));
   profileListingCount.textContent = `${profileListings.length} listing${profileListings.length === 1 ? '' : 's'}`;
   profileListingsStatus.textContent = profileListings.length ? '' : 'No visible listings.';
   profileListingsGrid.innerHTML = profileListings.map((listing) => renderMarketplaceListingCard(listing, '', true)).join('');
@@ -999,6 +1009,22 @@ async function updateListingStatus(status) {
   await Promise.all([loadListings(), loadMyListings()]);
 }
 
+async function completeListingOutsideRiftTrade() {
+  const listingId = saleConfirmationListingId || listingDetailsDialog.dataset.listingId;
+  if (!listingId || !window.riftTradeSupabase) return;
+  saleConfirmationExternal.disabled = true;
+  saleConfirmationMessage.textContent = 'Completing listing...';
+  const { error } = await window.riftTradeSupabase.rpc('complete_listing_outside_rifttrade', { target_listing_id: listingId });
+  if (error) {
+    saleConfirmationExternal.disabled = false;
+    saleConfirmationMessage.textContent = error.message;
+    return;
+  }
+  saleConfirmationDialog.close();
+  saleConfirmationListingId = null;
+  await Promise.all([loadListings(), loadMyListings()]);
+}
+
 async function openSaleConfirmationDialog() {
   const listingId = listingDetailsDialog.dataset.listingId;
   if (!listingId || !window.riftTradeSupabase) return;
@@ -1016,11 +1042,11 @@ async function openSaleConfirmationDialog() {
   }
   const contacts = (data || []).filter((conversation) => conversation.peer_id && conversation.last_message_body);
   saleConfirmationBuyer.innerHTML = contacts.length
-    ? `<option value="">Choose the buyer</option>${contacts.map((contact) => `<option value="${escapeHtml(contact.peer_id)}">${escapeHtml(contact.peer_display_name || 'RiftTrade member')}</option>`).join('')}`
+    ? `<option value="">Choose the user</option>${contacts.map((contact) => `<option value="${escapeHtml(contact.peer_id)}">${escapeHtml(contact.peer_display_name || 'RiftTrade member')}</option>`).join('')}`
     : '<option value="">No message contacts found</option>';
   saleConfirmationBuyer.disabled = contacts.length === 0;
   saleConfirmationSubmit.disabled = contacts.length === 0;
-  if (!contacts.length) saleConfirmationMessage.textContent = 'Message the buyer first, then request sale confirmation here.';
+  if (!contacts.length) saleConfirmationMessage.textContent = 'Message the user first, then request sale confirmation here.';
 }
 
 listingEditButton.addEventListener('click', async () => {
@@ -1032,6 +1058,7 @@ listingEditButton.addEventListener('click', async () => {
 });
 listingPendingButton.addEventListener('click', () => updateListingStatus(listingDetailsDialog.dataset.listingStatus === 'paused' ? 'active' : 'paused'));
 listingSoldButton.addEventListener('click', () => listingDetailsDialog.dataset.listingStatus === 'completed' ? updateListingStatus('active') : openSaleConfirmationDialog());
+saleConfirmationExternal.addEventListener('click', completeListingOutsideRiftTrade);
 listingDeleteButton.addEventListener('click', async () => {
   const listingId = listingDetailsDialog.dataset.listingId;
   if (!listingId || !window.confirm('Delete this listing?')) return;

@@ -12,7 +12,7 @@ as $$
       join public.listings on listings.id = listing_cards.listing_id
     ), 0),
     (select count(*)::bigint from public.profiles),
-    (select count(*)::bigint from public.listings where status = 'completed');
+    (select count(*)::bigint from public.listings where status = 'completed' and not completed_outside_rifttrade);
 $$;
 
 revoke all on function public.get_public_stats() from public;

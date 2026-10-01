@@ -104,7 +104,7 @@ begin
   values (
     target_conversation_id,
     current_user_id,
-    'Sale confirmation requested. Please confirm that you bought this listing.',
+    'Sale confirmation requested. Please confirm that you completed this transaction.',
     target_listing_id,
     confirmation_id
   );
@@ -137,13 +137,13 @@ begin
   set status = 'confirmed', confirmed_at = now()
   where id = confirmation.id;
   update public.listings
-  set status = 'completed'
+  set status = 'completed', completed_outside_rifttrade = false
   where id = confirmation.listing_id and seller_id = confirmation.seller_id and status <> 'completed';
   insert into public.direct_messages (conversation_id, sender_id, body, shared_listing_id, sale_confirmation_id)
   values (
     confirmation.conversation_id,
     current_user_id,
-    'Sale confirmed. The listing has been marked sold.',
+    'Sale confirmed. The listing has been marked completed.',
     confirmation.listing_id,
     confirmation.id
   );
