@@ -2763,7 +2763,6 @@ async function refreshAuthState() {
   if (adminRoleLabel) adminRoleLabel.textContent = isAdministrator ? 'Administrator' : 'Moderator';
   if (adminListingsTab) {
     adminListingsTab.hidden = !isAdministrator;
-    adminListingsTab.closest('[data-page="admin"]')?.querySelector('#admin-panel-listings')?.toggleAttribute('hidden', !isAdministrator);
     if (!isAdministrator && adminListingsTab.classList.contains('is-active')) adminTabs.querySelector('.admin-tab:not([hidden])')?.click();
   }
   authStateReady = true;
