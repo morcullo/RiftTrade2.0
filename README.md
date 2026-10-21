@@ -9,6 +9,14 @@ RiftTrade is a minimal, mobile-friendly starting point for trading Riftbound car
 
 Open `index.html` directly in a browser, or serve this folder with any static web server. The marketplace search is currently powered by the sample listings in the page.
 
+## App icons
+
+The app uses the artwork in [`icons/`](icons/): a multi-resolution ICO and PNG favicon for browser tabs, a monochrome Safari pinned-tab icon, Apple touch icons for iPhone/iPad bookmarks and Home Screen shortcuts, and 192px/512px PNGs for Android and desktop web-app icons. Legacy Windows tiles use the 144px PNG.
+
+[`site.webmanifest`](site.webmanifest) is the manifest linked by the app. [`icons/manifest.json`](icons/manifest.json) is a compatible alternative; keep its app metadata and icon entries aligned if updating the icon pack. All icon and launch paths are relative, supporting both domain-root and subfolder hosting. The supplied artwork is declared as `any`, not `maskable`, because it has not been designed with a verified maskable safe area.
+
+Serve over HTTPS in production (localhost is suitable for development). On iPhone/iPad, open Safari and use **Share > Add to Home Screen**. Available installation features depend on the browser and OS; these icon changes do not add offline support or guarantee an install prompt. Existing bookmarks or installed shortcuts may cache the old artwork and need to be removed and added again.
+
 ## Supabase setup
 
 1. Create a Supabase project and enable Email or OAuth providers under Authentication.
